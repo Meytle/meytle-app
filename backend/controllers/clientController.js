@@ -5,6 +5,7 @@
 
 const { pool: db } = require('../config/database');
 const path = require('path');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
 
 /**
  * Get client profile
@@ -180,32 +181,49 @@ const updateProfilePhoto = async (req, res) => {
       });
     }
 
-    const photoPath = `/uploads/profiles/${req.file.filename}`;
+    // Upload to Cloudinary (production) or use local path (development)
+    const uploadResult = await uploadToCloudinary(req.file, 'profiles');
+    
+    if (!uploadResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upload photo',
+        error: uploadResult.error
+      });
+    }
+
+    const photoUrl = uploadResult.url;
 
     // Check if verification record exists
     const [existing] = await db.execute(
-      'SELECT id FROM client_verifications WHERE user_id = ?',
+      'SELECT id, profile_photo_url FROM client_verifications WHERE user_id = ?',
       [userId]
     );
 
     if (existing.length > 0) {
+      // Delete old photo from Cloudinary if it exists (production only)
+      if (process.env.NODE_ENV === 'production' && existing[0].profile_photo_url && existing[0].profile_photo_url.includes('cloudinary.com')) {
+        const oldPublicId = existing[0].profile_photo_url.split('/').pop().split('.')[0];
+        await deleteFromCloudinary(`meytle/profiles/${oldPublicId}`);
+      }
+
       // Update existing record
       await db.execute(
         'UPDATE client_verifications SET profile_photo_url = ? WHERE user_id = ?',
-        [photoPath, userId]
+        [photoUrl, userId]
       );
     } else {
       // Create new record
       await db.execute(
         'INSERT INTO client_verifications (user_id, profile_photo_url) VALUES (?, ?)',
-        [userId, photoPath]
+        [userId, photoUrl]
       );
     }
 
     res.json({
       success: true,
       message: 'Profile photo updated successfully',
-      data: { photoUrl: photoPath }
+      data: { photoUrl: photoUrl }
     });
 
   } catch (error) {

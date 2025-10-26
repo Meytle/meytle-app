@@ -1,13 +1,14 @@
 /**
  * Multer Configuration for File Uploads
  * Handles profile photos and government ID documents
+ * Now uses Cloudinary for cloud storage
  */
 
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure upload directories exist
+// Ensure upload directories exist (for temporary storage before Cloudinary upload)
 const uploadDirs = {
   profiles: path.join(__dirname, '../uploads/profiles'),
   documents: path.join(__dirname, '../uploads/documents'),
@@ -19,7 +20,7 @@ Object.values(uploadDirs).forEach(dir => {
   }
 });
 
-// Configure storage
+// Configure storage (temporary local storage before Cloudinary upload)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Determine destination based on field name
