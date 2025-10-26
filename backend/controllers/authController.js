@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const config = require('../config/config');
-const { sendWelcomeEmail, sendVerificationEmail, generateVerificationToken } = require('../services/emailService');
+const { sendWelcomeVerificationEmail, generateVerificationToken } = require('../services/emailService');
 
 /**
  * Sign up a new user
@@ -16,11 +16,35 @@ const signup = async (req, res) => {
   try {
     const { name, email, password, roles } = req.body;
 
+    // Log incoming signup request
+    console.log('📨 Signup request received:', {
+      name: name ? `${name.substring(0, 3)}***` : 'missing',
+      email: email ? `${email.split('@')[0].substring(0, 3)}***@${email.split('@')[1] || ''}` : 'missing',
+      passwordLength: password ? password.length : 0,
+      roles: roles,
+      hasAllFields: !!(name && email && password && roles)
+    });
+
     // Validate required fields
     if (!name || !email || !password || !roles) {
+      console.log('❌ Missing required fields:', {
+        hasName: !!name,
+        hasEmail: !!email,
+        hasPassword: !!password,
+        hasRoles: !!roles
+      });
       return res.status(400).json({
         status: 'error',
         message: 'Please provide all required fields: name, email, password, and roles'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide a valid email address'
       });
     }
 
@@ -37,26 +61,53 @@ const signup = async (req, res) => {
       }
     }
 
-    // Validate password length
-    if (password.length < 6) {
+    // Validate password strength
+    if (password.length < 8) {
+      console.log('❌ Password too short:', password.length, 'characters');
       return res.status(400).json({
         status: 'error',
-        message: 'Password must be at least 6 characters long'
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    // Check password complexity
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    console.log('🔐 Password validation:', {
+      length: password.length,
+      hasUpperCase,
+      hasLowerCase,
+      hasNumbers,
+      hasSpecialChar,
+      isValid: hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar
+    });
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+      console.log('❌ Password complexity failed');
+      return res.status(400).json({
+        status: 'error',
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
       });
     }
 
     // Check if user already exists
-    const [existingUsers] = await pool.query(
+    console.log('🔍 Checking if email exists:', email);
+    const [existingUsers] = await pool.execute(
       'SELECT id FROM users WHERE email = ?',
       [email]
     );
 
     if (existingUsers.length > 0) {
+      console.log('❌ Email already exists in database');
       return res.status(400).json({
         status: 'error',
         message: 'User with this email already exists'
       });
     }
+    console.log('✅ Email is available');
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -69,7 +120,7 @@ const signup = async (req, res) => {
     const primaryRole = roleArray[0];
 
     // Insert user into database
-    const [result] = await pool.query(
+    const [result] = await pool.execute(
       'INSERT INTO users (name, email, password, role, email_verification_token, email_verification_expires) VALUES (?, ?, ?, ?, ?, ?)',
       [name, email, hashedPassword, primaryRole, verificationToken, verificationExpires]
     );
@@ -78,28 +129,19 @@ const signup = async (req, res) => {
 
     // Insert roles into user_roles table
     for (const role of roleArray) {
-      await pool.query(
+      await pool.execute(
         'INSERT INTO user_roles (user_id, role, is_active) VALUES (?, ?, TRUE)',
         [userId, role]
       );
     }
 
-    // Send welcome email
-    try {
-      await sendWelcomeEmail(email, name, primaryRole);
-      console.log('✅ Welcome email sent to:', email);
-    } catch (emailError) {
-      console.error('❌ Failed to send welcome email:', emailError);
-      // Don't fail signup if email fails
-    }
-
     // Send verification email
     try {
-      await sendVerificationEmail(email, name, verificationToken);
+      await sendWelcomeVerificationEmail(email, name, verificationToken);
       console.log('✅ Verification email sent to:', email);
     } catch (emailError) {
       console.error('❌ Failed to send verification email:', emailError);
-      // Don't fail signup if email fails
+      // Don't fail signup if email fails, but warn the user
     }
 
     // Generate JWT token with roles array
@@ -109,24 +151,56 @@ const signup = async (req, res) => {
       { expiresIn: config.jwt.expiresIn }
     );
 
-    // Return user data (excluding password)
-    res.status(201).json({
-      status: 'success',
-      token,
-      data: {
-        user: {
-          id: userId,
-          name,
-          email,
-          roles: roleArray,
-          activeRole: primaryRole,
-          emailVerified: false
-        }
-      },
-      message: 'Account created successfully! Please check your email to verify your account.'
+    // Set HTTP-only cookie with the token
+    res.cookie('authToken', token, {
+      httpOnly: true,        // Can't be accessed by JavaScript
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax',       // CSRF protection with better compatibility
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
+
+    // Also set user data in a separate cookie (not httpOnly so frontend can read it)
+    const userData = {
+      id: userId,
+      name,
+      email,
+      roles: roleArray,
+      activeRole: primaryRole,
+      emailVerified: false // Not verified until user clicks email link
+    };
+    res.cookie('userData', JSON.stringify(userData), {
+      httpOnly: false,       // Frontend needs to read this
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Return user data (also include token for backwards compatibility)
+    const responseData = {
+      status: 'success',
+      token, // Still send token for now (will remove after frontend update)
+      data: {
+        user: userData
+      },
+      message: 'Account created successfully!'
+    };
+
+    console.log('✅ Signup successful, setting cookies and sending response:', {
+      userId,
+      email,
+      roles: roleArray,
+      activeRole: primaryRole,
+      tokenLength: token.length
+    });
+
+    res.status(201).json(responseData);
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('❌ Signup error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({
       status: 'error',
       message: 'Failed to create account. Please try again.',
@@ -151,7 +225,7 @@ const login = async (req, res) => {
     }
 
     // Find user by email with their roles
-    const [users] = await pool.query(
+    const [users] = await pool.execute(
       'SELECT id, name, email, password, role, email_verified FROM users WHERE email = ?',
       [email]
     );
@@ -176,7 +250,7 @@ const login = async (req, res) => {
     }
 
     // Get all active roles for the user
-    const [userRoles] = await pool.query(
+    const [userRoles] = await pool.execute(
       'SELECT role FROM user_roles WHERE user_id = ? AND is_active = TRUE',
       [user.id]
     );
@@ -191,19 +265,36 @@ const login = async (req, res) => {
       { expiresIn: config.jwt.expiresIn }
     );
 
-    // Return user data (excluding password)
+    // Set HTTP-only cookie with the token
+    res.cookie('authToken', token, {
+      httpOnly: true,        // Can't be accessed by JavaScript
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'lax',       // CSRF protection with better compatibility
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Also set user data in a separate cookie (not httpOnly so frontend can read it)
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roles,
+      activeRole,
+      emailVerified: user.email_verified
+    };
+    res.cookie('userData', JSON.stringify(userData), {
+      httpOnly: false,       // Frontend needs to read this
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Return user data (also include token for backwards compatibility)
     res.status(200).json({
       status: 'success',
-      token,
+      token, // Still send token for now (will remove after frontend update)
       data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          roles,
-          activeRole,
-          emailVerified: user.email_verified
-        }
+        user: userData
       }
     });
   } catch (error) {
@@ -223,7 +314,7 @@ const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const [users] = await pool.query(
+    const [users] = await pool.execute(
       'SELECT id, name, email, role, email_verified, created_at FROM users WHERE id = ?',
       [userId]
     );
@@ -236,7 +327,7 @@ const getProfile = async (req, res) => {
     }
 
     // Get all active roles for the user
-    const [userRoles] = await pool.query(
+    const [userRoles] = await pool.execute(
       'SELECT role FROM user_roles WHERE user_id = ? AND is_active = TRUE',
       [userId]
     );
@@ -279,7 +370,7 @@ const verifyEmail = async (req, res) => {
     }
 
     // Find user by verification token
-    const [users] = await pool.query(
+    const [users] = await pool.execute(
       'SELECT id, name, email, email_verification_expires FROM users WHERE email_verification_token = ? AND email_verified = FALSE',
       [token]
     );
@@ -302,7 +393,7 @@ const verifyEmail = async (req, res) => {
     }
 
     // Update user as verified
-    await pool.query(
+    await pool.execute(
       'UPDATE users SET email_verified = TRUE, email_verification_token = NULL, email_verification_expires = NULL WHERE id = ?',
       [user.id]
     );
@@ -337,8 +428,8 @@ const resendVerification = async (req, res) => {
     const userId = req.user.id;
 
     // Get user details
-    const [users] = await pool.query(
-      'SELECT id, name, email, email_verified FROM users WHERE id = ?',
+    const [users] = await pool.execute(
+      'SELECT id, name, email, role, email_verified FROM users WHERE id = ?',
       [userId]
     );
 
@@ -363,17 +454,17 @@ const resendVerification = async (req, res) => {
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Update user with new token
-    await pool.query(
+    await pool.execute(
       'UPDATE users SET email_verification_token = ?, email_verification_expires = ? WHERE id = ?',
       [verificationToken, verificationExpires, userId]
     );
 
-    // Send verification email
+    // Send combined welcome + verification email
     try {
-      await sendVerificationEmail(user.email, user.name, verificationToken);
-      console.log('✅ Verification email resent to:', user.email);
+      await sendWelcomeVerificationEmail(user.email, user.name, user.role, verificationToken);
+      console.log('✅ Welcome + Verification email resent to:', user.email);
     } catch (emailError) {
-      console.error('❌ Failed to resend verification email:', emailError);
+      console.error('❌ Failed to resend welcome + verification email:', emailError);
       return res.status(500).json({
         status: 'error',
         message: 'Failed to send verification email'
@@ -410,7 +501,7 @@ const switchRole = async (req, res) => {
     }
 
     // Check if user has this role
-    const [userRoles] = await pool.query(
+    const [userRoles] = await pool.execute(
       'SELECT role FROM user_roles WHERE user_id = ? AND role = ? AND is_active = TRUE',
       [userId, role]
     );
@@ -423,18 +514,25 @@ const switchRole = async (req, res) => {
     }
 
     // Update user's primary role in users table
-    await pool.query(
+    await pool.execute(
       'UPDATE users SET role = ? WHERE id = ?',
       [role, userId]
     );
 
     // Get all user roles for new token
-    const [allUserRoles] = await pool.query(
+    const [allUserRoles] = await pool.execute(
       'SELECT role FROM user_roles WHERE user_id = ? AND is_active = TRUE',
       [userId]
     );
 
     const roles = allUserRoles.map(r => r.role);
+
+    // Get user's full data for the cookie
+    const [users] = await pool.execute(
+      'SELECT id, name, email, email_verified FROM users WHERE id = ?',
+      [userId]
+    );
+    const user = users[0];
 
     // Generate new JWT token with updated active role
     const token = jwt.sign(
@@ -443,15 +541,35 @@ const switchRole = async (req, res) => {
       { expiresIn: config.jwt.expiresIn }
     );
 
+    // Set updated HTTP-only cookie with new token
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    // Update user data cookie with new active role
+    const userData = {
+      id: userId,
+      name: user.name,
+      email: user.email,
+      roles,
+      activeRole: role,
+      emailVerified: user.email_verified
+    };
+    res.cookie('userData', JSON.stringify(userData), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
     res.status(200).json({
       status: 'success',
-      token,
+      token, // Still send token for backward compatibility
       data: {
-        user: {
-          id: userId,
-          activeRole: role,
-          roles
-        }
+        user: userData
       },
       message: `Successfully switched to ${role} role`
     });
@@ -465,11 +583,116 @@ const switchRole = async (req, res) => {
   }
 };
 
+/**
+ * Sign out the current user by clearing cookies
+ */
+const signout = async (req, res) => {
+  try {
+    // Clear the auth token cookie
+    res.cookie('authToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date(0) // Expire immediately
+    });
+
+    // Clear the user data cookie
+    res.cookie('userData', '', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date(0) // Expire immediately
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Successfully signed out'
+    });
+  } catch (error) {
+    console.error('Signout error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to sign out',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete user account
+ * Requires email confirmation for safety
+ */
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+    const { email } = req.body;
+
+    // Verify email confirmation matches
+    if (!email || email !== userEmail) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email confirmation does not match. Please enter your correct email address.'
+      });
+    }
+
+    // Start transaction for safe deletion
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      console.log(`🗑️ Starting account deletion for user ${userId} (${userEmail})`);
+
+      // Delete from companion-related tables
+      await connection.query('DELETE FROM companion_interests WHERE companion_id = ?', [userId]);
+      await connection.query('DELETE FROM companion_applications WHERE user_id = ?', [userId]);
+
+      // Delete from client-related tables
+      await connection.query('DELETE FROM client_verifications WHERE user_id = ?', [userId]);
+
+      // Delete from booking-related tables
+      await connection.query('DELETE FROM booking_reviews WHERE reviewer_id = ? OR reviewee_id = ?', [userId, userId]);
+      await connection.query('DELETE FROM bookings WHERE client_id = ? OR companion_id = ?', [userId, userId]);
+
+      // Delete from user_roles table
+      await connection.query('DELETE FROM user_roles WHERE user_id = ?', [userId]);
+
+      // Finally, delete the user account
+      await connection.query('DELETE FROM users WHERE id = ?', [userId]);
+
+      // Commit transaction
+      await connection.commit();
+      console.log(`✅ Account deleted successfully for user ${userId}`);
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Your account has been permanently deleted.'
+      });
+    } catch (error) {
+      // Rollback transaction on error
+      await connection.rollback();
+      console.error('❌ Error during account deletion transaction:', error);
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to delete account. Please try again.',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   signup,
   login,
+  signout,
   getProfile,
   verifyEmail,
   resendVerification,
-  switchRole
+  switchRole,
+  deleteAccount
 };

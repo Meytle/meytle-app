@@ -1,4 +1,4 @@
-# 🎯 MeetGo - Social Companion Platform
+# 🎯 Meytle - Social Companion Platform
 
 A modern web application connecting clients with verified social companions for various activities.
 
@@ -25,7 +25,7 @@ A modern web application connecting clients with verified social companions for 
 1. **Clone repository**
 ```bash
 git clone <repository-url>
-cd meetgo
+cd meytle
 ```
 
 2. **Backend Setup**
@@ -39,7 +39,7 @@ Create `.env` file:
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=meetgo_db
+DB_NAME=meytle_db
 DB_PORT=3306
 JWT_SECRET=your_jwt_secret_here
 PORT=5000
@@ -48,7 +48,7 @@ NODE_ENV=development
 
 3. **Frontend Setup**
 ```bash
-cd frontendf
+cd frontend
 npm install
 ```
 
@@ -62,7 +62,7 @@ npm start
 
 Frontend:
 ```bash
-cd frontendf
+cd frontend
 npm run dev
 ```
 
@@ -77,7 +77,7 @@ node setup-admin.js
 ```
 
 **Default Admin Credentials:**
-- Email: `admin@meetgo.com`
+- Email: `admin@meytle.com`
 - Password: `admin123`
 
 ### **Admin Features**
@@ -97,25 +97,40 @@ node setup-admin.js
 ## 📁 Project Structure
 
 ```
-meetgo/
-├── backend/                 # Node.js/Express backend
-│   ├── config/             # Configuration files
-│   ├── controllers/        # Route controllers
-│   ├── middleware/         # Auth & validation
-│   ├── routes/            # API routes
-│   └── uploads/           # File uploads
+meytle/
+├── backend/                    # Node.js/Express backend
+│   ├── config/                # Database & app configuration
+│   ├── controllers/           # Business logic handlers
+│   ├── middleware/            # Auth & validation middleware
+│   ├── routes/                # API endpoint definitions
+│   ├── services/              # External service integrations
+│   ├── scripts/               # Utility scripts
+│   │   ├── setup-admin.js     # Create admin & test data
+│   │   └── test-email.js      # Email configuration tester
+│   ├── uploads/               # File upload storage
+│   │   ├── profiles/          # Profile photos
+│   │   └── documents/         # Government IDs
+│   └── server.js              # Application entry point
 │
-├── frontendf/              # React/TypeScript frontend
+├── frontend/                   # React/TypeScript frontend
 │   ├── src/
-│   │   ├── api/           # API calls
-│   │   ├── components/    # React components
-│   │   ├── contexts/      # React contexts
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── pages/         # Page components
-│   │   └── types/         # TypeScript types
-│   └── public/            # Static assets
+│   │   ├── api/               # API client modules
+│   │   ├── components/        # Reusable React components
+│   │   │   ├── common/        # Shared UI components
+│   │   │   └── companion/     # Companion-specific components
+│   │   ├── contexts/          # React contexts (Auth)
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── pages/             # Page components
+│   │   ├── routes/            # React Router configuration
+│   │   ├── types/             # TypeScript definitions
+│   │   ├── utils/             # Utility functions
+│   │   └── config/            # App configuration
+│   ├── public/                # Static assets
+│   └── vite.config.ts         # Vite build configuration
 │
-└── README.md              # This file
+├── .gitignore                 # Git ignore rules
+├── README.md                  # Project documentation
+└── CLAUDE.md                  # AI assistant guidance
 ```
 
 ---
@@ -300,7 +315,7 @@ node test-admin-flow.js
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=meetgo_db
+DB_NAME=meytle_db
 DB_PORT=3306
 
 # JWT
@@ -339,7 +354,7 @@ FRONTEND_URL=http://localhost:5173
 
 1. **Start MySQL server**
 2. **Run backend:** `cd backend && npm start`
-3. **Run frontend:** `cd frontendf && npm run dev`
+3. **Run frontend:** `cd frontend && npm run dev`
 4. **Create admin:** `cd backend && node setup-admin.js`
 5. **Test features:** Login and test functionality
 

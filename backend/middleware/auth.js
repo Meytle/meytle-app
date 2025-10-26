@@ -8,27 +8,36 @@ const config = require('../config/config');
 
 const authMiddleware = (req, res, next) => {
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = null;
+
+    // First, try to get token from cookie
+    if (req.cookies && req.cookies.authToken) {
+      token = req.cookies.authToken;
+    }
+    // Fallback to Authorization header for backwards compatibility
+    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.substring(7); // Remove 'Bearer ' prefix
+    }
+
+    // If no token found in either place
+    if (!token) {
       return res.status(401).json({
         status: 'error',
         message: 'No token provided. Please authenticate.'
       });
     }
 
-    // Extract token
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
     // Verify token
     const decoded = jwt.verify(token, config.jwt.secret);
 
     // Attach user info to request
+    // Support multi-role architecture with activeRole and roles array
     req.user = {
       id: decoded.id,
       email: decoded.email,
-      role: decoded.activeRole || decoded.role // Support both new activeRole and legacy role
+      role: decoded.activeRole || decoded.role, // Primary role for backward compatibility
+      activeRole: decoded.activeRole, // Current active role in multi-role system
+      roles: decoded.roles || [decoded.role] // Array of all user roles
     };
 
     next();

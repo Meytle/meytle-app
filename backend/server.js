@@ -1,29 +1,76 @@
 /**
  * Main Server File
- * Entry point for the MeetGo Backend API
+ * Entry point for the Meytle Backend API
  */
 
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const config = require('./config/config');
-const { testConnection, initializeDatabase } = require('./config/database');
+const { testConnection, initializeDatabase, closePool } = require('./config/database');
+
+// Security middlewares
+const {
+  enforceHTTPS,
+  securityHeaders,
+  preventParameterPollution,
+  securityLogger,
+  hideSensitiveInfo
+} = require('./middleware/security');
+
+// Rate limiting middlewares
+const {
+  apiRateLimiter,
+  authRateLimiter,
+  searchRateLimiter,
+  emailVerificationRateLimiter
+} = require('./middleware/rateLimiting');
+
+// Validation middleware
+const { sanitizeInput } = require('./middleware/validation');
+
+// Routes
 const authRoutes = require('./routes/authRoutes');
 const companionRoutes = require('./routes/companionRoutes');
 const clientRoutes = require('./routes/clientRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const serviceCategoryRoutes = require('./routes/serviceCategoryRoutes');
+const favoritesRoutes = require('./routes/favoritesRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors(config.cors));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Apply security middlewares first
+app.use(enforceHTTPS);
+app.use(securityHeaders);
+app.use(preventParameterPollution);
+
+// CORS configuration
+app.use(cors({
+  ...config.cors,
+  credentials: true // Allow cookies to be sent with requests
+}));
+
+// Body parsing middlewares
+app.use(cookieParser()); // Parse cookies
+app.use(express.json({ limit: '10mb' })); // Limit request body size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Global security middlewares
+app.use(sanitizeInput); // Sanitize all inputs to prevent XSS
+app.use(securityLogger); // Log security events
+app.use(hideSensitiveInfo); // Hide sensitive info from responses
+
+// Note: Rate limiting is now applied selectively on specific routes
+// instead of globally to avoid blocking legitimate dashboard requests
 
 // Serve static files (uploaded images)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1d', // Cache static files for 1 day
+  etag: true,
+  lastModified: true
+}));
 
 // Request logging middleware (development only)
 if (config.nodeEnv === 'development') {
@@ -49,6 +96,7 @@ app.use('/api/client', clientRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/service-categories', serviceCategoryRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -71,7 +119,7 @@ app.use((err, req, res, next) => {
 // Initialize database and start server
 const startServer = async () => {
   try {
-    console.log('🚀 Starting MeetGo Backend Server...\n');
+    console.log('🚀 Starting Meytle Backend Server...\n');
 
     // Test MySQL server connection
     const isConnected = await testConnection();
@@ -83,10 +131,10 @@ const startServer = async () => {
     await initializeDatabase();
 
     // Start listening
-    app.listen(config.port, () => {
+    const server = app.listen(config.port, () => {
       console.log(`\n✅ Server running on port ${config.port}`);
       console.log(`📍 Environment: ${config.nodeEnv}`);
-      console.log(`🌐 Frontend URL: ${config.cors.origin}`);
+      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`);
       console.log(`\n🔗 API Endpoints:`);
       console.log(`   Authentication:`);
       console.log(`   - POST   /api/auth/signup`);
@@ -115,9 +163,16 @@ const startServer = async () => {
       console.log(`   - POST   /api/service-categories (admin - create)`);
       console.log(`   - PUT    /api/service-categories/:id (admin - update)`);
       console.log(`   - DELETE /api/service-categories/:id (admin - delete)`);
+      console.log(`   Stripe (protected):`);
+      console.log(`   - POST   /api/stripe/connect/create-account (protected)`);
+      console.log(`   - POST   /api/stripe/connect/onboarding-link (protected)`);
+      console.log(`   - GET    /api/stripe/connect/account-status (protected)`);
+      console.log(`   - POST   /api/stripe/webhook (public)`);
       console.log(`   Health:`);
       console.log(`   - GET    /health\n`);
     });
+
+    return server; // Return server instance for graceful shutdown
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
     process.exit(1);
@@ -131,7 +186,43 @@ process.on('unhandledRejection', (err) => {
   process.exit(1);
 });
 
-// Start the server
-startServer();
+// Graceful shutdown handling
+let serverInstance = null;
+
+const gracefulShutdown = async (signal) => {
+  console.log(`\n📴 ${signal} received. Starting graceful shutdown...`);
+
+  try {
+    // Stop accepting new connections
+    if (serverInstance) {
+      await new Promise((resolve) => {
+        serverInstance.close(resolve);
+      });
+      console.log('✅ Server closed to new connections');
+    }
+
+    // Close database pool
+    await closePool();
+    console.log('✅ Database connections closed');
+
+    console.log('👋 Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// Listen for termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Start the server and capture the instance
+startServer().then((server) => {
+  serverInstance = server;
+}).catch((error) => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+});
 
 module.exports = app;

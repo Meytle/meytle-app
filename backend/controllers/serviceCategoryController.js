@@ -4,6 +4,16 @@
  */
 
 const { pool } = require('../config/database');
+const config = require('../config/config');
+
+// Supported currencies and their validation rules
+const SUPPORTED_CURRENCIES = {
+  'usd': { symbol: '$', decimals: 2 },
+  'eur': { symbol: '€', decimals: 2 },
+  'gbp': { symbol: '£', decimals: 2 },
+  'cad': { symbol: 'C$', decimals: 2 },
+  'aud': { symbol: 'A$', decimals: 2 }
+};
 
 /**
  * Get all service categories
@@ -21,7 +31,7 @@ const getAllCategories = async (req, res) => {
 
     query += ' ORDER BY name';
 
-    const [categories] = await pool.query(query, params);
+    const [categories] = await pool.execute(query, params);
 
     // Cast base_price to number for each category
     const categoriesWithNumericPrice = categories.map(cat => ({
@@ -50,7 +60,7 @@ const getCategoryById = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
-    const [categories] = await pool.query(
+    const [categories] = await pool.execute(
       'SELECT * FROM service_categories WHERE id = ?',
       [categoryId]
     );
@@ -105,8 +115,17 @@ const createCategory = async (req, res) => {
       });
     }
 
+    // Validate currency compatibility
+    const currency = config.stripe.currency;
+    if (!SUPPORTED_CURRENCIES[currency]) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Currency ${currency} is not supported. Supported currencies: ${Object.keys(SUPPORTED_CURRENCIES).join(', ')}`
+      });
+    }
+
     // Check for duplicate name (case-insensitive)
-    const [existing] = await pool.query(
+    const [existing] = await pool.execute(
       'SELECT id FROM service_categories WHERE LOWER(name) = LOWER(?)',
       [name]
     );
@@ -119,7 +138,7 @@ const createCategory = async (req, res) => {
     }
 
     // Insert new category
-    const [result] = await pool.query(
+    const [result] = await pool.execute(
       `INSERT INTO service_categories (name, description, base_price, is_active) 
        VALUES (?, ?, ?, ?)`,
       [name, description || null, parseFloat(basePrice), isActive !== undefined ? isActive : true]
@@ -164,7 +183,7 @@ const updateCategory = async (req, res) => {
     const { name, description, basePrice, isActive } = req.body;
 
     // Check if category exists
-    const [existing] = await pool.query(
+    const [existing] = await pool.execute(
       'SELECT id FROM service_categories WHERE id = ?',
       [categoryId]
     );
@@ -184,9 +203,20 @@ const updateCategory = async (req, res) => {
       });
     }
 
+    // Validate currency compatibility if basePrice is being updated
+    if (basePrice !== undefined) {
+      const currency = config.stripe.currency;
+      if (!SUPPORTED_CURRENCIES[currency]) {
+        return res.status(400).json({
+          status: 'error',
+          message: `Currency ${currency} is not supported. Supported currencies: ${Object.keys(SUPPORTED_CURRENCIES).join(', ')}`
+        });
+      }
+    }
+
     // Check for duplicate name if name is being changed
     if (name) {
-      const [duplicate] = await pool.query(
+      const [duplicate] = await pool.execute(
         'SELECT id FROM service_categories WHERE LOWER(name) = LOWER(?) AND id != ?',
         [name, categoryId]
       );
@@ -229,7 +259,7 @@ const updateCategory = async (req, res) => {
 
     params.push(categoryId);
 
-    await pool.query(
+    await pool.execute(
       `UPDATE service_categories SET ${updates.join(', ')} WHERE id = ?`,
       params
     );
@@ -265,7 +295,7 @@ const deleteCategory = async (req, res) => {
     const { categoryId } = req.params;
 
     // Check if category exists
-    const [existing] = await pool.query(
+    const [existing] = await pool.execute(
       'SELECT id FROM service_categories WHERE id = ?',
       [categoryId]
     );
@@ -278,7 +308,7 @@ const deleteCategory = async (req, res) => {
     }
 
     // Check if category is referenced in any bookings
-    const [bookings] = await pool.query(
+    const [bookings] = await pool.execute(
       'SELECT COUNT(*) as count FROM bookings WHERE service_category_id = ?',
       [categoryId]
     );
@@ -291,7 +321,7 @@ const deleteCategory = async (req, res) => {
     }
 
     // Delete the category
-    await pool.query('DELETE FROM service_categories WHERE id = ?', [categoryId]);
+    await pool.execute('DELETE FROM service_categories WHERE id = ?', [categoryId]);
 
     res.json({
       status: 'success',

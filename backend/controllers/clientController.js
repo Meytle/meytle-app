@@ -3,7 +3,7 @@
  * Handles client-specific operations like profile management and identity verification
  */
 
-const db = require('../config/database');
+const { pool: db } = require('../config/database');
 const path = require('path');
 
 /**
@@ -27,16 +27,24 @@ const getProfile = async (req, res) => {
 
     // Check for client verification data
     const [verifications] = await db.execute(
-      `SELECT 
+      `SELECT
         id,
         profile_photo_url,
         id_document_url,
         date_of_birth,
+        government_id_number,
         phone_number,
         location,
+        address_line,
+        city,
+        state,
+        country,
+        postal_code,
         bio,
         verification_status,
+        rejection_reason,
         verified_at,
+        reviewed_at,
         created_at
       FROM client_verifications
       WHERE user_id = ?`,
@@ -69,7 +77,17 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { fullName, phoneNumber, location, bio } = req.body;
+    const {
+      fullName,
+      phoneNumber,
+      location,
+      addressLine,
+      city,
+      state,
+      country,
+      postalCode,
+      bio
+    } = req.body;
 
     // Update user name
     if (fullName) {
@@ -88,17 +106,48 @@ const updateProfile = async (req, res) => {
     if (existing.length > 0) {
       // Update existing record
       await db.execute(
-        `UPDATE client_verifications 
-        SET phone_number = ?, location = ?, bio = ?, updated_at = CURRENT_TIMESTAMP
+        `UPDATE client_verifications
+        SET phone_number = ?,
+            location = ?,
+            address_line = ?,
+            city = ?,
+            state = ?,
+            country = ?,
+            postal_code = ?,
+            bio = ?,
+            updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?`,
-        [phoneNumber, location, bio, userId]
+        [phoneNumber, location, addressLine, city, state, country, postalCode, bio, userId]
       );
     } else {
       // Create new record
       await db.execute(
-        `INSERT INTO client_verifications (user_id, phone_number, location, bio)
-        VALUES (?, ?, ?, ?)`,
-        [userId, phoneNumber, location, bio]
+        `INSERT INTO client_verifications (
+          user_id,
+          phone_number,
+          location,
+          address_line,
+          city,
+          state,
+          country,
+          postal_code,
+          bio
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, phoneNumber, location, addressLine, city, state, country, postalCode, bio]
+      );
+    }
+
+    // Build full location string from address components
+    const locationComponents = [addressLine, city, state, country, postalCode]
+      .filter(Boolean)
+      .join(', ');
+
+    // Update the location field with the full address
+    if (locationComponents) {
+      await db.execute(
+        'UPDATE client_verifications SET location = ? WHERE user_id = ?',
+        [locationComponents, userId]
       );
     }
 
@@ -198,6 +247,22 @@ const submitVerification = async (req, res) => {
       });
     }
 
+    // Check if user has provided address information
+    const [verificationCheck] = await db.execute(
+      'SELECT address_line, city, state, country, postal_code FROM client_verifications WHERE user_id = ?',
+      [userId]
+    );
+
+    if (verificationCheck.length === 0 ||
+        !verificationCheck[0].address_line ||
+        !verificationCheck[0].city ||
+        !verificationCheck[0].country) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please update your address information before submitting verification'
+      });
+    }
+
     const documentPath = `/uploads/documents/${req.file.filename}`;
 
     // Check if verification record exists
@@ -207,31 +272,46 @@ const submitVerification = async (req, res) => {
     );
 
     if (existing.length > 0) {
-      // Update existing record
+      // Update existing record - automatically approve
       await db.execute(
-        `UPDATE client_verifications 
-        SET id_document_url = ?, date_of_birth = ?, government_id_number = ?, verification_status = 'pending', updated_at = CURRENT_TIMESTAMP
+        `UPDATE client_verifications
+        SET id_document_url = ?,
+            date_of_birth = ?,
+            government_id_number = ?,
+            verification_status = 'approved',
+            verified_at = CURRENT_TIMESTAMP,
+            reviewed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?`,
         [documentPath, dateOfBirth, governmentIdNumber, userId]
       );
     } else {
-      // Create new record
+      // Create new record - automatically approved
       await db.execute(
-        `INSERT INTO client_verifications (user_id, id_document_url, date_of_birth, government_id_number, verification_status)
-        VALUES (?, ?, ?, ?, 'pending')`,
+        `INSERT INTO client_verifications (
+          user_id,
+          id_document_url,
+          date_of_birth,
+          government_id_number,
+          verification_status,
+          verified_at,
+          reviewed_at
+        )
+        VALUES (?, ?, ?, ?, 'approved', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
         [userId, documentPath, dateOfBirth, governmentIdNumber]
       );
     }
 
-    console.log(`✅ Client verification submitted by user ${userId}:`, {
+    console.log(`✅ Client verification auto-approved for user ${userId}:`, {
       dateOfBirth,
       governmentIdNumber: governmentIdNumber.substring(0, 4) + '****', // Log partial for security
-      documentPath
+      documentPath,
+      status: 'approved'
     });
 
     res.json({
       success: true,
-      message: 'Verification submitted successfully. We\'ll review it within 24 hours.'
+      message: 'Verification successful! Your identity has been verified.'
     });
 
   } catch (error) {
@@ -251,8 +331,8 @@ const getVerificationStatus = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const [verifications] = await db.execute(
-      `SELECT 
+    const [results] = await db.execute(
+      `SELECT
         verification_status,
         verified_at,
         created_at
@@ -261,10 +341,10 @@ const getVerificationStatus = async (req, res) => {
       [userId]
     );
 
-    const verification = verifications[0] || { verification_status: 'not_submitted' };
+    const verification = results[0] || { verification_status: 'not_submitted' };
 
     res.json({
-      success: true,
+      status: 'success',
       data: verification
     });
 

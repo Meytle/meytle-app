@@ -1,0 +1,468 @@
+/**
+ * Client Dashboard Page
+ * Dashboard for client users to browse companions and manage bookings
+ */
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import type { Booking } from '../../types';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import VerificationModal from '../../components/VerificationModal';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { ROUTES } from '../../constants';
+import { bookingApi } from '../../api/booking';
+import clientApi from '../../api/client';
+import { FaCalendarAlt, FaIdCard, FaSearch, FaUser, FaHeart, FaCreditCard, FaUserTie, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
+
+type VerificationStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
+
+const ClientDashboard = () => {
+  const { user, isAuthenticated } = useAuth();
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('not_submitted');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchBookings();
+    fetchVerificationStatus();
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+      setIsLoadingBookings(true);
+      const fetchedBookings = await bookingApi.getBookings();
+      setBookings(fetchedBookings || []);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      toast.error('Failed to load bookings');
+    } finally {
+      setIsLoadingBookings(false);
+    }
+  };
+
+  const fetchVerificationStatus = async () => {
+    try {
+      const status = await clientApi.getVerificationStatus();
+      setVerificationStatus(status.verification_status || 'not_submitted');
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+      // Default to not_submitted if there's an error
+      setVerificationStatus('not_submitted');
+    }
+  };
+
+  const handleVerifyIdentity = () => {
+    setIsVerificationModalOpen(true);
+  };
+
+  const handleVerificationSuccess = () => {
+    setVerificationStatus('pending');
+    toast.success('Verification submitted successfully! We\'ll review it within 24 hours.');
+  };
+
+  const handleBrowseCompanions = () => {
+    navigate('/browse-companions');
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <FaClock className="text-yellow-500" />;
+      case 'confirmed':
+        return <FaCheckCircle className="text-green-500" />;
+      case 'completed':
+        return <FaCheckCircle className="text-blue-500" />;
+      case 'cancelled':
+        return <FaTimesCircle className="text-red-500" />;
+      default:
+        return <FaExclamationCircle className="text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'no_show':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Awaiting Approval';
+      case 'confirmed':
+        return 'Approved';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'no_show':
+        return 'No Show';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  if (!user) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-500">View your bookings and activity</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - My Bookings */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* My Bookings Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <FaCalendarAlt className="text-primary-600 text-xl" />
+                <h2 className="text-xl font-bold text-gray-900">My Bookings</h2>
+              </div>
+              
+              {isLoadingBookings ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="bg-gray-200 rounded-lg h-32"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : bookings.length === 0 ? (
+                <div className="text-center py-12">
+                  <FaCalendarAlt className="mx-auto text-6xl text-gray-300 mb-4" />
+                  <p className="text-gray-500 text-lg">No bookings yet</p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Start browsing companions to make your first booking
+                  </p>
+                  <button
+                    onClick={handleBrowseCompanions}
+                    className="mt-6 px-6 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-500 text-white font-medium rounded-lg hover:from-primary-700 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Browse Companions
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-semibold">
+                              {booking.companion_name?.charAt(0) || 'C'}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">
+                                {booking.companion_name || 'Companion'}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {formatDate(booking.booking_date)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <FaClock className="text-gray-400" />
+                              <span className="text-gray-600">
+                                {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <FaMoneyBillWave className="text-gray-400" />
+                              <span className="text-gray-900 font-semibold">
+                                ${booking.total_amount}
+                              </span>
+                            </div>
+                          </div>
+
+                          {booking.meeting_location && (
+                            <p className="text-sm text-gray-600 mt-2">
+                              📍 {booking.meeting_location}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(booking.status)}`}>
+                            {getStatusIcon(booking.status)}
+                            {getStatusLabel(booking.status)}
+                          </span>
+
+                          <div className="flex gap-2">
+                            {booking.status === 'pending' && (
+                              <button
+                                onClick={() => toast('Cancel feature coming soon', { icon: '🚫' })}
+                                className="text-xs px-3 py-1 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                            {booking.status === 'completed' && !booking.has_review && (
+                              <button
+                                onClick={() => toast('Review feature coming soon', { icon: '⭐' })}
+                                className="text-xs px-3 py-1 border border-primary-300 text-primary-600 rounded hover:bg-primary-50 transition-colors"
+                              >
+                                Leave Review
+                              </button>
+                            )}
+                            <button
+                              onClick={() => toast('Details view coming soon', { icon: '📋' })}
+                              className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
+                {verificationStatus === 'approved' && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                    <FaCheckCircle />
+                    Verified
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={handleBrowseCompanions}
+                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 group"
+                >
+                  <FaSearch className="text-2xl text-gray-400 group-hover:text-primary-600 transition-colors" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">Browse Companions</h3>
+                    <p className="text-sm text-gray-500">Find your perfect match</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/favorites')}
+                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-secondary-500 hover:bg-secondary-50 transition-all duration-200 group"
+                >
+                  <FaHeart className="text-2xl text-gray-400 group-hover:text-secondary-600 transition-colors" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">My Favorites</h3>
+                    <p className="text-sm text-gray-500">Saved companions</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate(ROUTES.CLIENT_PROFILE)}
+                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all duration-200 group"
+                >
+                  <FaUser className="text-2xl text-gray-400 group-hover:text-accent-600 transition-colors" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">My Profile</h3>
+                    <p className="text-sm text-gray-500">Edit your information</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => toast('Payment methods feature coming soon!', { icon: '💳' })}
+                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-all duration-200 group"
+                >
+                  <FaCreditCard className="text-2xl text-gray-400 group-hover:text-success-600 transition-colors" />
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-900">Payment Methods</h3>
+                    <p className="text-sm text-gray-500">Manage payments</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Identity Verification Box */}
+            {verificationStatus !== 'approved' && (
+              <div className={`rounded-lg shadow-md border-2 p-6 ${
+                verificationStatus === 'pending'
+                  ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'
+                  : verificationStatus === 'rejected'
+                  ? 'bg-gradient-to-br from-red-50 to-pink-50 border-red-200'
+                  : 'bg-gradient-to-br from-primary-50 to-secondary-50 border-primary-200'
+              }`}>
+                {verificationStatus === 'pending' ? (
+                  <>
+                    <div className="flex items-start gap-3 mb-4">
+                      <FaClock className="text-yellow-600 text-2xl flex-shrink-0 mt-1" />
+                      <h3 className="text-lg font-bold text-gray-900">Verification Pending</h3>
+                    </div>
+                    <p className="text-gray-700 text-sm mb-5 leading-relaxed">
+                      Your identity verification is being reviewed. We'll notify you within 24 hours once it's approved.
+                    </p>
+                    <div className="bg-yellow-100 rounded-lg p-3 text-center">
+                      <p className="text-sm text-yellow-800 font-medium">
+                        ⏱️ Review in progress...
+                      </p>
+                    </div>
+                  </>
+                ) : verificationStatus === 'rejected' ? (
+                  <>
+                    <div className="flex items-start gap-3 mb-4">
+                      <FaExclamationCircle className="text-red-600 text-2xl flex-shrink-0 mt-1" />
+                      <h3 className="text-lg font-bold text-gray-900">Verification Rejected</h3>
+                    </div>
+                    <p className="text-gray-700 text-sm mb-5 leading-relaxed">
+                      Your verification was not approved. Please resubmit with clear, valid documents.
+                    </p>
+                    <button
+                      onClick={handleVerifyIdentity}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                      <FaIdCard />
+                      Resubmit Verification
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-3 mb-4">
+                      <FaIdCard className="text-primary-600 text-2xl flex-shrink-0 mt-1" />
+                      <h3 className="text-lg font-bold text-gray-900">Verify Your Identity</h3>
+                    </div>
+                    <p className="text-gray-700 text-sm mb-5 leading-relaxed">
+                      Before your first booking, please verify your identity by uploading a government-approved ID.
+                    </p>
+                    <button
+                      onClick={handleVerifyIdentity}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                    >
+                      <FaIdCard />
+                      Verify Now
+                    </button>
+                    <p className="text-xs text-primary-700 mt-3 text-center">
+                      🔒 Your information is secure and encrypted
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Quick Stats */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Stats</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                  <span className="text-gray-600 text-sm">Total Bookings</span>
+                  <span className="text-2xl font-bold text-gray-900">{bookings.length}</span>
+                </div>
+                <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                  <span className="text-gray-600 text-sm">Upcoming</span>
+                  <span className="text-2xl font-bold text-primary-600">
+                    {bookings.filter(b => ['pending', 'confirmed'].includes(b.status)).length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 text-sm">Completed</span>
+                  <span className="text-2xl font-bold text-success-600">
+                    {bookings.filter(b => b.status === 'completed').length}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Become a Companion */}
+            <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg shadow-md border-2 border-primary-200 p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
+                  <FaUserTie className="text-white text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Want to Earn?</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Become a companion and start earning money by offering your time and company!
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaMoneyBillWave className="text-success-600" />
+                  <span className="text-sm font-semibold text-gray-900">Earn up to $50/hour</span>
+                </div>
+                <ul className="space-y-1 text-xs text-gray-600 ml-6">
+                  <li>• Flexible schedule</li>
+                  <li>• Choose your clients</li>
+                  <li>• Safe and secure platform</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => navigate(ROUTES.COMPANION_APPLICATION)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-secondary-500 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                <FaUserTie />
+                Apply as Companion
+              </button>
+              
+              <p className="text-xs text-primary-700 mt-3 text-center">
+                ✨ Join 500+ companions already earning
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </main>
+
+      {/* Verification Modal */}
+      <VerificationModal
+        isOpen={isVerificationModalOpen}
+        onClose={() => setIsVerificationModalOpen(false)}
+        onSuccess={handleVerificationSuccess}
+      />
+    </div>
+  );
+};
+
+export default ClientDashboard;

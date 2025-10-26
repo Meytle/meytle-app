@@ -1,6 +1,6 @@
-# MeetGo Backend API
+# Meytle Backend API
 
-Backend API server for the MeetGo application with MySQL database integration.
+Backend API server for the Meytle application with MySQL database integration.
 
 ## 🚀 Quick Start
 
@@ -23,7 +23,7 @@ Backend API server for the MeetGo application with MySQL database integration.
    - MySQL Host: `localhost`
    - MySQL User: `root`
    - MySQL Password: `sahil`
-   - Database Name: `meetgo_db`
+   - Database Name: `meytle_db`
    - Server Port: `5000`
    - Frontend URL: `http://localhost:5173`
 
@@ -33,7 +33,7 @@ Backend API server for the MeetGo application with MySQL database integration.
    DB_HOST=localhost
    DB_USER=root
    DB_PASSWORD=sahil
-   DB_NAME=meetgo_db
+   DB_NAME=meytle_db
    DB_PORT=3306
    JWT_SECRET=your_jwt_secret_key
    JWT_EXPIRES_IN=7d

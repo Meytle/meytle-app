@@ -4,41 +4,119 @@
 
 const mysql = require('mysql2');
 
-// Database configuration
+// Database configuration - no hardcoded passwords allowed
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'sahil',
-  database: process.env.DB_NAME || 'meetgo_db',
-  port: process.env.DB_PORT || 3306,
+  password: process.env.DB_PASSWORD, // No default - must be provided
+  database: process.env.DB_NAME || 'meytle_db',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  decimalNumbers: true
+  queueLimit: 50, // Reasonable limit to prevent memory issues
+  decimalNumbers: true,
+  // Additional pool settings for better performance
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0
 };
 
-// Create connection pool
+// Create connection pool with error handling
 const pool = mysql.createPool(dbConfig);
 
 // Get promise-based pool
 const promisePool = pool.promise();
 
-// Test database connection (without selecting a database)
-const testConnection = async () => {
+// Pool event handlers for monitoring
+pool.on('connection', (connection) => {
+  console.log('✅ New database connection established (ID: ' + connection.threadId + ')');
+
+  // Set session variables for better performance
+  connection.query("SET time_zone = '+00:00'");
+  connection.query('SET SESSION sql_mode = "STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION"');
+});
+
+pool.on('acquire', (connection) => {
+  console.log('📊 Connection %d acquired from pool', connection.threadId);
+});
+
+pool.on('release', (connection) => {
+  console.log('📊 Connection %d released back to pool', connection.threadId);
+});
+
+pool.on('enqueue', () => {
+  console.log('⏳ Waiting for available connection slot');
+});
+
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('❌ Unexpected database pool error:', err);
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.error('Database connection was closed.');
+  }
+  if (err.code === 'ER_CON_COUNT_ERROR') {
+    console.error('Database has too many connections.');
+  }
+  if (err.code === 'ECONNREFUSED') {
+    console.error('Database connection was refused.');
+  }
+});
+
+// Test database connection with retry logic
+const testConnection = async (retries = 3, delay = 5000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const connection = await mysql.createConnection({
+        host: dbConfig.host,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        port: dbConfig.port,
+        connectTimeout: 10000 // 10 second timeout
+      });
+
+      await connection.promise().query('SELECT 1');
+      console.log('✅ MySQL Server connected successfully');
+      await connection.end();
+      return true;
+    } catch (error) {
+      console.error(`❌ MySQL connection attempt ${i + 1} failed:`, error.message);
+
+      if (i < retries - 1) {
+        console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  console.error('❌ Could not establish database connection after ' + retries + ' attempts');
+  return false;
+};
+
+// Health check function for monitoring
+const checkPoolHealth = async () => {
   try {
-    const connection = await mysql.createConnection({
-      host: dbConfig.host,
-      user: dbConfig.user,
-      password: dbConfig.password,
-      port: dbConfig.port
-    });
-    await connection.promise().query('SELECT 1');
-    console.log('✅ MySQL Server connected successfully');
-    await connection.end();
-    return true;
+    const result = await promisePool.query('SELECT 1');
+    const poolStats = {
+      allConnections: pool._allConnections.length,
+      freeConnections: pool._freeConnections.length,
+      connectionQueue: pool._connectionQueue.length,
+      isHealthy: true
+    };
+    return poolStats;
   } catch (error) {
-    console.error('❌ MySQL connection failed:', error.message);
-    return false;
+    return {
+      isHealthy: false,
+      error: error.message
+    };
+  }
+};
+
+// Graceful shutdown handler
+const closePool = async () => {
+  try {
+    await promisePool.end();
+    console.log('✅ Database pool closed gracefully');
+  } catch (error) {
+    console.error('❌ Error closing database pool:', error);
   }
 };
 
@@ -151,6 +229,12 @@ const initializeDatabase = async () => {
         government_id_url VARCHAR(500),
         date_of_birth DATE NOT NULL,
         government_id_number VARCHAR(100) NOT NULL,
+        address_line VARCHAR(255),
+        city VARCHAR(100),
+        state VARCHAR(100),
+        country VARCHAR(100),
+        postal_code VARCHAR(20),
+        bio TEXT,
         status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
         rejection_reason TEXT,
         reviewed_at TIMESTAMP NULL,
@@ -174,9 +258,16 @@ const initializeDatabase = async () => {
         government_id_number VARCHAR(100),
         phone_number VARCHAR(50),
         location VARCHAR(255),
+        address_line VARCHAR(255),
+        city VARCHAR(100),
+        state VARCHAR(100),
+        country VARCHAR(100),
+        postal_code VARCHAR(20),
         bio TEXT,
         verification_status ENUM('not_submitted', 'pending', 'approved', 'rejected') NOT NULL DEFAULT 'not_submitted',
+        rejection_reason TEXT,
         verified_at TIMESTAMP NULL,
+        reviewed_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -185,6 +276,104 @@ const initializeDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log('✅ Client verifications table ready');
+
+    // Add new columns to existing client_verifications table (migration)
+    try {
+      const dbName = dbConfig.database;
+
+      // Add address_line column
+      const [[{ count_address_line }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_address_line FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'address_line'`,
+        [dbName]
+      );
+      if (Number(count_address_line) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN address_line VARCHAR(255) NULL AFTER location`
+        );
+        console.log('✅ Added address_line column to client_verifications');
+      }
+
+      // Add city column
+      const [[{ count_city }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_city FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'city'`,
+        [dbName]
+      );
+      if (Number(count_city) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN city VARCHAR(100) NULL AFTER address_line`
+        );
+        console.log('✅ Added city column to client_verifications');
+      }
+
+      // Add state column
+      const [[{ count_state }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_state FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'state'`,
+        [dbName]
+      );
+      if (Number(count_state) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN state VARCHAR(100) NULL AFTER city`
+        );
+        console.log('✅ Added state column to client_verifications');
+      }
+
+      // Add country column
+      const [[{ count_country }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_country FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'country'`,
+        [dbName]
+      );
+      if (Number(count_country) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN country VARCHAR(100) NULL AFTER state`
+        );
+        console.log('✅ Added country column to client_verifications');
+      }
+
+      // Add postal_code column
+      const [[{ count_postal }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_postal FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'postal_code'`,
+        [dbName]
+      );
+      if (Number(count_postal) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN postal_code VARCHAR(20) NULL AFTER country`
+        );
+        console.log('✅ Added postal_code column to client_verifications');
+      }
+
+      // Add rejection_reason column
+      const [[{ count_rejection }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_rejection FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'rejection_reason'`,
+        [dbName]
+      );
+      if (Number(count_rejection) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN rejection_reason TEXT NULL AFTER verification_status`
+        );
+        console.log('✅ Added rejection_reason column to client_verifications');
+      }
+
+      // Add reviewed_at column
+      const [[{ count_reviewed }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_reviewed FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'client_verifications' AND COLUMN_NAME = 'reviewed_at'`,
+        [dbName]
+      );
+      if (Number(count_reviewed) === 0) {
+        await promisePool.query(
+          `ALTER TABLE client_verifications ADD COLUMN reviewed_at TIMESTAMP NULL AFTER verified_at`
+        );
+        console.log('✅ Added reviewed_at column to client_verifications');
+      }
+    } catch (migrationError) {
+      console.error('❌ Client verifications table migration failed:', migrationError.message);
+    }
 
     // Create companion_availability table
     await promisePool.query(`
@@ -195,6 +384,7 @@ const initializeDatabase = async () => {
         start_time TIME NOT NULL,
         end_time TIME NOT NULL,
         is_available BOOLEAN NOT NULL DEFAULT TRUE,
+        services JSON NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (companion_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -204,6 +394,24 @@ const initializeDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log('✅ Companion availability table ready');
+
+    // Add services column to existing companion_availability table (migration)
+    try {
+      const dbName = dbConfig.database;
+      const [[{ count_services }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_services FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_availability' AND COLUMN_NAME = 'services'`,
+        [dbName]
+      );
+      if (Number(count_services) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_availability ADD COLUMN services JSON NULL`
+        );
+        console.log('✅ Added services column to companion_availability table');
+      }
+    } catch (migrationError) {
+      console.error('❌ Services column migration failed:', migrationError.message);
+    }
 
     // Create service_categories table
     await promisePool.query(`
@@ -263,6 +471,7 @@ const initializeDatabase = async () => {
         FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (companion_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (service_category_id) REFERENCES service_categories(id) ON DELETE SET NULL,
+        CONSTRAINT chk_no_self_booking CHECK (client_id != companion_id),
         INDEX idx_client_id (client_id),
         INDEX idx_companion_id (companion_id),
         INDEX idx_booking_date (booking_date),
@@ -273,6 +482,44 @@ const initializeDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log('✅ Bookings table ready');
+
+    // Create booking_requests table for when no time slots are available
+    await promisePool.query(`
+      CREATE TABLE IF NOT EXISTS booking_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        client_id INT NOT NULL,
+        companion_id INT NOT NULL,
+        requested_date DATE NOT NULL,
+        preferred_time VARCHAR(100) NULL,
+        start_time TIME NULL,
+        end_time TIME NULL,
+        duration_hours INT DEFAULT 1,
+        service_category_id INT NULL,
+        service_type VARCHAR(255) NULL,
+        extra_amount DECIMAL(10, 2) DEFAULT 0,
+        meeting_type ENUM('in_person', 'virtual') DEFAULT 'in_person',
+        special_requests TEXT NULL,
+        meeting_location VARCHAR(255) NULL,
+        status ENUM('pending', 'accepted', 'rejected', 'expired') DEFAULT 'pending',
+        companion_response TEXT NULL,
+        suggested_date DATE NULL,
+        suggested_start_time TIME NULL,
+        suggested_end_time TIME NULL,
+        expires_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        responded_at TIMESTAMP NULL,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (companion_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (service_category_id) REFERENCES service_categories(id) ON DELETE SET NULL,
+        INDEX idx_client_id (client_id),
+        INDEX idx_companion_id (companion_id),
+        INDEX idx_status (status),
+        INDEX idx_requested_date (requested_date),
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Booking requests table ready');
 
     // Add service_category_id column to existing bookings table (migration)
     try {
@@ -415,6 +662,386 @@ const initializeDatabase = async () => {
       console.error('❌ Bookings payment fields migration failed:', migrationError.message);
     }
 
+    // Add address-related columns to companion_applications table (migration)
+    try {
+      const dbName = dbConfig.database;
+
+      // Add address_line column
+      const [[{ count_address_line }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_address_line FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'address_line'`,
+        [dbName]
+      );
+      if (Number(count_address_line) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN address_line VARCHAR(255) NULL`
+        );
+      }
+
+      // Add city column
+      const [[{ count_city }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_city FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'city'`,
+        [dbName]
+      );
+      if (Number(count_city) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN city VARCHAR(100) NULL`
+        );
+      }
+
+      // Add state column
+      const [[{ count_state }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_state FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'state'`,
+        [dbName]
+      );
+      if (Number(count_state) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN state VARCHAR(100) NULL`
+        );
+      }
+
+      // Add country column
+      const [[{ count_country }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_country FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'country'`,
+        [dbName]
+      );
+      if (Number(count_country) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN country VARCHAR(100) NULL`
+        );
+      }
+
+      // Add postal_code column
+      const [[{ count_postal_code }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_postal_code FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'postal_code'`,
+        [dbName]
+      );
+      if (Number(count_postal_code) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN postal_code VARCHAR(20) NULL`
+        );
+      }
+
+      // Add bio column
+      const [[{ count_bio }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_bio FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'bio'`,
+        [dbName]
+      );
+      if (Number(count_bio) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN bio TEXT NULL`
+        );
+      }
+    } catch (migrationError) {
+      console.error('❌ Companion applications address fields migration failed:', migrationError.message);
+    }
+
+    // Add profile-related columns to companion_applications table (migration)
+    try {
+      const dbName = dbConfig.database;
+
+      // Add hourly_rate column
+      const [[{ count_hourly_rate }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_hourly_rate FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'hourly_rate'`,
+        [dbName]
+      );
+      if (Number(count_hourly_rate) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN hourly_rate DECIMAL(10,2) DEFAULT 50.00`
+        );
+      }
+
+      // Add currency column
+      const [[{ count_currency }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_currency FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'currency'`,
+        [dbName]
+      );
+      if (Number(count_currency) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN currency VARCHAR(3) DEFAULT 'USD'`
+        );
+      }
+
+      // Add languages column (JSON)
+      const [[{ count_languages }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_languages FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'languages'`,
+        [dbName]
+      );
+      if (Number(count_languages) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN languages JSON NULL`
+        );
+      }
+
+      // Add services_offered column (JSON)
+      const [[{ count_services }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_services FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'services_offered'`,
+        [dbName]
+      );
+      if (Number(count_services) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN services_offered JSON NULL`
+        );
+      }
+
+      // Add phone_number column (increased size for country codes)
+      const [[{ count_phone }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_phone FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'phone_number'`,
+        [dbName]
+      );
+      if (Number(count_phone) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN phone_number VARCHAR(30) NULL`
+        );
+      } else {
+        // Update existing column to support longer phone numbers with country codes
+        await promisePool.query(
+          `ALTER TABLE companion_applications MODIFY COLUMN phone_number VARCHAR(30) NULL`
+        );
+      }
+    } catch (migrationError) {
+      console.error('❌ Companion profile fields migration failed:', migrationError.message);
+    }
+
+    // Add additional companion profile columns (migration)
+    try {
+      const dbName = dbConfig.database;
+
+      // Add services_offered column
+      const [[{ count_services_offered }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_services_offered FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'services_offered'`,
+        [dbName]
+      );
+      if (Number(count_services_offered) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN services_offered JSON NULL`
+        );
+      }
+
+      // Add languages column
+      const [[{ count_languages }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_languages FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'languages'`,
+        [dbName]
+      );
+      if (Number(count_languages) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN languages JSON NULL`
+        );
+      }
+
+      // Add hourly_rate column
+      const [[{ count_hourly_rate }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_hourly_rate FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'hourly_rate'`,
+        [dbName]
+      );
+      if (Number(count_hourly_rate) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN hourly_rate DECIMAL(10,2) NULL`
+        );
+      }
+    } catch (migrationError) {
+      console.error('❌ Additional companion profile fields migration failed:', migrationError.message);
+    }
+
+    // Add Stripe-related columns to companion_applications table (migration)
+    try {
+      const dbName = dbConfig.database;
+
+      // Add stripe_account_id column
+      const [[{ count_stripe_account_id }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_stripe_account_id FROM information_schema.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'stripe_account_id'`,
+        [dbName]
+      );
+      if (Number(count_stripe_account_id) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN stripe_account_id VARCHAR(255) NULL`
+        );
+      }
+
+      // Add stripe_account_status column
+      const [[{ count_stripe_account_status }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_stripe_account_status FROM information_schema.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'stripe_account_status'`,
+        [dbName]
+      );
+      if (Number(count_stripe_account_status) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN stripe_account_status ENUM('not_created', 'pending', 'active', 'rejected') DEFAULT 'not_created'`
+        );
+      }
+
+      // Add stripe_onboarding_completed column
+      const [[{ count_stripe_onboarding_completed }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_stripe_onboarding_completed FROM information_schema.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND COLUMN_NAME = 'stripe_onboarding_completed'`,
+        [dbName]
+      );
+      if (Number(count_stripe_onboarding_completed) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD COLUMN stripe_onboarding_completed BOOLEAN DEFAULT FALSE`
+        );
+      }
+
+      // Add indexes on Stripe columns
+      const [[{ idx_stripe_account_id }]] = await promisePool.query(
+        `SELECT COUNT(*) AS idx_stripe_account_id FROM information_schema.STATISTICS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND INDEX_NAME = 'idx_stripe_account_id'`,
+        [dbName]
+      );
+      if (Number(idx_stripe_account_id) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD INDEX idx_stripe_account_id (stripe_account_id)`
+        );
+      }
+
+      const [[{ idx_stripe_account_status }]] = await promisePool.query(
+        `SELECT COUNT(*) AS idx_stripe_account_status FROM information_schema.STATISTICS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'companion_applications' AND INDEX_NAME = 'idx_stripe_account_status'`,
+        [dbName]
+      );
+      if (Number(idx_stripe_account_status) === 0) {
+        await promisePool.query(
+          `ALTER TABLE companion_applications ADD INDEX idx_stripe_account_status (stripe_account_status)`
+        );
+      }
+    } catch (migrationError) {
+      console.error('❌ Companion applications Stripe fields migration failed:', migrationError.message);
+    }
+
+    // Add Stripe transfer-related columns to bookings table (migration)
+    try {
+      const dbName = dbConfig.database;
+
+      // Add transfer_id column
+      const [[{ count_transfer_id }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_transfer_id FROM information_schema.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'bookings' AND COLUMN_NAME = 'transfer_id'`,
+        [dbName]
+      );
+      if (Number(count_transfer_id) === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD COLUMN transfer_id VARCHAR(255) NULL`
+        );
+      }
+
+      // Add platform_fee_amount column
+      const [[{ count_platform_fee_amount }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_platform_fee_amount FROM information_schema.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'bookings' AND COLUMN_NAME = 'platform_fee_amount'`,
+        [dbName]
+      );
+      if (Number(count_platform_fee_amount) === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD COLUMN platform_fee_amount DECIMAL(10,2) NULL`
+        );
+      }
+
+      // Add transfer_status column
+      const [[{ count_transfer_status }]] = await promisePool.query(
+        `SELECT COUNT(*) AS count_transfer_status FROM information_schema.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'bookings' AND COLUMN_NAME = 'transfer_status'`,
+        [dbName]
+      );
+      if (Number(count_transfer_status) === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD COLUMN transfer_status ENUM('pending', 'completed', 'failed') NULL`
+        );
+      }
+
+      // Add index on transfer_id
+      const [[{ idx_transfer_id }]] = await promisePool.query(
+        `SELECT COUNT(*) AS idx_transfer_id FROM information_schema.STATISTICS 
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'bookings' AND INDEX_NAME = 'idx_transfer_id'`,
+        [dbName]
+      );
+      if (Number(idx_transfer_id) === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD INDEX idx_transfer_id (transfer_id)`
+        );
+      }
+    } catch (migrationError) {
+      console.error('❌ Bookings Stripe transfer fields migration failed:', migrationError.message);
+    }
+
+    // Add custom service fields to bookings table for client-specified services
+    try {
+      // Add custom_service_name column
+      const [[{ count_custom_service_name }]] = await promisePool.query(
+        `SELECT COUNT(*) as count FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'bookings'
+         AND COLUMN_NAME = 'custom_service_name'`
+      );
+
+      if (count_custom_service_name === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD COLUMN custom_service_name VARCHAR(255) NULL`
+        );
+        console.log('✅ Added custom_service_name column to bookings table');
+      }
+
+      // Add custom_service_description column
+      const [[{ count_custom_service_description }]] = await promisePool.query(
+        `SELECT COUNT(*) as count FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'bookings'
+         AND COLUMN_NAME = 'custom_service_description'`
+      );
+
+      if (count_custom_service_description === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD COLUMN custom_service_description TEXT NULL`
+        );
+        console.log('✅ Added custom_service_description column to bookings table');
+      }
+
+      // Add is_custom_service column for easier querying
+      const [[{ count_is_custom_service }]] = await promisePool.query(
+        `SELECT COUNT(*) as count FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'bookings'
+         AND COLUMN_NAME = 'is_custom_service'`
+      );
+
+      if (count_is_custom_service === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD COLUMN is_custom_service BOOLEAN NOT NULL DEFAULT FALSE`
+        );
+        console.log('✅ Added is_custom_service column to bookings table');
+      }
+
+      // Add index on is_custom_service for efficient filtering
+      const [[{ idx_is_custom_service }]] = await promisePool.query(
+        `SELECT COUNT(*) as count FROM information_schema.STATISTICS
+         WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'bookings'
+         AND INDEX_NAME = 'idx_is_custom_service'`
+      );
+
+      if (idx_is_custom_service === 0) {
+        await promisePool.query(
+          `ALTER TABLE bookings ADD INDEX idx_is_custom_service (is_custom_service)`
+        );
+        console.log('✅ Added index on is_custom_service');
+      }
+    } catch (migrationError) {
+      console.error('❌ Bookings custom service fields migration failed:', migrationError.message);
+    }
+
     // Create booking_reviews table
     await promisePool.query(`
       CREATE TABLE IF NOT EXISTS booking_reviews (
@@ -471,18 +1098,156 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Companion interests table ready');
 
+    // Create favorite_companions table for clients to save their favorite companions
+    await promisePool.query(`
+      CREATE TABLE IF NOT EXISTS favorite_companions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        client_id INT NOT NULL,
+        companion_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (companion_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_client_id (client_id),
+        INDEX idx_companion_id (companion_id),
+        UNIQUE KEY unique_favorite (client_id, companion_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('✅ Favorite companions table ready');
+
+    // Drop and recreate audit log table to fix constraint issues
+    try {
+      await promisePool.query('DROP TABLE IF EXISTS availability_audit_log');
+    } catch (err) {
+      // Ignore if table doesn't exist
+    }
+
+    // Create audit log table for tracking data changes
+    await promisePool.query(`
+      CREATE TABLE IF NOT EXISTS availability_audit_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        companion_id INT NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        old_data JSON,
+        new_data JSON,
+        changed_by_id INT DEFAULT NULL,
+        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        INDEX idx_companion_audit (companion_id),
+        INDEX idx_changed_at (changed_at),
+        FOREIGN KEY (companion_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (changed_by_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+    console.log('✅ Created availability_audit_log table');
+
+    // Drop existing triggers if they exist (for clean updates)
+    try {
+      await promisePool.query('DROP TRIGGER IF EXISTS validate_availability_insert');
+      await promisePool.query('DROP TRIGGER IF EXISTS validate_availability_update');
+      await promisePool.query('DROP TRIGGER IF EXISTS prevent_cross_companion_update');
+    } catch (err) {
+      // Ignore errors if triggers don't exist
+    }
+
+    // Create trigger to validate companion_id on INSERT
+    await promisePool.query(`
+      CREATE TRIGGER validate_availability_insert
+      BEFORE INSERT ON companion_availability
+      FOR EACH ROW
+      BEGIN
+        -- Ensure companion_id exists and has companion role
+        DECLARE companion_exists INT DEFAULT 0;
+
+        SELECT COUNT(*) INTO companion_exists
+        FROM user_roles
+        WHERE user_id = NEW.companion_id
+        AND role = 'companion'
+        AND is_active = TRUE;
+
+        IF companion_exists = 0 THEN
+          SIGNAL SQLSTATE '45000'
+          SET MESSAGE_TEXT = 'Invalid companion_id or user is not an active companion';
+        END IF;
+      END
+    `);
+    console.log('✅ Created trigger: validate_availability_insert');
+
+    // Create trigger to prevent updating to different companion_id
+    await promisePool.query(`
+      CREATE TRIGGER prevent_cross_companion_update
+      BEFORE UPDATE ON companion_availability
+      FOR EACH ROW
+      BEGIN
+        IF OLD.companion_id != NEW.companion_id THEN
+          SIGNAL SQLSTATE '45000'
+          SET MESSAGE_TEXT = 'Cannot change companion_id of existing availability record';
+        END IF;
+      END
+    `);
+    console.log('✅ Created trigger: prevent_cross_companion_update');
+
+    // Create data integrity check stored procedure for admin use
+    await promisePool.query(`
+      CREATE PROCEDURE IF NOT EXISTS check_availability_integrity()
+      BEGIN
+        -- Check for orphaned availability records
+        SELECT
+          'Orphaned Records' as check_type,
+          COUNT(*) as issue_count,
+          GROUP_CONCAT(DISTINCT ca.companion_id) as affected_companions
+        FROM companion_availability ca
+        LEFT JOIN users u ON ca.companion_id = u.id
+        WHERE u.id IS NULL;
+
+        -- Check for companions without proper role
+        SELECT
+          'Invalid Role' as check_type,
+          COUNT(*) as issue_count,
+          GROUP_CONCAT(DISTINCT ca.companion_id) as affected_companions
+        FROM companion_availability ca
+        LEFT JOIN user_roles ur ON ca.companion_id = ur.user_id AND ur.role = 'companion'
+        WHERE ur.user_id IS NULL;
+
+        -- Check for duplicate time slots
+        SELECT
+          'Duplicate Slots' as check_type,
+          COUNT(*) as issue_count,
+          GROUP_CONCAT(DISTINCT companion_id) as affected_companions
+        FROM (
+          SELECT companion_id, day_of_week, start_time, COUNT(*) as cnt
+          FROM companion_availability
+          GROUP BY companion_id, day_of_week, start_time
+          HAVING cnt > 1
+        ) duplicates;
+
+        -- Check for overlapping time slots
+        SELECT
+          'Overlapping Slots' as check_type,
+          COUNT(*) as issue_count,
+          GROUP_CONCAT(DISTINCT a1.companion_id) as affected_companions
+        FROM companion_availability a1
+        JOIN companion_availability a2
+          ON a1.companion_id = a2.companion_id
+          AND a1.day_of_week = a2.day_of_week
+          AND a1.id != a2.id
+        WHERE a1.start_time < a2.end_time AND a1.end_time > a2.start_time;
+      END
+    `);
+    console.log('✅ Created stored procedure: check_availability_integrity');
+
     // Migrate existing users to user_roles table
     try {
       const [existingUsers] = await promisePool.query(`
         SELECT id, role FROM users WHERE role IS NOT NULL
       `);
-      
+
       for (const user of existingUsers) {
         // Check if user already has entries in user_roles
         const [existingRoles] = await promisePool.query(`
           SELECT COUNT(*) as count FROM user_roles WHERE user_id = ?
         `, [user.id]);
-        
+
         if (existingRoles[0].count === 0) {
           // Create user_roles entry for existing user
           await promisePool.query(`
@@ -505,5 +1270,7 @@ const initializeDatabase = async () => {
 module.exports = {
   pool: promisePool,
   testConnection,
-  initializeDatabase
+  initializeDatabase,
+  checkPoolHealth,
+  closePool
 };

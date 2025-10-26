@@ -13,7 +13,13 @@ const {
   approveApplication,
   rejectApplication,
   getUsers,
-  deleteUser
+  deleteUser,
+  checkAvailabilityIntegrity,
+  getAvailabilityAuditLogs,
+  cleanupAvailabilityData,
+  getClientVerifications,
+  approveClientVerification,
+  rejectClientVerification
 } = require('../controllers/adminController');
 
 // Apply auth middleware to all admin routes
@@ -31,6 +37,16 @@ router.put('/applications/:applicationId/reject', rejectApplication);
 // User management
 router.get('/users', getUsers);
 router.delete('/users/:userId', deleteUser);
+
+// Client verification management
+router.get('/client-verifications', getClientVerifications);
+router.put('/client-verifications/:id/approve', approveClientVerification);
+router.put('/client-verifications/:id/reject', rejectClientVerification);
+
+// Data integrity management
+router.get('/availability/integrity-check', checkAvailabilityIntegrity);
+router.get('/availability/audit-logs', getAvailabilityAuditLogs);
+router.post('/availability/cleanup', cleanupAvailabilityData);
 
 module.exports = router;
 
