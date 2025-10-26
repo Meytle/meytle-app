@@ -31,6 +31,11 @@ interface FloatingProfileImagesProps {
 
 // Adaptive profile configuration based on device
 const getProfileConfig = () => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined') {
+    return { count: 6, complexity: 'simple', imageSize: 150 };
+  }
+
   const width = window.innerWidth;
   const isRetina = window.devicePixelRatio > 1;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
