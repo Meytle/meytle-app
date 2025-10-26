@@ -22,8 +22,10 @@ export default defineConfig({
     // Enable minification
     minify: 'terser',
     terserOptions: {
-      drop_console: true,
-      drop_debugger: true
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
     }
   },
   server: {
