@@ -22,19 +22,9 @@ const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NOD
 const getAllowedOrigins = () => {
   const origins = [];
 
-  // Always allow the configured frontend URL if provided
+  // Allow the configured frontend URL
   if (process.env.FRONTEND_URL) {
     origins.push(process.env.FRONTEND_URL);
-  }
-
-  // In development, also allow common localhost ports
-  if (isDevelopment) {
-    origins.push(
-      'http://localhost:5173', // Vite default
-      'http://localhost:5174', // Vite alternate
-      'http://localhost:3000', // Create React App default
-      'http://localhost:3001'  // Common alternate
-    );
   }
 
   return origins;
