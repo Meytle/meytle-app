@@ -1,9 +1,9 @@
 /**
  * Enhanced Homepage V3 - Three Section Layout
- * Clean, modern design with Hero, Services, and How It Works sections
+ * Optimized for performance with memoization and reduced animations
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FaArrowRight, FaStar, FaShieldAlt, FaClock, FaCheckCircle,
@@ -15,28 +15,42 @@ import { ROUTES } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 import FloatingProfileImages from '../components/common/FloatingProfileImages';
 
-const HomePage = () => {
+const HomePage = React.memo(() => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [activeMetric, setActiveMetric] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Fade in animation on mount
+  // Fade in animation on mount and device detection
   useEffect(() => {
     setIsVisible(true);
+    setIsMobile(window.innerWidth < 768);
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     const interval = setInterval(() => {
       setActiveMetric(prev => (prev + 1) % 3);
     }, 3000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
-  const trustMetrics = [
+  // Memoized arrays to prevent re-creation on every render
+  const trustMetrics = useMemo(() => [
     { label: '100% Verified', color: 'text-purple-400' },
     { label: '4.9 Rating', color: 'text-pink-400' },
     { label: 'Instant Connect', color: 'text-indigo-400' }
-  ];
+  ], []);
 
-  const services = [
+  const services = useMemo(() => [
     {
       icon: FaCoffee,
       title: 'Coffee Date',
@@ -121,9 +135,9 @@ const HomePage = () => {
       color: 'from-indigo-600 to-purple-600',
       popular: false
     }
-  ];
+  ], []);
 
-  const steps = [
+  const steps = useMemo(() => [
     {
       number: '1',
       title: 'Create Account',
@@ -145,22 +159,51 @@ const HomePage = () => {
       icon: '🚀',
       color: 'from-rose-500 to-purple-500'
     }
-  ];
+  ], []);
+
+  // Memoized click handlers
+  const handleGetStarted = useCallback(() => {
+    if (isAuthenticated && user) {
+      if (user.activeRole === 'admin') {
+        navigate(ROUTES.ADMIN_DASHBOARD);
+      } else if (user.activeRole === 'companion') {
+        navigate(ROUTES.COMPANION_DASHBOARD);
+      } else {
+        navigate(ROUTES.CLIENT_DASHBOARD);
+      }
+    } else {
+      navigate(ROUTES.SIGN_UP);
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleSignIn = useCallback(() => {
+    if (isAuthenticated && user) {
+      if (user.activeRole === 'admin') {
+        navigate(ROUTES.ADMIN_DASHBOARD);
+      } else if (user.activeRole === 'companion') {
+        navigate(ROUTES.COMPANION_DASHBOARD);
+      } else {
+        navigate(ROUTES.CLIENT_DASHBOARD);
+      }
+    } else {
+      navigate(ROUTES.SIGN_IN);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
-      {/* Floating Profile Images */}
-      <FloatingProfileImages variant="sides" className="z-0" />
+      {/* Enhanced FloatingProfileImages with adaptive rendering */}
+      <FloatingProfileImages variant="sides" className="z-0" opacity={0.85} />
 
       {/* Main content */}
       <div className="relative z-10">
         {/* SECTION 1: HERO */}
         <section className="relative overflow-hidden">
-        {/* Animated gradient orbs - matching main gradient colors */}
+        {/* OPTIMIZED: Removed blur-3xl and mix-blend-multiply for performance */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-40 w-80 h-80 bg-purple-900 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-float" />
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-800 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-float-delayed" />
-          <div className="absolute -bottom-40 left-1/2 w-80 h-80 bg-indigo-900 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-float-slow" />
+          <div className="absolute -top-40 -left-40 w-80 h-80 bg-purple-900 rounded-full opacity-20" />
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-800 rounded-full opacity-20" />
+          <div className="absolute -bottom-40 left-1/2 w-80 h-80 bg-indigo-900 rounded-full opacity-20" />
         </div>
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-24 text-center">
@@ -188,21 +231,7 @@ const HomePage = () => {
           {/* CTA Button */}
           <div className={`transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <button
-              onClick={() => {
-                if (isAuthenticated && user) {
-                  // Navigate to appropriate dashboard based on role
-                  if (user.activeRole === 'admin') {
-                    navigate(ROUTES.ADMIN_DASHBOARD);
-                  } else if (user.activeRole === 'companion') {
-                    navigate(ROUTES.COMPANION_DASHBOARD);
-                  } else {
-                    navigate(ROUTES.CLIENT_DASHBOARD);
-                  }
-                } else {
-                  // Not logged in, go to signup
-                  navigate(ROUTES.SIGN_UP);
-                }
-              }}
+              onClick={handleGetStarted}
               className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-lg rounded-full transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:shadow-purple-500/25"
             >
               Start Free Today
@@ -350,41 +379,13 @@ const HomePage = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => {
-                  if (isAuthenticated && user) {
-                    // Navigate to appropriate dashboard based on role
-                    if (user.activeRole === 'admin') {
-                      navigate(ROUTES.ADMIN_DASHBOARD);
-                    } else if (user.activeRole === 'companion') {
-                      navigate(ROUTES.COMPANION_DASHBOARD);
-                    } else {
-                      navigate(ROUTES.CLIENT_DASHBOARD);
-                    }
-                  } else {
-                    // Not logged in, go to signup
-                    navigate(ROUTES.SIGN_UP);
-                  }
-                }}
+                onClick={handleGetStarted}
                 className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-lg rounded-full hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
               >
                 Join Free Now
               </button>
               <button
-                onClick={() => {
-                  if (isAuthenticated && user) {
-                    // Navigate to appropriate dashboard based on role
-                    if (user.activeRole === 'admin') {
-                      navigate(ROUTES.ADMIN_DASHBOARD);
-                    } else if (user.activeRole === 'companion') {
-                      navigate(ROUTES.COMPANION_DASHBOARD);
-                    } else {
-                      navigate(ROUTES.CLIENT_DASHBOARD);
-                    }
-                  } else {
-                    // Not logged in, go to signin
-                    navigate(ROUTES.SIGN_IN);
-                  }
-                }}
+                onClick={handleSignIn}
                 className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold text-lg rounded-full border-2 border-purple-400 hover:bg-white/20 hover:border-pink-400 transition-all duration-300"
               >
                 I Have an Account
@@ -400,29 +401,11 @@ const HomePage = () => {
         </div>
       </section>
 
-        {/* Custom CSS for animations */}
-        <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-          }
-
-          .animate-float {
-            animation: float 6s ease-in-out infinite;
-          }
-
-          .animate-float-delayed {
-            animation: float 6s ease-in-out 2s infinite;
-          }
-
-          .animate-float-slow {
-            animation: float 8s ease-in-out 1s infinite;
-          }
-        `}</style>
-
       </div> {/* End of content wrapper */}
     </div>
   );
-};
+});
+
+HomePage.displayName = 'HomePage';
 
 export default HomePage;

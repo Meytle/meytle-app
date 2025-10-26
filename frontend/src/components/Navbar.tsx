@@ -1,19 +1,32 @@
 ﻿import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { FaUser, FaSignOutAlt, FaBell, FaEdit, FaTachometerAlt, FaUserCircle } from 'react-icons/fa';
 import Button from './common/Button';
 import RoleSwitcher from './common/RoleSwitcher';
 import { theme } from '../styles/theme';
 
-const Navbar = () => {
+// Throttle utility for scroll performance
+const throttle = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout | null;
+  let lastExecTime = 0;
+  return (...args: any[]) => {
+    const currentTime = Date.now();
+    if (currentTime - lastExecTime > delay) {
+      func(...args);
+      lastExecTime = currentTime;
+    }
+  };
+};
+
+const Navbar = React.memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, signOut } = useAuth();
@@ -33,40 +46,46 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Scroll direction detection for header visibility
+  // Throttled scroll handler for 60fps (16ms)
   useEffect(() => {
-    let ticking = false;
-
-    const handleScroll = () => {
+    const handleScroll = throttle(() => {
       const currentScrollY = window.scrollY;
 
       // Only hide header after scrolling down past 80px
-      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+      if (currentScrollY > lastScrollY.current && currentScrollY > 80) {
         // Scrolling DOWN - hide header
         setIsHeaderVisible(false);
-      } else if (currentScrollY < lastScrollY) {
+      } else if (currentScrollY < lastScrollY.current) {
         // Scrolling UP - show header
         setIsHeaderVisible(true);
       }
 
-      setLastScrollY(currentScrollY);
+      lastScrollY.current = currentScrollY;
+    }, 16);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Proper cleanup
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
     };
+  }, []);
 
-    const scrollHandler = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
+  // Memoized event handlers
+  const handleSignOut = useCallback(() => {
+    signOut();
+    setIsProfileDropdownOpen(false);
+  }, [signOut]);
 
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-    return () => window.removeEventListener('scroll', scrollHandler);
-  }, [lastScrollY]);
+  const handleProfileClick = useCallback(() => {
+    setIsProfileDropdownOpen(prev => !prev);
+  }, []);
 
-  const scrollToSection = (sectionId: string) => {
+  const handleNotificationClick = useCallback(() => {
+    setIsNotificationOpen(prev => !prev);
+  }, []);
+
+  const scrollToSection = useCallback((sectionId: string) => {
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
@@ -105,20 +124,20 @@ const Navbar = () => {
         }
       }
     }
-  };
+  }, [location.pathname, navigate]);
 
   return (
     <>
       {/* Floating Auth Buttons - Only show when header is hidden */}
       {!isHeaderVisible && (
-        <div className="fixed top-6 right-6 z-[9999] hidden md:flex items-center gap-3 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-neutral-200/50 transition-all duration-300 animate-fadeIn">
+        <div className="fixed top-6 right-6 z-[9999] hidden md:flex items-center gap-3 bg-white/95 px-4 py-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-neutral-200/50 transition-all duration-300 animate-fadeIn">
         {isAuthenticated ? (
           // Authenticated User Menu
           <>
             {/* Notification Bell */}
             <div className="relative" ref={notificationRef}>
               <button
-                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                onClick={handleNotificationClick}
                 className="relative p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
               >
                 <FaBell className="w-5 h-5" />
@@ -168,7 +187,7 @@ const Navbar = () => {
             {/* Profile Dropdown */}
             <div className="relative" ref={profileDropdownRef}>
               <button
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                onClick={handleProfileClick}
                 className="flex items-center gap-3 text-sm text-neutral-700 hover:bg-primary-50 px-3 py-2 rounded-lg transition-all duration-200"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold shadow-md">
@@ -223,10 +242,7 @@ const Navbar = () => {
                     <div className="border-t border-neutral-200 my-1"></div>
 
                     <button
-                      onClick={() => {
-                        signOut();
-                        setIsProfileDropdownOpen(false);
-                      }}
+                      onClick={handleSignOut}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-error-600 hover:bg-error-50 transition-colors"
                     >
                       <FaSignOutAlt className="w-4 h-4" />
@@ -262,9 +278,13 @@ const Navbar = () => {
       )}
 
       {/* Main Navigation Bar */}
-      <nav className={`bg-white/95 backdrop-blur-md border-b border-neutral-200 sticky top-0 z-50 shadow-lg transition-transform duration-300 ${
+      <nav className={`bg-white/95 border-b border-neutral-200 sticky top-0 z-50 shadow-lg transition-transform duration-300 ${
         isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}>
+      }`}
+      style={{
+        transform: `translateY(${isHeaderVisible ? '0' : '-100%'})`,
+        willChange: 'transform',
+      }}>
         <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12">
           <div className="relative flex justify-between items-center h-20">
           {/* Desktop Navigation - LEFT SIDE */}
@@ -677,6 +697,8 @@ const Navbar = () => {
       </nav>
     </>
   );
-};
+});
+
+Navbar.displayName = 'Navbar';
 
 export default Navbar;

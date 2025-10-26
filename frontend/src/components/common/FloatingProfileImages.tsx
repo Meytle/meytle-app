@@ -1,27 +1,25 @@
 /**
  * FloatingProfileImages Component
- * Creates an amazing floating avatar effect with dynamic animations
+ * Enhanced with beautiful visual effects and optimized performance
  */
 
 import { motion } from 'framer-motion';
-import { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 
 interface FloatingProfile {
   id: number;
   name: string;
   bgColor: string;
+  gradientColors: string[];
   size: number;
   initialX: number;
   initialY: number;
   duration: number;
   delay: number;
+  orbitRadius: number;
+  hasGlow: boolean;
+  hasBreathing: boolean;
   rotationSpeed: number;
-  floatRadius: number;
-  image: string;
-  hasRing: boolean;
-  hasOnlineIndicator: boolean;
-  hasEmojiReaction: boolean;
-  emojiReaction?: string;
 }
 
 interface FloatingProfileImagesProps {
@@ -31,156 +29,188 @@ interface FloatingProfileImagesProps {
   zIndex?: string;
 }
 
-const FloatingProfileImages = ({
+// Adaptive profile configuration based on device
+const getProfileConfig = () => {
+  const width = window.innerWidth;
+  const isRetina = window.devicePixelRatio > 1;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    return { count: 0, complexity: 'none', imageSize: 150 };
+  }
+
+  if (width >= 1024) {
+    return { count: 10, complexity: 'high', imageSize: isRetina ? 300 : 200 };
+  } else if (width >= 768) {
+    return { count: 8, complexity: 'medium', imageSize: isRetina ? 250 : 175 };
+  } else {
+    return { count: 6, complexity: 'simple', imageSize: isRetina ? 200 : 150 };
+  }
+};
+
+const FloatingProfileImages = React.memo(({
   variant = 'hero',
   className = '',
   opacity,
   zIndex = ''
 }: FloatingProfileImagesProps) => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(true);
+  const [profileConfig, setProfileConfig] = useState(getProfileConfig());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number>();
 
-  // Track mouse position for parallax effect
+  // Update profile config on resize
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth - 0.5) * 2,
-        y: (e.clientY / window.innerHeight - 0.5) * 2,
-      });
+    const handleResize = () => {
+      setProfileConfig(getProfileConfig());
     };
 
-    if (variant === 'hero') {
-      window.addEventListener('mousemove', handleMouseMove);
-      return () => window.removeEventListener('mousemove', handleMouseMove);
-    }
-  }, [variant]);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Generate profile data based on variant
+  // Don't render if animations are disabled
+  if (profileConfig.count === 0) {
+    return null;
+  }
+
+  // Use Intersection Observer with rootMargin for early activation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px' // Start animations 50px before visible
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+      observer.disconnect();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
+  // Enhanced profiles with gradient colors and visual effects
   const profiles = useMemo(() => {
-    // Using diverse stock photos with consistent IDs for each person
     const baseProfiles = [
-      { name: 'Sarah M', bgColor: 'FF10F0', photoId: 1 },  // Pink - keep
-      { name: 'Mike L', bgColor: '8B5CF6', photoId: 8 },   // Purple-500
-      { name: 'Emma K', bgColor: '9945FF', photoId: 9 },   // Purple - keep
-      { name: 'David R', bgColor: 'EC4899', photoId: 12 }, // Pink-500
-      { name: 'Lisa T', bgColor: 'A855F7', photoId: 20 },  // Purple-500
-      { name: 'James P', bgColor: '7C3AED', photoId: 15 }, // Purple-600
-      { name: 'Anna S', bgColor: 'F472B6', photoId: 25 },  // Pink-400
-      { name: 'Tom W', bgColor: 'FF69B4', photoId: 18 },   // Hot Pink - keep
-      { name: 'Nina R', bgColor: '818CF8', photoId: 30 },  // Indigo-400
-      { name: 'Alex J', bgColor: 'C084FC', photoId: 22 },  // Purple-400
-      // Additional profiles for sides variant
-      { name: 'Chris B', bgColor: 'FF1493', photoId: 35 }, // Deep Pink - keep
-      { name: 'Diana M', bgColor: '6366F1', photoId: 40 }, // Indigo-500
-      { name: 'Ryan K', bgColor: 'E879F9', photoId: 45 },  // Pink-400
-      { name: 'Sophie L', bgColor: 'BA55D3', photoId: 50 }, // Medium Orchid - keep
-      { name: 'Marcus T', bgColor: '4F46E5', photoId: 55 }, // Indigo-600
+      { name: 'Sarah M', bgColor: 'FF10F0', gradientColors: ['FF10F0', 'FF69B4', 'FF1493'] },
+      { name: 'Mike L', bgColor: '8B5CF6', gradientColors: ['8B5CF6', 'A78BFA', '7C3AED'] },
+      { name: 'Emma K', bgColor: '9945FF', gradientColors: ['9945FF', 'B794F4', 'A855F7'] },
+      { name: 'David R', bgColor: 'EC4899', gradientColors: ['EC4899', 'F472B6', 'DB2777'] },
+      { name: 'Lisa T', bgColor: 'A855F7', gradientColors: ['A855F7', 'C084FC', '9333EA'] },
+      { name: 'James P', bgColor: '7C3AED', gradientColors: ['7C3AED', '8B5CF6', '6D28D9'] },
+      { name: 'Anna S', bgColor: 'F472B6', gradientColors: ['F472B6', 'EC4899', 'F9A8D4'] },
+      { name: 'Tom W', bgColor: 'FF69B4', gradientColors: ['FF69B4', 'FF10F0', 'FF1493'] },
+      { name: 'Nina R', bgColor: '818CF8', gradientColors: ['818CF8', '6366F1', '4F46E5'] },
+      { name: 'Alex J', bgColor: 'C084FC', gradientColors: ['C084FC', 'A855F7', 'D8B4FE'] }
     ];
 
-    const reactions = ['❤️', '⭐', '✨', '💫', '🎉'];
+    // Adaptive profile count based on device
+    const profileCount = profileConfig.count;
+    const selectedProfiles = baseProfiles.slice(0, profileCount);
+    const { complexity, imageSize } = profileConfig;
 
-    if (variant === 'hero') {
-      // Larger, more prominent avatars for hero section
-      return baseProfiles.map((profile, index) => ({
-        ...profile,
-        id: index,
-        image: `https://i.pravatar.cc/150?img=${profile.photoId}`,
-        size: 80 + Math.random() * 40, // 80-120px
-        initialX: 10 + Math.random() * 80, // Keep within 10-90% of viewport
-        initialY: 10 + Math.random() * 50, // Keep within 10-60% of viewport (further reduced to avoid footer)
-        duration: 20 + Math.random() * 15, // 20-35s
-        delay: index * 0.3,
-        rotationSpeed: 15 + Math.random() * 20,
-        floatRadius: 30 + Math.random() * 30, // Increased from 15-40 to 30-60 for more movement
-        hasRing: Math.random() > 0.5,
-        hasOnlineIndicator: Math.random() > 0.3,
-        hasEmojiReaction: Math.random() > 0.5,
-        emojiReaction: reactions[Math.floor(Math.random() * reactions.length)],
-      }));
-    } else if (variant === 'sides') {
-      // Side-positioned avatars for homepage with vertical bounce
-      const allProfiles = baseProfiles.slice(0, 15); // Use all 15 profiles
-      return allProfiles.map((profile, index) => {
-        const isLeftSide = index < 8; // First 8 on left, rest on right
-        const sideIndex = isLeftSide ? index : index - 8; // Position index for each side
+    return selectedProfiles.map((profile, index) => ({
+      ...profile,
+      id: index,
+      // High quality images with WebP support
+      image: `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=${profile.bgColor}&color=fff&size=${imageSize}&bold=true&format=svg`,
+      size: complexity === 'simple' ? 60 : complexity === 'medium' ? 70 : 80,
+      initialX: 10 + (index / profileCount) * 80, // Even distribution
+      initialY: 15 + Math.sin(index * 0.8) * 30 + Math.random() * 20,
+      duration: complexity === 'simple' ? 40 + index * 3 : complexity === 'medium' ? 35 + index * 2 : 30 + index * 2,
+      delay: index * 0.3, // Staggered start
+      orbitRadius: complexity === 'simple' ? 20 : complexity === 'medium' ? 35 : 50,
+      hasGlow: complexity !== 'simple' && Math.random() > 0.3,
+      hasBreathing: complexity === 'high' || (complexity === 'medium' && Math.random() > 0.5),
+      rotationSpeed: complexity === 'simple' ? 60 : complexity === 'medium' ? 45 : 30,
+    }));
+  }, [variant, profileConfig]);
 
-        return {
-          ...profile,
-          id: index,
-          image: `https://i.pravatar.cc/150?img=${profile.photoId}`,
-          size: 60 + Math.random() * 20, // 60-80px
-          initialX: isLeftSide
-            ? 2 + Math.random() * 3  // 2-5% for left side
-            : 95 + Math.random() * 3, // 95-98% for right side
-          initialY: 10 + (sideIndex * 12), // Distribute vertically (10%, 22%, 34%, etc.)
-          duration: 3 + Math.random() * 2, // 3-5s for vertical bounce
-          delay: Math.random() * 2, // Random start delay for natural movement
-          rotationSpeed: 5 + Math.random() * 10, // Slower rotation
-          floatRadius: 20 + Math.random() * 20, // Vertical bounce height
-          hasRing: Math.random() > 0.5,
-          hasOnlineIndicator: Math.random() > 0.4,
-          hasEmojiReaction: Math.random() > 0.6,
-          emojiReaction: reactions[Math.floor(Math.random() * reactions.length)],
-        };
-      });
-    } else {
-      // Smaller avatars for auth pages
-      return baseProfiles.slice(0, 7).map((profile, index) => ({
-        ...profile,
-        id: index,
-        image: `https://i.pravatar.cc/150?img=${profile.photoId}`,
-        size: 50 + Math.random() * 30, // 50-80px
-        initialX: 10 + Math.random() * 80,
-        initialY: 10 + Math.random() * 70,
-        duration: 25 + Math.random() * 15, // 25-40s
-        delay: index * 0.5,
-        rotationSpeed: 10 + Math.random() * 15,
-        floatRadius: 10 + Math.random() * 20,
-        hasRing: Math.random() > 0.6,
-        hasOnlineIndicator: false,
-        hasEmojiReaction: false,
-        emojiReaction: undefined,
-      }));
-    }
-  }, [variant]);
 
-  // Create natural floating path using sine/cosine or simple bounce for sides
-  const createFloatingPath = (profile: FloatingProfile) => {
-    const centerX = profile.initialX;
-    const centerY = profile.initialY;
-    const radius = profile.floatRadius;
+  // Create orbital or simple animation path based on complexity
+  const getAnimationPath = (profile: FloatingProfile) => {
+    const { complexity } = profileConfig;
 
-    // Simple vertical bounce for sides variant
-    if (variant === 'sides') {
+    if (complexity === 'simple') {
+      // Simple vertical bounce for mobile
       return {
-        x: [centerX, centerX, centerX, centerX, centerX], // No horizontal movement
-        y: [
-          centerY,
-          centerY - radius, // Move up
-          centerY,          // Back to center
-          centerY + radius, // Move down
-          centerY           // Back to center
-        ],
+        x: 0,
+        y: [-profile.orbitRadius/2, profile.orbitRadius/2, -profile.orbitRadius/2],
       };
+    } else if (complexity === 'medium') {
+      // Figure-8 pattern for tablet
+      return {
+        x: [0, profile.orbitRadius, 0, -profile.orbitRadius, 0],
+        y: [0, profile.orbitRadius/2, 0, -profile.orbitRadius/2, 0],
+      };
+    } else {
+      // Smooth orbital motion for desktop
+      const steps = 8;
+      const xPath = Array.from({ length: steps }, (_, i) =>
+        Math.sin((i / steps) * Math.PI * 2) * profile.orbitRadius
+      );
+      const yPath = Array.from({ length: steps }, (_, i) =>
+        Math.cos((i / steps) * Math.PI * 2) * profile.orbitRadius * 0.6
+      );
+      return { x: xPath, y: yPath };
     }
-
-    // Create a figure-8 or circular path for other variants
-    return {
-      x: Array.from({ length: 8 }, (_, i) => {
-        const angle = (i / 8) * Math.PI * 2;
-        return centerX + Math.sin(angle) * radius;
-      }),
-      y: Array.from({ length: 8 }, (_, i) => {
-        const angle = (i / 8) * Math.PI * 2;
-        return centerY + Math.cos(angle * 2) * radius * 0.6;
-      }),
-    };
   };
 
   return (
-    <div className={`fixed inset-x-0 top-16 bottom-32 overflow-hidden pointer-events-none ${zIndex} ${className}`}>
-      {profiles.map((profile) => {
-        const path = createFloatingPath(profile);
-        const isStockPhoto = profile.image.startsWith('http'); // Check if it's a URL
+    <div
+      ref={containerRef}
+      className={`fixed inset-x-0 top-16 bottom-32 overflow-hidden pointer-events-none ${zIndex} ${className}`}
+      style={{
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+        contain: 'layout style paint'
+      }}
+    >
+      {/* Sparkle effects for desktop only */}
+      {profileConfig.complexity === 'high' && (
+        <>
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={`sparkle-${i}`}
+              className="absolute text-2xl"
+              style={{
+                left: `${20 + i * 15}%`,
+                top: `${10 + i * 15}%`,
+                filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.8))'
+              }}
+              animate={{
+                scale: [0, 1, 0],
+                opacity: [0, 1, 0],
+                rotate: [0, 180, 360],
+              }}
+              transition={{
+                duration: 3 + i * 0.5,
+                repeat: Infinity,
+                delay: i * 1.5,
+                repeatDelay: 5,
+                ease: "easeInOut"
+              }}
+            >
+              ✨
+            </motion.div>
+          ))}
+        </>
+      )}
+
+      {isVisible && profiles.map((profile, index) => {
+        const animationPath = getAnimationPath(profile);
 
         return (
           <motion.div
@@ -191,254 +221,105 @@ const FloatingProfileImages = ({
               height: profile.size,
               left: `${profile.initialX}%`,
               top: `${profile.initialY}%`,
-              transform: 'translate(-50%, -50%)', // Center the avatar on its position
+              transform: 'translate3d(-50%, -50%, 0)',
+              filter: profile.hasGlow ? 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.3))' : 'none'
             }}
-            initial={{
-              scale: 0,
-              opacity: 0,
-            }}
+            initial={{ opacity: 0, scale: 0 }}
             animate={{
-              scale: 1,
-              opacity: opacity !== undefined ? opacity : (variant === 'hero' ? 0.9 : 0.5),
+              opacity: opacity !== undefined ? opacity : 0.85,
+              scale: profile.hasBreathing ? [1, 1.05, 1] : 1,
+              x: animationPath.x,
+              y: animationPath.y,
             }}
             transition={{
-              duration: 1.5,
+              duration: profile.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
               delay: profile.delay,
-              ease: "easeOut",
+              scale: profile.hasBreathing ? {
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              } : undefined
             }}
           >
+            {/* Enhanced gradient container with glow effects */}
             <motion.div
-              className="relative w-full h-full"
+              className="relative w-full h-full rounded-full overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, #${profile.gradientColors[0]}, #${profile.gradientColors[1]}, #${profile.gradientColors[2]})`,
+                boxShadow: profile.hasGlow ?
+                  `0 0 30px rgba(${parseInt(profile.bgColor.slice(0, 2), 16)}, ${parseInt(profile.bgColor.slice(2, 4), 16)}, ${parseInt(profile.bgColor.slice(4, 6), 16)}, 0.6),
+                   0 0 60px rgba(${parseInt(profile.bgColor.slice(0, 2), 16)}, ${parseInt(profile.bgColor.slice(2, 4), 16)}, ${parseInt(profile.bgColor.slice(4, 6), 16)}, 0.3),
+                   inset 0 0 20px rgba(255, 255, 255, 0.2)` :
+                  `0 8px 32px rgba(${parseInt(profile.bgColor.slice(0, 2), 16)}, ${parseInt(profile.bgColor.slice(2, 4), 16)}, ${parseInt(profile.bgColor.slice(4, 6), 16)}, 0.3)`,
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+              }}
               animate={{
-                x: path.x.map(x => x - profile.initialX),
-                y: path.y.map(y => y - profile.initialY),
+                rotate: profile.rotationSpeed ? [0, 360] : 0
               }}
               transition={{
-                duration: profile.duration,
-                repeat: Infinity,
-                ease: variant === 'sides' ? "easeInOut" : "linear",
-              }}
-              style={{ transformStyle: 'preserve-3d' }}
-            >
-              {/* Enhanced glow effect */}
-              <motion.div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, #${profile.bgColor}44 0%, #${profile.bgColor}22 40%, transparent 70%)`,
-                  filter: 'blur(20px)',
-                  transform: 'scale(1.5)',
-                }}
-                animate={{
-                  scale: [1.5, 2, 1.5],
-                  opacity: [0.6, 0.9, 0.6],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  delay: profile.delay,
-                  ease: "easeInOut",
-                }}
-              />
-
-              {/* Glass morphism container */}
-              <motion.div
-                className="relative w-full h-full rounded-full overflow-hidden"
-                style={{
-                  background: `linear-gradient(135deg, #${profile.bgColor}DD 0%, #${profile.bgColor}99 100%)`,
-                  backdropFilter: 'blur(10px)',
-                  filter: 'blur(3px)', // Add subtle blur to the entire profile image
-                  boxShadow: `
-                    0 0 30px rgba(${parseInt(profile.bgColor.slice(0, 2), 16)}, ${parseInt(profile.bgColor.slice(2, 4), 16)}, ${parseInt(profile.bgColor.slice(4, 6), 16)}, 0.5),
-                    inset 0 0 20px rgba(255, 255, 255, 0.2)
-                  `,
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
-                }}
-                animate={{
-                  rotate: [0, 360],
-                }}
-                transition={{
+                rotate: {
                   duration: profile.rotationSpeed,
                   repeat: Infinity,
-                  ease: "linear",
-                }}
-              >
-                {/* Avatar with stock photo or fallback */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {isStockPhoto ? (
-                    <img
-                      src={profile.image}
-                      alt={profile.name}
-                      className="w-full h-full rounded-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        // Fallback to UI Avatars if stock photo fails to load
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=${profile.bgColor}&color=fff&size=${Math.round(profile.size * 2)}&bold=true&font-size=0.4`;
-                      }}
-                    />
-                  ) : (
-                    <img
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=${profile.bgColor}&color=fff&size=${Math.round(profile.size * 2)}&bold=true&font-size=0.4`}
-                      alt={profile.name}
-                      className="w-full h-full rounded-full"
-                    />
-                  )}
-                </div>
+                  ease: "linear"
+                }
+              }}
+            >
+              {/* Avatar image */}
+              <div className="absolute inset-1 rounded-full overflow-hidden bg-white/10">
+                <img
+                  src={profile.image}
+                  alt={profile.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
 
-                {/* Shimmer effect */}
+                {/* Shimmer effect overlay */}
                 <motion.div
-                  className="absolute inset-0 rounded-full"
+                  className="absolute inset-0"
                   style={{
-                    background: 'linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%)',
+                    background: 'linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%)',
                   }}
                   animate={{
-                    x: ['-100%', '200%'],
+                    x: ['-200%', '200%'],
                   }}
                   transition={{
                     duration: 3,
                     repeat: Infinity,
-                    repeatDelay: 3,
-                    delay: profile.delay + 2,
+                    repeatDelay: 5,
                     ease: "easeInOut",
                   }}
                 />
-              </motion.div>
+              </div>
 
-              {/* Animated rings */}
-              {profile.hasRing && (
-                <>
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2"
-                    style={{
-                      borderColor: `#${profile.bgColor}`,
-                    }}
-                    animate={{
-                      scale: [1, 1.3, 1],
-                      opacity: [0.8, 0, 0.8],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      delay: profile.delay,
-                      ease: "easeOut",
-                    }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 rounded-full border"
-                    style={{
-                      borderColor: `#${profile.bgColor}`,
-                    }}
-                    animate={{
-                      scale: [1, 1.5, 1],
-                      opacity: [0.6, 0, 0.6],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      delay: profile.delay + 0.5,
-                      ease: "easeOut",
-                    }}
-                  />
-                </>
-              )}
-
-              {/* Online indicator */}
-              {profile.hasOnlineIndicator && (
+              {/* Optional pulse ring */}
+              {profile.hasGlow && (
                 <motion.div
-                  className="absolute bottom-0 right-0"
+                  className="absolute inset-0 rounded-full border-2"
                   style={{
-                    width: profile.size * 0.25,
-                    height: profile.size * 0.25,
+                    borderColor: `#${profile.bgColor}`,
                   }}
                   animate={{
-                    scale: [1, 1.2, 1],
+                    scale: [1, 1.3, 1],
+                    opacity: [0.8, 0, 0.8],
                   }}
                   transition={{
                     duration: 2,
                     repeat: Infinity,
-                    delay: profile.delay,
+                    ease: "easeOut",
                   }}
-                >
-                  <span className="relative flex h-full w-full">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-full w-full bg-green-400 border-2 border-white shadow-lg" />
-                  </span>
-                </motion.div>
-              )}
-
-              {/* Floating emoji reactions */}
-              {profile.hasEmojiReaction && profile.emojiReaction && (
-                <motion.div
-                  className="absolute -top-4 -right-4 text-2xl"
-                  animate={{
-                    y: [-10, -20, -10],
-                    rotate: [-15, 15, -15],
-                    scale: [1, 1.2, 1],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    delay: profile.delay + 1,
-                    ease: "easeInOut",
-                  }}
-                >
-                  {profile.emojiReaction}
-                </motion.div>
+                />
               )}
             </motion.div>
           </motion.div>
         );
       })}
-
-      {/* Additional atmospheric effects */}
-      {variant === 'hero' && (
-        <>
-          {/* Sparkles */}
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={`sparkle-${i}`}
-              className="absolute text-2xl"
-              style={{
-                left: `${20 + i * 15}%`,
-                top: `${15 + i * 12}%`,
-              }}
-              animate={{
-                scale: [0, 1, 0],
-                opacity: [0, 1, 0],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: 2 + i * 0.5,
-                repeat: Infinity,
-                delay: i * 0.8,
-                repeatDelay: 3 + i,
-              }}
-            >
-              ✨
-            </motion.div>
-          ))}
-
-          {/* Gradient orbs for depth */}
-          <motion.div
-            className="absolute top-[10%] left-[5%] w-48 h-48 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(255,16,240,0.1) 0%, transparent 70%)',
-              filter: 'blur(40px)',
-            }}
-            animate={{
-              x: [-30, 30, -30],
-              y: [-40, 40, -40],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-        </>
-      )}
     </div>
   );
-};
+});
+
+FloatingProfileImages.displayName = 'FloatingProfileImages';
 
 export default FloatingProfileImages;
