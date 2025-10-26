@@ -45,12 +45,103 @@ const getProfileConfig = () => {
   }
 
   if (width >= 1024) {
-    return { count: 10, complexity: 'high', imageSize: isRetina ? 300 : 200 };
+    return { count: 10, complexity: 'high', imageSize: 150 };
   } else if (width >= 768) {
-    return { count: 8, complexity: 'medium', imageSize: isRetina ? 250 : 175 };
+    return { count: 8, complexity: 'medium', imageSize: 150 };
   } else {
-    return { count: 6, complexity: 'simple', imageSize: isRetina ? 200 : 150 };
+    return { count: 6, complexity: 'simple', imageSize: 150 };
   }
+};
+
+// Extract initials from name
+const getInitials = (name: string): string => {
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+// Generate SVG fallback as data URI
+const generateFallbackSVG = (name: string, bgColor: string): string => {
+  const initials = getInitials(name);
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
+      <circle cx="75" cy="75" r="75" fill="#${bgColor}"/>
+      <text x="75" y="75" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="central">
+        ${initials}
+      </text>
+    </svg>
+  `;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+
+// Profile Avatar Component with loading and error handling
+const ProfileAvatar: React.FC<{
+  profile: FloatingProfile;
+}> = ({ profile }) => {
+  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  // Use random person photos from randomuser.me
+  const [imageSrc, setImageSrc] = useState<string>(() =>
+    `https://randomuser.me/api/portraits/${profile.id % 2 === 0 ? 'men' : 'women'}/${profile.id % 50}.jpg`
+  );
+
+  const handleImageLoad = useCallback(() => {
+    setImageState('loaded');
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    setImageState('error');
+    // Use a different random person photo as fallback
+    const fallbackSrc = `https://randomuser.me/api/portraits/${profile.id % 2 === 0 ? 'women' : 'men'}/${(profile.id + 10) % 50}.jpg`;
+    setImageSrc(fallbackSrc);
+  }, [profile.id]);
+
+
+  return (
+    <div className="absolute inset-1 rounded-full overflow-hidden bg-white/10">
+      {/* Main image - show immediately when imageSrc is available */}
+      {imageSrc && (
+        <img
+          src={imageSrc}
+          alt={profile.name}
+          className={`w-full h-full object-cover transition-opacity duration-500 ${
+            imageState === 'loaded' ? 'opacity-100' : imageState === 'error' ? 'opacity-90' : 'opacity-70'
+          }`}
+          loading="lazy"
+          decoding="async"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+        />
+      )}
+
+      {/* Show initials overlay only when image fails */}
+      {imageState === 'error' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <div className="text-white text-2xl font-bold">
+            {getInitials(profile.name)}
+          </div>
+        </div>
+      )}
+
+      {/* Shimmer effect overlay */}
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%)',
+        }}
+        animate={{
+          x: ['-200%', '200%'],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          repeatDelay: 5,
+          ease: "easeInOut",
+        }}
+      />
+    </div>
+  );
 };
 
 const FloatingProfileImages = React.memo(({
@@ -62,7 +153,7 @@ const FloatingProfileImages = React.memo(({
   const [isVisible, setIsVisible] = useState(true);
   const [profileConfig, setProfileConfig] = useState(getProfileConfig());
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Update profile config on resize
   useEffect(() => {
@@ -124,25 +215,22 @@ const FloatingProfileImages = React.memo(({
     // Adaptive profile count based on device
     const profileCount = profileConfig.count;
     const selectedProfiles = baseProfiles.slice(0, profileCount);
-    const { complexity, imageSize } = profileConfig;
+    const { complexity } = profileConfig;
 
     return selectedProfiles.map((profile, index) => ({
       ...profile,
       id: index,
-      // High quality images with WebP support
-      image: `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=${profile.bgColor}&color=fff&size=${imageSize}&bold=true&format=svg`,
       size: complexity === 'simple' ? 60 : complexity === 'medium' ? 70 : 80,
       initialX: 10 + (index / profileCount) * 80, // Even distribution
       initialY: 15 + Math.sin(index * 0.8) * 30 + Math.random() * 20,
       duration: complexity === 'simple' ? 40 + index * 3 : complexity === 'medium' ? 35 + index * 2 : 30 + index * 2,
-      delay: index * 0.3, // Staggered start
+      delay: index * 0.1, // Faster staggered start
       orbitRadius: complexity === 'simple' ? 20 : complexity === 'medium' ? 35 : 50,
       hasGlow: complexity !== 'simple' && Math.random() > 0.3,
       hasBreathing: complexity === 'high' || (complexity === 'medium' && Math.random() > 0.5),
       rotationSpeed: complexity === 'simple' ? 60 : complexity === 'medium' ? 45 : 30,
     }));
   }, [variant, profileConfig]);
-
 
   // Create orbital or simple animation path based on complexity
   const getAnimationPath = (profile: FloatingProfile) => {
@@ -172,6 +260,7 @@ const FloatingProfileImages = React.memo(({
       return { x: xPath, y: yPath };
     }
   };
+
 
   return (
     <div
@@ -271,33 +360,10 @@ const FloatingProfileImages = React.memo(({
                 }
               }}
             >
-              {/* Avatar image */}
-              <div className="absolute inset-1 rounded-full overflow-hidden bg-white/10">
-                <img
-                  src={profile.image}
-                  alt={profile.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-
-                {/* Shimmer effect overlay */}
-                <motion.div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%)',
-                  }}
-                  animate={{
-                    x: ['-200%', '200%'],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    repeatDelay: 5,
-                    ease: "easeInOut",
-                  }}
-                />
-              </div>
+              {/* Avatar image with loading and error handling */}
+              <ProfileAvatar
+                profile={profile}
+              />
 
               {/* Optional pulse ring */}
               {profile.hasGlow && (
