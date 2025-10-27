@@ -316,7 +316,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
   return (
     <div className={`${className}`}>
       {/* Header with Templates */}
-      <div className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-t-xl p-6">
+      <div className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white rounded-t-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -342,7 +342,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
               onClick={() => applyTemplate(template.id)}
               className={`p-3 rounded-lg transition-all ${
                 selectedTemplate === template.id
-                  ? 'bg-white text-primary-600 shadow-lg'
+                  ? 'bg-white text-[#312E81] shadow-lg'
                   : 'bg-white/10 hover:bg-white/20 text-white'
               }`}
             >
@@ -372,7 +372,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
           <button
             onClick={saveAvailability}
             disabled={isSaving || overlappingDays.length > 0}
-            className="px-6 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white rounded-lg hover:shadow-lg hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <FaSave className="w-4 h-4" />
             {isSaving ? 'Saving...' : 'Save Schedule'}
@@ -407,7 +407,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
                     {daySlots.length > 0 && (
                       <button
                         onClick={() => copyWeek(day)}
-                        className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-[#312E81] transition-colors"
                         title="Copy to all days"
                       >
                         <FaCopy className="w-3 h-3" />
@@ -415,7 +415,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
                     )}
                     <button
                       onClick={() => addTimeSlot(day)}
-                      className="p-1 text-primary-500 hover:text-primary-600 transition-colors"
+                      className="p-1 text-[#312E81] hover:text-[#1E1B4B] transition-colors"
                       title="Add time slot"
                     >
                       <FaPlus className="w-3 h-3" />
@@ -440,7 +440,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
                           key={identifier}
                           className={`p-2 rounded-lg border ${
                             isEditing
-                              ? 'border-primary-300 bg-primary-50'
+                              ? 'border-[#312E81] bg-primary-50'
                               : 'border-gray-200 bg-gray-50'
                           }`}
                         >
@@ -464,7 +464,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
                               <div className="flex gap-1">
                                 <button
                                   onClick={() => setEditingSlot(null)}
-                                  className="flex-1 px-2 py-1 bg-primary-500 text-white rounded text-xs hover:bg-primary-600"
+                                  className="flex-1 px-2 py-1 bg-[#312E81] text-white rounded text-xs hover:bg-[#1E1B4B]"
                                 >
                                   <FaCheck className="w-3 h-3 mx-auto" />
                                 </button>
@@ -503,7 +503,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
         {showPreview && (
           <div className="mt-6 p-4 bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg">
             <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FaMagic className="w-4 h-4 text-primary-500" />
+              <FaMagic className="w-4 h-4 text-[#312E81]" />
               Client View Preview
             </h4>
             <div className="grid grid-cols-7 gap-2">

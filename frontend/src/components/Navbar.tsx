@@ -5,6 +5,8 @@ import { FaUser, FaSignOutAlt, FaBell, FaEdit, FaTachometerAlt, FaUserCircle } f
 import Button from './common/Button';
 import RoleSwitcher from './common/RoleSwitcher';
 import { theme } from '../styles/theme';
+import notificationApi from '../api/notifications';
+import type { Notification } from '../api/notifications';
 
 // Throttle utility for scroll performance
 const throttle = (func: Function, delay: number) => {
@@ -26,6 +28,9 @@ const Navbar = React.memo(() => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const lastScrollY = useRef(0);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -71,6 +76,111 @@ const Navbar = React.memo(() => {
     };
   }, []);
 
+  // Fetch notifications when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      fetchUnreadCount();
+      // Refresh notifications every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    setIsLoadingNotifications(true);
+    try {
+      const response = await notificationApi.getNotifications(10, 0);
+      setNotifications(response.data.notifications);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch unread count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await notificationApi.getUnreadCount();
+      setUnreadCount(response.data.unreadCount);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  }, [isAuthenticated]);
+
+  // Mark notification as read
+  const markAsRead = useCallback(async (notificationId: number) => {
+    try {
+      await notificationApi.markAsRead(notificationId);
+      // Update local state
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  }, []);
+
+  // Mark all as read
+  const markAllAsRead = useCallback(async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    }
+  }, []);
+
+  // Format notification timestamp
+  const formatNotificationTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Handle notification click
+  const handleNotificationItemClick = useCallback((notification: Notification) => {
+    // Mark as read if unread
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    // Navigate if action URL exists
+    if (notification.action_url) {
+      navigate(notification.action_url);
+      setIsNotificationOpen(false);
+    }
+  }, [markAsRead, navigate]);
+
+  // Get notification icon color based on type
+  const getNotificationIconColor = (type: string, isRead: boolean) => {
+    if (isRead) return 'bg-neutral-300';
+    switch(type) {
+      case 'application': return 'bg-primary-500';
+      case 'booking': return 'bg-secondary-500';
+      case 'payment': return 'bg-green-500';
+      case 'account': return 'bg-[#312E81]';
+      case 'system': return 'bg-orange-500';
+      default: return 'bg-primary-500';
+    }
+  };
+
   // Memoized event handlers
   const handleSignOut = useCallback(() => {
     signOut();
@@ -83,7 +193,10 @@ const Navbar = React.memo(() => {
 
   const handleNotificationClick = useCallback(() => {
     setIsNotificationOpen(prev => !prev);
-  }, []);
+    if (!isNotificationOpen) {
+      fetchNotifications();
+    }
+  }, [isNotificationOpen, fetchNotifications]);
 
   const scrollToSection = useCallback((sectionId: string) => {
     if (location.pathname !== '/') {
@@ -130,7 +243,7 @@ const Navbar = React.memo(() => {
     <>
       {/* Floating Auth Buttons - Only show when header is hidden */}
       {!isHeaderVisible && (
-        <div className="fixed top-6 right-6 z-[9999] hidden md:flex items-center gap-3 bg-white/95 px-4 py-3 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-neutral-200/50 transition-all duration-300 animate-fadeIn">
+        <div className="fixed top-6 right-6 z-[9999] hidden md:flex items-center gap-3 glass-navy px-4 py-3 rounded-2xl shadow-[0_10px_40px_rgba(30,27,75,0.2)] border border-[#312E81]/20 transition-all duration-300 animate-fadeIn">
         {isAuthenticated ? (
           // Authenticated User Menu
           <>
@@ -138,42 +251,79 @@ const Navbar = React.memo(() => {
             <div className="relative" ref={notificationRef}>
               <button
                 onClick={handleNotificationClick}
-                className="relative p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
+                className="relative p-2 text-white hover:text-secondary-200 hover:bg-white/10 rounded-lg transition-all duration-200"
               >
                 <FaBell className="w-5 h-5" />
                 {/* Notification Badge */}
-                <span className="absolute top-1 right-1 w-2 h-2 bg-error-500 rounded-full"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[8px] h-2 bg-error-500 rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? (
+                      <span className="text-white text-[10px] px-1">9+</span>
+                    ) : (
+                      <span className="text-white text-[10px] px-0.5">{unreadCount}</span>
+                    )}
+                  </span>
+                )}
               </button>
 
               {/* Notification Dropdown */}
               {isNotificationOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-neutral-200">
+                  <div className="px-4 py-2 border-b border-neutral-200 flex items-center justify-between">
                     <h3 className="font-semibold text-neutral-900">Notifications</h3>
+                    {notifications.some(n => !n.is_read) && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
                   </div>
                   <div className="max-h-96 overflow-y-auto">
-                    {/* Sample Notifications */}
-                    <div className="px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-neutral-100">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-primary-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm text-neutral-800">Welcome to Meytle! Complete your profile to get started.</p>
-                          <p className="text-xs text-neutral-500 mt-1">2 hours ago</p>
-                        </div>
+                    {isLoadingNotifications ? (
+                      <div className="px-4 py-8 text-center">
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                        <p className="text-sm text-neutral-500 mt-2">Loading notifications...</p>
                       </div>
-                    </div>
-                    <div className="px-4 py-3 hover:bg-primary-50 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-neutral-300 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm text-neutral-600">Your application is under review.</p>
-                          <p className="text-xs text-neutral-500 mt-1">1 day ago</p>
-                        </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <FaBell className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
+                        <p className="text-sm text-neutral-500">No notifications yet</p>
                       </div>
-                    </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          onClick={() => handleNotificationItemClick(notification)}
+                          className={`px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-neutral-100 transition-colors ${
+                            notification.is_read ? 'opacity-70' : ''
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`w-2 h-2 rounded-full mt-2 ${getNotificationIconColor(notification.type, notification.is_read)}`}></div>
+                            <div className="flex-1">
+                              <p className={`text-sm ${notification.is_read ? 'text-neutral-600' : 'text-neutral-800 font-medium'}`}>
+                                {notification.title}
+                              </p>
+                              <p className="text-xs text-neutral-600 mt-0.5">{notification.message}</p>
+                              <p className="text-xs text-neutral-500 mt-1">
+                                {formatNotificationTime(notification.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                   <div className="px-4 py-2 border-t border-neutral-200 text-center">
-                    <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                    <button
+                      onClick={() => {
+                        navigate('/notifications');
+                        setIsNotificationOpen(false);
+                      }}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
                       View All Notifications
                     </button>
                   </div>
@@ -188,9 +338,9 @@ const Navbar = React.memo(() => {
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={handleProfileClick}
-                className="flex items-center gap-3 text-sm text-neutral-700 hover:bg-primary-50 px-3 py-2 rounded-lg transition-all duration-200"
+                className="flex items-center gap-3 text-sm text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold shadow-md">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#312E81] to-[#1E1B4B] flex items-center justify-center text-white font-semibold shadow-[0_0_15px_rgba(255,204,203,0.3)]">
                   {user?.name?.charAt(0).toUpperCase()}
                 </div>
                 <span className="font-medium">{user?.name}</span>
@@ -206,7 +356,7 @@ const Navbar = React.memo(() => {
                   <div className="px-4 py-3 border-b border-neutral-200">
                     <p className="text-sm font-semibold text-neutral-900">{user?.name}</p>
                     <p className="text-xs text-neutral-500">{user?.email}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-primary-100 text-primary-600 text-xs rounded-full capitalize">
+                    <span className="inline-block mt-1 px-2 py-0.5 bg-[#312E81]/10 text-[#312E81] text-xs rounded-full capitalize">
                       {user?.activeRole}
                     </span>
                   </div>
@@ -218,7 +368,7 @@ const Navbar = React.memo(() => {
                         navigate(user?.activeRole === 'companion' ? '/companion-dashboard' : '/client-dashboard');
                         setIsProfileDropdownOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#1E1B4B] hover:bg-[#312E81]/10 hover:text-[#312E81] transition-colors"
                     >
                       <FaTachometerAlt className="w-4 h-4" />
                       Dashboard
@@ -233,7 +383,7 @@ const Navbar = React.memo(() => {
                         }
                         setIsProfileDropdownOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#1E1B4B] hover:bg-[#312E81]/10 hover:text-[#312E81] transition-colors"
                     >
                       <FaEdit className="w-4 h-4" />
                       Edit Profile
@@ -260,7 +410,7 @@ const Navbar = React.memo(() => {
               variant="outline"
               size="md"
               onClick={() => navigate('/signin')}
-              className="border-2 hover:shadow-lg transition-all duration-300 font-semibold"
+              className="btn-premium-light px-6 py-2 rounded-lg transition-all duration-300 font-semibold"
             >
               Sign In
             </Button>
@@ -268,7 +418,7 @@ const Navbar = React.memo(() => {
               variant="primary"
               size="md"
               onClick={() => navigate('/signup')}
-              className="shadow-lg hover:shadow-xl transition-all duration-300 font-semibold bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
+              className="btn-premium-light px-6 py-2 rounded-lg transition-all duration-300 font-semibold"
             >
               Join Us
             </Button>
@@ -288,7 +438,7 @@ const Navbar = React.memo(() => {
         <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12">
           <div className="relative flex justify-between items-center h-20">
           {/* Desktop Navigation - LEFT SIDE */}
-          <div className="hidden md:flex items-center space-x-10">
+          <div className="hidden md:flex items-center space-x-6">
             <button
               onClick={() => {
                 if (location.pathname === '/') {
@@ -297,39 +447,39 @@ const Navbar = React.memo(() => {
                   navigate('/');
                 }
               }}
-              className={`text-base font-semibold transition-all duration-300 hover:scale-105 ${
+              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
                 location.pathname === '/'
-                  ? 'text-primary-600 border-b-2 border-primary-600 pb-1'
-                  : 'text-neutral-700 hover:text-primary-600'
+                  ? 'bg-gradient-to-r from-[#312E81]/10 to-[#FFCCCB]/10 text-[#312E81] shadow-[0_0_15px_rgba(255,204,203,0.3)]'
+                  : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)]'
               }`}
             >
               Home
             </button>
             <button
               onClick={() => scrollToSection('services')}
-              className="text-base font-semibold text-neutral-700 hover:text-primary-600 transition-all duration-300 hover:scale-105"
+              className="px-4 py-2 rounded-lg text-base font-semibold text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-300"
             >
               Services
             </button>
             <button
               onClick={() => scrollToSection('steps')}
-              className="text-base font-semibold text-neutral-700 hover:text-primary-600 transition-all duration-300 hover:scale-105"
+              className="px-4 py-2 rounded-lg text-base font-semibold text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-300"
             >
               How It Works
             </button>
             <Link
               to="/browse-companions"
-              className={`text-base font-semibold transition-all duration-300 hover:scale-105 ${
+              className={`px-4 py-2 rounded-lg text-base font-semibold transition-all duration-300 ${
                 location.pathname === '/browse-companions'
-                  ? 'text-primary-600 border-b-2 border-primary-600 pb-1'
-                  : 'text-neutral-700 hover:text-primary-600'
+                  ? 'bg-gradient-to-r from-[#312E81]/10 to-[#FFCCCB]/10 text-[#312E81] shadow-[0_0_15px_rgba(255,204,203,0.3)]'
+                  : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)]'
               }`}
             >
               Browse
             </Link>
             <button
               onClick={() => scrollToSection('footer')}
-              className="text-base font-semibold text-neutral-700 hover:text-primary-600 transition-all duration-300 hover:scale-105"
+              className="px-4 py-2 rounded-lg text-base font-semibold text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-300"
             >
               About
             </button>
@@ -339,7 +489,7 @@ const Navbar = React.memo(() => {
           <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
             <Link to="/" className="flex items-center space-x-3 hover:scale-110 transition-transform duration-300">
               {/* START of Logo Change to match the outline style */}
-              <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-shadow duration-300">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#312E81] to-[#1E1B4B] rounded-xl flex items-center justify-center shadow-xl hover:shadow-[0_0_20px_rgba(255,204,203,0.4)] transition-all duration-300">
                 <svg
                   className="w-full h-full p-1.5"
                   viewBox="0 0 24 24"
@@ -358,7 +508,7 @@ const Navbar = React.memo(() => {
                 </svg>
               </div>
               {/* END of Logo Change */}
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Meytle</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#312E81] to-[#1E1B4B] bg-clip-text text-transparent">Meytle</span>
             </Link>
           </div>
 
@@ -371,43 +521,80 @@ const Navbar = React.memo(() => {
                   {/* Notification Bell */}
                   <div className="relative" ref={notificationRef}>
                     <button
-                      onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                      className="relative p-2 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
+                      onClick={handleNotificationClick}
+                      className="relative p-2 text-[#312E81] hover:text-[#1E1B4B] hover:bg-[#312E81]/10 rounded-lg transition-all duration-200"
                     >
                       <FaBell className="w-5 h-5" />
                       {/* Notification Badge */}
-                      <span className="absolute top-1 right-1 w-2 h-2 bg-error-500 rounded-full"></span>
+                      {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 min-w-[8px] h-2 bg-error-500 rounded-full flex items-center justify-center">
+                          {unreadCount > 9 ? (
+                            <span className="text-white text-[10px] px-1">9+</span>
+                          ) : (
+                            <span className="text-white text-[10px] px-0.5">{unreadCount}</span>
+                          )}
+                        </span>
+                      )}
                     </button>
 
                     {/* Notification Dropdown */}
                     {isNotificationOpen && (
                       <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 z-50">
-                        <div className="px-4 py-2 border-b border-neutral-200">
+                        <div className="px-4 py-2 border-b border-neutral-200 flex items-center justify-between">
                           <h3 className="font-semibold text-neutral-900">Notifications</h3>
+                          {notifications.some(n => !n.is_read) && (
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                            >
+                              Mark all as read
+                            </button>
+                          )}
                         </div>
                         <div className="max-h-96 overflow-y-auto">
-                          {/* Sample Notifications */}
-                          <div className="px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-neutral-100">
-                            <div className="flex items-start gap-3">
-                              <div className="w-2 h-2 bg-primary-500 rounded-full mt-2"></div>
-                              <div className="flex-1">
-                                <p className="text-sm text-neutral-800">Welcome to Meytle! Complete your profile to get started.</p>
-                                <p className="text-xs text-neutral-500 mt-1">2 hours ago</p>
-                              </div>
+                          {isLoadingNotifications ? (
+                            <div className="px-4 py-8 text-center">
+                              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                              <p className="text-sm text-neutral-500 mt-2">Loading notifications...</p>
                             </div>
-                          </div>
-                          <div className="px-4 py-3 hover:bg-primary-50 cursor-pointer">
-                            <div className="flex items-start gap-3">
-                              <div className="w-2 h-2 bg-neutral-300 rounded-full mt-2"></div>
-                              <div className="flex-1">
-                                <p className="text-sm text-neutral-600">Your application is under review.</p>
-                                <p className="text-xs text-neutral-500 mt-1">1 day ago</p>
-                              </div>
+                          ) : notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                              <FaBell className="w-8 h-8 text-neutral-300 mx-auto mb-2" />
+                              <p className="text-sm text-neutral-500">No notifications yet</p>
                             </div>
-                          </div>
+                          ) : (
+                            notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                onClick={() => handleNotificationItemClick(notification)}
+                                className={`px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-neutral-100 transition-colors ${
+                                  notification.is_read ? 'opacity-70' : ''
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`w-2 h-2 rounded-full mt-2 ${getNotificationIconColor(notification.type, notification.is_read)}`}></div>
+                                  <div className="flex-1">
+                                    <p className={`text-sm ${notification.is_read ? 'text-neutral-600' : 'text-neutral-800 font-medium'}`}>
+                                      {notification.title}
+                                    </p>
+                                    <p className="text-xs text-neutral-600 mt-0.5">{notification.message}</p>
+                                    <p className="text-xs text-neutral-500 mt-1">
+                                      {formatNotificationTime(notification.created_at)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                         <div className="px-4 py-2 border-t border-neutral-200 text-center">
-                          <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                          <button
+                            onClick={() => {
+                              navigate('/notifications');
+                              setIsNotificationOpen(false);
+                            }}
+                            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                          >
                             View All Notifications
                           </button>
                         </div>
@@ -422,12 +609,12 @@ const Navbar = React.memo(() => {
                   <div className="relative" ref={profileDropdownRef}>
                     <button
                       onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                      className="flex items-center gap-3 text-sm text-neutral-700 hover:bg-primary-50 px-3 py-2 rounded-lg transition-all duration-200"
+                      className="flex items-center gap-3 text-sm text-[#1E1B4B] hover:bg-[#312E81]/10 px-3 py-2 rounded-lg transition-all duration-200"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold shadow-md">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#312E81] to-[#1E1B4B] flex items-center justify-center text-white font-semibold shadow-[0_0_15px_rgba(255,204,203,0.3)]">
                         {user?.name?.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">{user?.name}</span>
+                      <span className="font-medium text-[#1E1B4B]">{user?.name}</span>
                       <svg className={`w-4 h-4 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -440,7 +627,7 @@ const Navbar = React.memo(() => {
                         <div className="px-4 py-3 border-b border-neutral-200">
                           <p className="text-sm font-semibold text-neutral-900">{user?.name}</p>
                           <p className="text-xs text-neutral-500">{user?.email}</p>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-primary-100 text-primary-600 text-xs rounded-full capitalize">
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-[#312E81]/10 text-[#312E81] text-xs rounded-full capitalize">
                             {user?.activeRole}
                           </span>
                         </div>
@@ -452,7 +639,7 @@ const Navbar = React.memo(() => {
                               navigate(user?.activeRole === 'companion' ? '/companion-dashboard' : '/client-dashboard');
                               setIsProfileDropdownOpen(false);
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#1E1B4B] hover:bg-[#312E81]/10 hover:text-[#312E81] transition-colors"
                           >
                             <FaTachometerAlt className="w-4 h-4" />
                             Dashboard
@@ -467,7 +654,7 @@ const Navbar = React.memo(() => {
                               }
                               setIsProfileDropdownOpen(false);
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-neutral-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#1E1B4B] hover:bg-[#312E81]/10 hover:text-[#312E81] transition-colors"
                           >
                             <FaEdit className="w-4 h-4" />
                             Edit Profile
@@ -497,7 +684,7 @@ const Navbar = React.memo(() => {
                     variant="outline"
                     size="md"
                     onClick={() => navigate('/signin')}
-                    className="border-2 hover:shadow-lg transition-all duration-300 font-semibold"
+                    className="btn-premium text-white px-6 py-2 rounded-lg hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] transition-all duration-300 font-semibold"
                   >
                     Sign In
                   </Button>
@@ -505,7 +692,7 @@ const Navbar = React.memo(() => {
                     variant="primary"
                     size="md"
                     onClick={() => navigate('/signup')}
-                    className="shadow-lg hover:shadow-xl transition-all duration-300 font-semibold bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600"
+                    className="btn-premium text-white px-6 py-2 rounded-lg hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] transition-all duration-300 font-semibold"
                   >
                     Join Us
                   </Button>
@@ -552,7 +739,11 @@ const Navbar = React.memo(() => {
                 }
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:text-neutral-900 hover:bg-primary-50"
+              className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ${
+                location.pathname === '/'
+                  ? 'bg-gradient-to-r from-[#312E81]/10 to-[#FFCCCB]/10 text-[#312E81]'
+                  : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81]'
+              }`}
             >
               Home
             </button>
@@ -561,7 +752,7 @@ const Navbar = React.memo(() => {
                 scrollToSection('services');
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:text-neutral-900 hover:bg-primary-50"
+              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] transition-all duration-300"
             >
               Services
             </button>
@@ -570,14 +761,18 @@ const Navbar = React.memo(() => {
                 scrollToSection('steps');
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:text-neutral-900 hover:bg-primary-50"
+              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] transition-all duration-300"
             >
               How It Works
             </button>
             <Link
               to="/browse-companions"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:text-neutral-900 hover:bg-primary-50"
+              className={`block px-3 py-2 rounded-md text-base font-medium transition-all duration-300 ${
+                location.pathname === '/browse-companions'
+                  ? 'bg-gradient-to-r from-[#312E81]/10 to-[#FFCCCB]/10 text-[#312E81]'
+                  : 'text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81]'
+              }`}
             >
               Browse Companions
             </Link>
@@ -586,7 +781,7 @@ const Navbar = React.memo(() => {
                 scrollToSection('footer');
                 setIsMobileMenuOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:text-neutral-900 hover:bg-primary-50"
+              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-700 hover:bg-gradient-to-r hover:from-[#312E81]/10 hover:to-[#FFCCCB]/10 hover:text-[#312E81] transition-all duration-300"
             >
               About
             </button>
@@ -596,9 +791,9 @@ const Navbar = React.memo(() => {
               {isAuthenticated ? (
                 // Authenticated Mobile Menu
                 <>
-                  <div className="px-3 py-3 text-base font-medium text-neutral-900 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg mb-3">
+                  <div className="px-3 py-3 text-base font-medium text-[#1E1B4B] bg-gradient-to-r from-[#312E81]/10 to-[#FFCCCB]/10 rounded-lg mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold shadow-md">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#312E81] to-[#1E1B4B] flex items-center justify-center text-white font-semibold shadow-[0_0_15px_rgba(255,204,203,0.3)]">
                         {user?.name?.charAt(0).toUpperCase()}
                       </div>
                       <div>

@@ -2,30 +2,30 @@
 export const theme = {
   colors: {
     primary: {
-      50: '#faf5ff',
-      100: '#f3e8ff',
-      200: '#e9d5ff',
-      300: '#d8b4fe',
-      400: '#c084fc',
-      500: '#a855f7',
-      600: '#9333ea',
-      700: '#7c3aed',
-      800: '#6b21a8',
-      900: '#581c87',
-      950: '#3b0764',
+      50: '#F5F4FB',  // Lightest blue tint for backgrounds
+      100: '#E8E6F7', // Very light blue for hover backgrounds
+      200: '#C7C4E8', // Light blue-purple
+      300: '#9A95D5', // Medium light blue
+      400: '#6B65B8', // Medium blue
+      500: '#4A47A3', // Light Royal Blue
+      600: '#3B3890', // Medium Royal Blue
+      700: '#312E81', // Royal Blue (main action color)
+      800: '#1E1B4B', // Deep Navy (headers/footers)
+      900: '#0F0D26', // Midnight (text/borders)
+      950: '#08071A', // Darkest navy
     },
     secondary: {
-      50: '#fdf2f8',
-      100: '#fce7f3',
-      200: '#fbcfe8',
-      300: '#f9a8d4',
-      400: '#f472b6',
-      500: '#ec4899',
-      600: '#db2777',
-      700: '#be185d',
-      800: '#9d174d',
-      900: '#831843',
-      950: '#500724',
+      50: '#FFF0F0',   // Soft pink (background start)
+      100: '#FFE5E5',  // Light pink
+      200: '#FFDBDB',  // Pink tint
+      300: '#FFD1D1',  // Medium light pink
+      400: '#FFC7C7',  // Medium pink
+      500: '#FFBDBD',  // Pink
+      600: '#FFB3B3',  // Darker pink
+      700: '#FFA9A9',  // Deep pink
+      800: '#FF9F9F',  // Deeper pink
+      900: '#FFCCCB',  // Pink gradient end
+      950: '#FF8585',  // Darkest pink
     },
     accent: {
       50: '#f0f9ff',
@@ -143,8 +143,14 @@ export const theme = {
     md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
     lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
     xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-    glow: '0 0 20px rgb(168 85 247 / 0.3)',
-    'glow-lg': '0 0 40px rgb(168 85 247 / 0.4)',
+    glow: '0 0 20px rgb(49 46 129 / 0.3)',
+    'glow-lg': '0 0 40px rgb(49 46 129 / 0.4)',
+    'glow-pink': '0 0 20px rgba(255, 204, 203, 0.5)',
+    'glow-pink-lg': '0 0 40px rgba(255, 204, 203, 0.6)',
+    'glow-blue': '0 0 25px rgba(49, 46, 129, 0.4)',
+    'glow-combo': '0 0 20px rgba(49, 46, 129, 0.3), 0 0 40px rgba(255, 204, 203, 0.2)',
+    'pink-shadow': '0 10px 40px rgba(255, 204, 203, 0.3)',
+    'blue-shadow': '0 10px 40px rgba(30, 27, 75, 0.2)',
   },
   transitions: {
     fast: '150ms ease-in-out',
@@ -183,33 +189,40 @@ export const getBreakpoint = (size: keyof typeof theme.breakpoints) => theme.bre
 
 // Common gradient combinations
 export const gradients = {
-  primary: 'bg-gradient-to-r from-primary-500 to-secondary-500',
-  primaryHover: 'bg-gradient-to-r from-primary-600 to-secondary-600',
-  subtle: 'bg-gradient-to-r from-primary-50 to-secondary-50',
-  dark: 'bg-gradient-to-r from-primary-800 to-secondary-800',
+  primary: 'bg-gradient-to-r from-[#312E81] to-[#1E1B4B]', // Royal Blue to Deep Navy
+  primaryHover: 'bg-gradient-to-r from-[#3B3890] to-[#312E81]', // Lighter on hover
+  subtle: 'bg-gradient-to-br from-primary-50 to-secondary-50', // Light blue to soft pink
+  dark: 'bg-gradient-to-r from-[#1E1B4B] to-[#0F0D26]', // Deep Navy to Midnight
+  bluePink: 'bg-gradient-to-r from-[#312E81] to-[#FFCCCB]', // Blue to Pink
+  pinkBlue: 'bg-gradient-to-r from-[#FFCCCB] to-[#312E81]', // Pink to Blue
+  hero: 'bg-gradient-to-br from-[#312E81]/10 via-transparent to-[#FFCCCB]/10', // Overlay gradient
+  glass: 'bg-gradient-to-br from-[#1E1B4B]/80 to-[#312E81]/60', // Glass effect
 } as const;
 
 // Common component variants
 export const variants = {
   button: {
-    primary: 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white hover:from-primary-600 hover:to-secondary-600',
-    secondary: 'bg-primary-500 text-white hover:bg-primary-600',
-    outline: 'border border-primary-500 text-primary-500 hover:bg-primary-50',
-    ghost: 'text-primary-500 hover:bg-primary-50',
-    danger: 'bg-error-500 text-white hover:bg-error-600',
+    primary: 'bg-gradient-to-r from-[#312E81] to-[#1E1B4B] text-white hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] transform hover:scale-[1.02] transition-all duration-300',
+    secondary: 'bg-[#312E81] text-white hover:bg-[#1E1B4B] hover:shadow-[0_0_20px_rgba(255,204,203,0.4)] transition-all duration-300',
+    outline: 'border-2 border-[#312E81] text-[#312E81] hover:bg-[#312E81] hover:text-white hover:shadow-[0_0_25px_rgba(49,46,129,0.3)] transition-all duration-300',
+    ghost: 'text-[#312E81] hover:bg-[#312E81]/10 hover:text-[#1E1B4B] transition-all duration-300',
+    danger: 'bg-error-500 text-white hover:bg-error-600 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all duration-300',
+    glass: 'backdrop-blur-md bg-[#1E1B4B]/20 text-[#1E1B4B] border border-[#312E81]/30 hover:bg-[#1E1B4B]/30 hover:shadow-[0_0_20px_rgba(255,204,203,0.3)] transition-all duration-300',
   },
   card: {
-    default: 'bg-white border border-neutral-200',
-    elevated: 'bg-white shadow-lg',
-    bordered: 'bg-white border-2 border-primary-200',
-    gradient: 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white',
+    default: 'bg-white/95 backdrop-blur-sm border border-[#312E81]/20 hover:border-[#312E81]/40 hover:shadow-[0_10px_40px_rgba(255,204,203,0.2)] transition-all duration-300',
+    elevated: 'bg-white shadow-[0_10px_40px_rgba(30,27,75,0.1)] hover:shadow-[0_20px_50px_rgba(255,204,203,0.25)] transition-all duration-300',
+    bordered: 'bg-white border-2 border-[#312E81] hover:border-[#1E1B4B] hover:shadow-[0_0_30px_rgba(49,46,129,0.2)] transition-all duration-300',
+    gradient: 'bg-gradient-to-br from-[#312E81] to-[#1E1B4B] text-white shadow-[0_10px_40px_rgba(30,27,75,0.3)]',
+    glass: 'backdrop-blur-lg bg-white/80 border border-[#312E81]/10 shadow-[0_10px_40px_rgba(255,204,203,0.1)]',
   },
   badge: {
     success: 'bg-success-100 text-success-800 border-success-200',
     warning: 'bg-warning-100 text-warning-800 border-warning-200',
     error: 'bg-error-100 text-error-800 border-error-200',
-    info: 'bg-accent-100 text-accent-800 border-accent-200',
+    info: 'bg-[#312E81]/10 text-[#312E81] border-[#312E81]/20',
     neutral: 'bg-neutral-100 text-neutral-800 border-neutral-200',
+    primary: 'bg-gradient-to-r from-[#312E81]/10 to-[#FFCCCB]/10 text-[#1E1B4B] border-[#312E81]/20',
   },
 } as const;
 

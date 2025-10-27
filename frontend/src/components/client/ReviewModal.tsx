@@ -159,8 +159,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <span className="text-purple-600 font-semibold">
+              <div className="w-12 h-12 rounded-full bg-[#f0effe] flex items-center justify-center">
+                <span className="text-[#312E81] font-semibold">
                   {companionName.charAt(0)}
                 </span>
               </div>
@@ -216,7 +216,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
               onChange={(e) => setComment(e.target.value)}
               rows={4}
               maxLength={500}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-[#312E81] resize-none"
               placeholder="What did you enjoy about your time with this companion? Were they professional, friendly, and engaging?"
             />
             <div className="flex justify-between items-center mt-2">
@@ -260,7 +260,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
             )}
 
             {photos.length < 3 && (
-              <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 transition-colors">
+              <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#4A47A3] transition-colors">
                 <Camera className="h-5 w-5 text-gray-400" />
                 <span className="text-sm text-gray-600">
                   Click to upload photos
@@ -300,7 +300,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || rating === 0 || comment.length < 10}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-[#312E81] to-[#312E81] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Review'}
           </button>

@@ -26,10 +26,10 @@ const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variantClasses = {
-    primary: 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white hover:from-primary-600 hover:to-secondary-600 focus:ring-primary-500 shadow-lg hover:shadow-xl',
-    secondary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500 shadow-md hover:shadow-lg',
-    outline: 'border-2 border-primary-500 text-primary-500 hover:bg-primary-50 focus:ring-primary-500',
-    ghost: 'text-primary-500 hover:bg-primary-50 focus:ring-primary-500',
+    primary: 'bg-gradient-to-r from-[#312E81] to-[#1E1B4B] text-white hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] focus:ring-[#312E81] shadow-lg transition-all duration-300',
+    secondary: 'bg-[#312E81] text-white hover:bg-[#1E1B4B] focus:ring-[#312E81] shadow-md hover:shadow-[0_0_20px_rgba(255,204,203,0.4)] transition-all duration-300',
+    outline: 'border-2 border-[#312E81] text-[#312E81] hover:bg-[#312E81]/10 focus:ring-[#312E81] transition-all duration-300',
+    ghost: 'text-[#312E81] hover:bg-[#312E81]/10 focus:ring-[#312E81] transition-all duration-300',
     danger: 'bg-error-500 text-white hover:bg-error-600 focus:ring-error-500 shadow-md hover:shadow-lg',
   };
 

@@ -85,14 +85,14 @@ const ServicesSelector: React.FC<ServicesSelectorProps> = ({
             onClick={() => handleServiceToggle(service)}
             className={`p-3 rounded-lg text-sm font-medium transition-all ${
               selectedServices.includes(service)
-                ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-purple-200'
+                ? 'bg-[#f0effe] text-[#1E1B4B] border-2 border-[#a5a3e8]'
+                : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-[#d5d3f7]'
             }`}
           >
             <div className="flex items-center justify-between">
               <span>{service}</span>
               {selectedServices.includes(service) && (
-                <FaCheck className="text-purple-600 ml-2" size={12} />
+                <FaCheck className="text-[#312E81] ml-2" size={12} />
               )}
             </div>
           </button>
@@ -107,10 +107,10 @@ const ServicesSelector: React.FC<ServicesSelectorProps> = ({
           .map(service => (
             <div
               key={service}
-              className="flex items-center justify-between p-3 bg-purple-50 rounded-lg"
+              className="flex items-center justify-between p-3 bg-[#f9f8ff] rounded-lg"
             >
-              <span className="text-sm font-medium text-purple-700">
-                {service} <span className="text-xs text-purple-500">(Custom)</span>
+              <span className="text-sm font-medium text-[#1E1B4B]">
+                {service} <span className="text-xs text-[#312E81]">(Custom)</span>
               </span>
               <button
                 type="button"
@@ -131,13 +131,13 @@ const ServicesSelector: React.FC<ServicesSelectorProps> = ({
               onChange={(e) => setCustomService(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddCustomService()}
               placeholder="Enter custom service..."
-              className="flex-1 px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="flex-1 px-3 py-2 border border-[#a5a3e8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a5a3e8]"
               maxLength={50}
             />
             <button
               type="button"
               onClick={handleAddCustomService}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="px-4 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B]"
             >
               Add
             </button>
@@ -160,7 +160,7 @@ const ServicesSelector: React.FC<ServicesSelectorProps> = ({
             className={`w-full p-3 border-2 border-dashed rounded-lg flex items-center justify-center gap-2 transition-colors ${
               selectedServices.length >= maxSelections
                 ? 'border-gray-300 text-gray-400 cursor-not-allowed'
-                : 'border-purple-300 text-purple-600 hover:border-purple-400 hover:bg-purple-50'
+                : 'border-[#a5a3e8] text-[#312E81] hover:border-[#4A47A3] hover:bg-[#f9f8ff]'
             }`}
           >
             <FaPlus size={14} />

@@ -163,7 +163,7 @@ const CompanionDashboard = () => {
         );
       case 'approved':
         return (
-          <span className="inline-flex items-center gap-2 bg-primary-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+          <span className="inline-flex items-center gap-2 bg-[#312E81] text-white px-4 py-2 rounded-full text-sm font-medium shadow-[0_0_15px_rgba(255,204,203,0.3)]">
             <FaCheckCircle className="w-4 h-4" />
             Approved
           </span>
@@ -195,7 +195,7 @@ const CompanionDashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#312E81] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading dashboard...</p>
         </div>
       </div>
@@ -223,7 +223,7 @@ const CompanionDashboard = () => {
               onClick={() => setActiveTab('overview')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'overview'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-[#312E81] text-[#312E81]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -236,7 +236,7 @@ const CompanionDashboard = () => {
               onClick={() => setActiveTab('availability')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'availability'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-[#312E81] text-[#312E81]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -249,7 +249,7 @@ const CompanionDashboard = () => {
               onClick={() => setActiveTab('bookings')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'bookings'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-[#312E81] text-[#312E81]'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -269,7 +269,7 @@ const CompanionDashboard = () => {
             {/* Booking Requests */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
-                <FaBell className="text-primary-600 text-xl" />
+                <FaBell className="text-[#312E81] text-xl" />
                 <h2 className="text-xl font-bold text-gray-900">Booking Requests</h2>
                 {bookingRequests.length > 0 && (
                   <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
@@ -280,7 +280,7 @@ const CompanionDashboard = () => {
 
               {isLoadingRequests ? (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#312E81]" />
                 </div>
               ) : bookingRequests.length === 0 ? (
                 <div className="text-center py-12">
@@ -362,7 +362,7 @@ const CompanionDashboard = () => {
             {/* All Bookings */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
-                <FaHistory className="text-primary-600 text-xl" />
+                <FaHistory className="text-[#312E81] text-xl" />
                 <h2 className="text-xl font-bold text-gray-900">All Bookings</h2>
               </div>
               <div className="text-center py-12">
@@ -377,7 +377,7 @@ const CompanionDashboard = () => {
             {/* Recent Reviews */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
-                <FaComments className="text-primary-600 text-xl" />
+                <FaComments className="text-[#312E81] text-xl" />
                 <h2 className="text-xl font-bold text-gray-900">Recent Reviews</h2>
               </div>
               <div className="text-center py-12">
@@ -395,7 +395,7 @@ const CompanionDashboard = () => {
             {/* Application Status */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-3 mb-6">
-                <FaUser className="text-primary-600 text-xl" />
+                <FaUser className="text-[#312E81] text-xl" />
                 <h2 className="text-xl font-bold text-gray-900">Companion Application Status</h2>
               </div>
               
@@ -422,7 +422,7 @@ const CompanionDashboard = () => {
                 {applicationStatus?.status === 'approved' && (
                   <button 
                     onClick={() => navigate(ROUTES.COMPANION_PROFILE)}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-3 px-4 rounded-lg hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 font-medium shadow-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-3 px-4 rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 font-medium shadow-sm"
                   >
                     <FaFileAlt className="w-4 h-4" />
                     Manage Your Profile
@@ -455,9 +455,9 @@ const CompanionDashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => navigate(ROUTES.COMPANION_PROFILE)}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 group"
+                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-[#312E81] hover:bg-[#312E81]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
                 >
-                  <FaUser className="text-2xl text-gray-400 group-hover:text-primary-600 transition-colors" />
+                  <FaUser className="text-2xl text-gray-400 group-hover:text-[#312E81] transition-colors" />
                   <div className="text-left">
                     <h3 className="font-semibold text-gray-900">Edit Profile</h3>
                     <p className="text-sm text-gray-500">Manage your information</p>
@@ -489,9 +489,9 @@ const CompanionDashboard = () => {
                 {/* Payment Setup button removed - will be implemented later */}
                 <button
                   onClick={() => toast('Earnings feature coming soon!', { icon: 'ℹ️' })}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-secondary-500 hover:bg-secondary-50 transition-all duration-200 group"
+                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-[#FFCCCB] hover:bg-[#FFCCCB]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
                 >
-                  <FaMoneyBillWave className="text-2xl text-gray-400 group-hover:text-secondary-600 transition-colors" />
+                  <FaMoneyBillWave className="text-2xl text-gray-400 group-hover:text-[#FF9F9F] transition-colors" />
                   <div className="text-left">
                     <h3 className="font-semibold text-gray-900">View Earnings</h3>
                     <p className="text-sm text-gray-500">Track your income</p>

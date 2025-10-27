@@ -4,6 +4,7 @@
  */
 
 const { pool } = require('../config/database');
+const { createNotification, notificationTemplates } = require('../services/notificationService');
 
 /**
  * Get admin dashboard statistics
@@ -165,6 +166,22 @@ const approveApplication = async (req, res) => {
 
     console.log(`✅ Application ${applicationId} approved for user ${userId}`);
 
+    // Send notification to the companion
+    try {
+      const notificationData = notificationTemplates.applicationApproved();
+      await createNotification(
+        userId,
+        notificationData.type,
+        notificationData.title,
+        notificationData.message,
+        notificationData.actionUrl
+      );
+      console.log(`✅ Notification sent to user ${userId} about application approval`);
+    } catch (notificationError) {
+      console.error('❌ Failed to send notification:', notificationError);
+      // Don't fail the whole operation if notification fails
+    }
+
     res.json({
       status: 'success',
       message: 'Application approved successfully'
@@ -186,9 +203,9 @@ const rejectApplication = async (req, res) => {
     const { applicationId } = req.params;
     const { reason } = req.body;
 
-    // Check if application exists
+    // Check if application exists and get user ID
     const [applications] = await pool.execute(
-      'SELECT id FROM companion_applications WHERE id = ?',
+      'SELECT id, user_id FROM companion_applications WHERE id = ?',
       [applicationId]
     );
 
@@ -199,15 +216,33 @@ const rejectApplication = async (req, res) => {
       });
     }
 
+    const userId = applications[0].user_id;
+
     // Update application status
     await pool.execute(
-      `UPDATE companion_applications 
-       SET status = 'rejected', rejection_reason = ?, reviewed_at = NOW() 
+      `UPDATE companion_applications
+       SET status = 'rejected', rejection_reason = ?, reviewed_at = NOW()
        WHERE id = ?`,
       [reason || 'Application rejected by admin', applicationId]
     );
 
     console.log(`✅ Application ${applicationId} rejected`);
+
+    // Send notification to the companion
+    try {
+      const notificationData = notificationTemplates.applicationRejected(reason || 'Application needs improvements');
+      await createNotification(
+        userId,
+        notificationData.type,
+        notificationData.title,
+        notificationData.message,
+        notificationData.actionUrl
+      );
+      console.log(`✅ Notification sent to user ${userId} about application rejection`);
+    } catch (notificationError) {
+      console.error('❌ Failed to send notification:', notificationError);
+      // Don't fail the whole operation if notification fails
+    }
 
     res.json({
       status: 'success',

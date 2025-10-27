@@ -18,6 +18,9 @@ import CompanionDetails from '../pages/companion/CompanionDetails';
 // Payment pages removed - will be implemented later
 import Favorites from '../pages/client/Favorites';
 import BookingCreate from '../pages/booking/BookingCreate';
+import Notifications from '../pages/Notifications';
+import DashboardRedirect from '../components/redirects/DashboardRedirect';
+import ProfileRedirect from '../components/redirects/ProfileRedirect';
 
 const router = createBrowserRouter([
   {
@@ -125,6 +128,30 @@ const router = createBrowserRouter([
             element: (
               <ProtectedRoute>
                 <BookingCreate />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'notifications',
+            element: (
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'dashboard',
+            element: (
+              <ProtectedRoute>
+                <DashboardRedirect />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'profile',
+            element: (
+              <ProtectedRoute>
+                <ProfileRedirect />
               </ProtectedRoute>
             ),
           },

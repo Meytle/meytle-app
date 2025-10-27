@@ -304,7 +304,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
             ${isPast
               ? 'text-gray-300 cursor-not-allowed'
               : isSelected
-                ? 'bg-primary-600 text-white font-semibold'
+                ? 'bg-[#312E81] text-white font-semibold'
                 : 'hover:bg-gray-100 text-gray-700'
             }
           `}
@@ -325,7 +325,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
             className={`
               w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
               ${currentStep >= step
-                ? 'bg-primary-600 text-white'
+                ? 'bg-[#312E81] text-white'
                 : 'bg-gray-200 text-gray-500'
               }
             `}
@@ -336,7 +336,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
             <div
               className={`
                 w-24 h-0.5 transition-all
-                ${currentStep > step ? 'bg-primary-600' : 'bg-gray-200'}
+                ${currentStep > step ? 'bg-[#312E81]' : 'bg-gray-200'}
               `}
             />
           )}
@@ -356,7 +356,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
         className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
       >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white px-6 py-4">
+        <div className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">Request Custom Booking</h2>
@@ -391,7 +391,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                 >
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <FaCalendarAlt className="text-primary-600" />
+                      <FaCalendarAlt className="text-[#312E81]" />
                       Select Date & Time
                     </h3>
 
@@ -451,7 +451,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           type="time"
                           value={formData.startTime}
                           onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                         />
                       </div>
                       <div className="flex-1">
@@ -462,7 +462,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           type="time"
                           value={formData.endTime}
                           onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                         />
                       </div>
                     </div>
@@ -471,7 +471,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                   {/* Service Selection */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <FaServicestack className="text-primary-600" />
+                      <FaServicestack className="text-[#312E81]" />
                       Select Service
                     </h3>
 
@@ -486,7 +486,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                             serviceType: '',
                             serviceCategoryId: undefined
                           })}
-                          className="form-checkbox h-4 w-4 text-primary-600"
+                          className="form-checkbox h-4 w-4 text-[#312E81]"
                         />
                         <span className="ml-2">Custom Service Request</span>
                       </label>
@@ -505,7 +505,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                             serviceCategoryId: selectedCategory?.id
                           });
                         }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                       >
                         <option value="">Select a service...</option>
                         {serviceCategories.length > 0 && (
@@ -534,14 +534,14 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           value={formData.customServiceName}
                           onChange={(e) => setFormData({ ...formData, customServiceName: e.target.value })}
                           placeholder="Service name (e.g., Python tutoring)"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                           maxLength={255}
                         />
                         <textarea
                           value={formData.customServiceDescription}
                           onChange={(e) => setFormData({ ...formData, customServiceDescription: e.target.value })}
                           placeholder="Additional details (optional)..."
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                           rows={2}
                           maxLength={1000}
                         />
@@ -552,7 +552,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                   {/* Extra Amount */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <FaMoneyBillWave className="text-primary-600" />
+                      <FaMoneyBillWave className="text-[#312E81]" />
                       Extra Amount (Optional Tip/Bonus)
                     </label>
                     <div className="flex gap-2">
@@ -566,7 +566,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           }}
                           className={`px-3 py-2 rounded-lg font-medium transition-all ${
                             formData.extraAmount === amount
-                              ? 'bg-primary-600 text-white'
+                              ? 'bg-[#312E81] text-white shadow-[0_0_15px_rgba(255,204,203,0.3)]'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                         >
@@ -589,7 +589,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                 >
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <FaMapMarkerAlt className="text-primary-600" />
+                      <FaMapMarkerAlt className="text-[#312E81]" />
                       Meeting Details
                     </h3>
 
@@ -607,7 +607,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           }}
                           className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                             formData.meetingType === 'in_person'
-                              ? 'border-primary-600 bg-primary-50 text-primary-700'
+                              ? 'border-[#312E81] bg-[#312E81]/10 text-[#1E1B4B]'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
@@ -622,7 +622,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           }}
                           className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                             formData.meetingType === 'virtual'
-                              ? 'border-primary-600 bg-primary-50 text-primary-700'
+                              ? 'border-[#312E81] bg-[#312E81]/10 text-[#1E1B4B]'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
@@ -672,7 +672,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                 >
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <FaCheckCircle className="text-primary-600" />
+                      <FaCheckCircle className="text-[#312E81]" />
                       Review Your Request
                     </h3>
 
@@ -734,7 +734,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                     {/* Special Requests */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <FaComment className="text-primary-600" />
+                        <FaComment className="text-[#312E81]" />
                         Special Requests or Notes (Optional)
                       </label>
                       <textarea
@@ -742,7 +742,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                         onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
                         placeholder="Any specific preferences or requirements..."
                         rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                       />
                     </div>
 
@@ -790,7 +790,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                   e.stopPropagation();
                   handleNextStep();
                 }}
-                className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+                className="px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all flex items-center gap-2"
               >
                 Next
                 <FaArrowRight />
@@ -804,7 +804,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                   handleSubmit();
                 }}
                 disabled={isSubmitting}
-                className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>

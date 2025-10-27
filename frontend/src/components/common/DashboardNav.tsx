@@ -21,7 +21,7 @@ const DashboardNav = ({ title, userName, onSignOut }: DashboardNavProps) => {
             <span className="text-sm text-gray-700">Welcome, {userName}</span>
             <button
               onClick={onSignOut}
-              className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-[#312E81] hover:bg-[#1E1B4B] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               aria-label="Sign out"
             >
               Sign Out

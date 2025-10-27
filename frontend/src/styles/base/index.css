@@ -43,17 +43,22 @@
 
 /* Design tokens: gradients */
 :root {
-	--gradient-primary: linear-gradient(135deg, hsl(280 89% 60%), hsl(330 81% 60%));
-	--gradient-secondary: linear-gradient(135deg, hsl(330 81% 60%), hsl(260 81% 60%));
-	--gradient-warm: linear-gradient(135deg, hsl(330 81% 60% / .1), hsl(280 89% 60% / .1));
-	--gradient-hero: linear-gradient(135deg, hsl(280 89% 60%) 0%, hsl(330 81% 60%) 50%, hsl(260 81% 60%) 100%);
-	--gradient-card: linear-gradient(135deg, hsl(280 89% 60% / .05), hsl(330 81% 60% / .05));
+	--gradient-primary: linear-gradient(135deg, #312E81, #1E1B4B);
+	--gradient-secondary: linear-gradient(135deg, #1E1B4B, #0F0D26);
+	--gradient-warm: linear-gradient(135deg, #FFCCCB, #FFF0F0);
+	--gradient-hero: linear-gradient(135deg, #312E81 0%, #1E1B4B 50%, #312E81 100%);
+	--gradient-card: linear-gradient(135deg, rgba(49, 46, 129, 0.05), rgba(255, 204, 203, 0.05));
+	--gradient-blue-pink: linear-gradient(135deg, #312E81, #FFCCCB);
+	--gradient-pink-blue: linear-gradient(135deg, #FFCCCB, #312E81);
+	--gradient-overlay: linear-gradient(135deg, rgba(49, 46, 129, 0.1), transparent, rgba(255, 204, 203, 0.1));
+	--shadow-glow-pink: 0 0 30px rgba(255, 204, 203, 0.6);
+	--shadow-glow-blue: 0 0 30px rgba(49, 46, 129, 0.4);
+	--shadow-glow-combo: 0 0 20px rgba(49, 46, 129, 0.3), 0 0 40px rgba(255, 204, 203, 0.2);
 }
 
 /* Utilities */
 .bg-hero-gradient {
 	background-image: var(--gradient-hero);
-	filter: saturate(95%);
 }
 
 .bg-card-gradient {
@@ -67,13 +72,50 @@
 	color: transparent;
 }
 
+.text-gradient-blue-pink {
+	background: var(--gradient-blue-pink);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
 .btn-gradient-primary {
 	background-image: var(--gradient-primary);
 	color: #fff;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-gradient-primary:hover {
-	filter: brightness(0.95);
+	transform: translateY(-2px) scale(1.02);
+	box-shadow: var(--shadow-glow-pink);
+}
+
+/* Glass morphism effects */
+.glass-navy {
+	background: rgba(30, 27, 75, 0.8);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid rgba(49, 46, 129, 0.2);
+}
+
+.glass-light {
+	background: rgba(255, 255, 255, 0.85);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	border: 1px solid rgba(49, 46, 129, 0.1);
+}
+
+/* Special hover effects */
+.hover-glow-pink:hover {
+	box-shadow: var(--shadow-glow-pink);
+}
+
+.hover-glow-blue:hover {
+	box-shadow: var(--shadow-glow-blue);
+}
+
+.hover-glow-combo:hover {
+	box-shadow: var(--shadow-glow-combo);
 }
 
 
@@ -134,6 +176,77 @@
 
 .glow-strong {
   filter: drop-shadow(0 0 40px currentColor) drop-shadow(0 0 80px currentColor) drop-shadow(0 0 120px currentColor);
+}
+
+/* Premium button effects */
+.btn-premium {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #312E81, #1E1B4B);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-premium::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 204, 203, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-premium:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(255, 204, 203, 0.6), 0 10px 40px rgba(30, 27, 75, 0.2);
+}
+
+/* Premium button light variant - white background on hover */
+.btn-premium-light {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #312E81, #1E1B4B);
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-premium-light::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s, height 0.5s;
+  z-index: 0;
+}
+
+.btn-premium-light:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-premium-light:hover {
+  transform: translateY(-2px);
+  color: #312E81;
+  box-shadow: 0 0 30px rgba(255, 204, 203, 0.6), 0 10px 40px rgba(30, 27, 75, 0.2);
+}
+
+.btn-premium-light span,
+.btn-premium-light svg {
+  position: relative;
+  z-index: 1;
 }
 
 /* Smooth gradient animations */

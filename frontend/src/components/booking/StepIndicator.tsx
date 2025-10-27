@@ -62,9 +62,9 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                     relative flex items-center justify-center w-12 h-12 rounded-full
                     transition-all duration-300 transform
                     ${isActive
-                      ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg scale-110'
+                      ? 'bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white shadow-[0_0_15px_rgba(255,204,203,0.3)] scale-110'
                       : isCompleted
-                        ? 'bg-primary-500 text-white shadow-md'
+                        ? 'bg-[#312E81] text-white shadow-md'
                         : 'bg-gray-100 text-gray-400 border-2 border-gray-200'
                     }
                   `}
@@ -89,9 +89,9 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                     className={`
                       text-sm font-semibold transition-colors duration-300
                       ${isActive
-                        ? 'text-primary-600'
+                        ? 'text-[#312E81]'
                         : isCompleted
-                          ? 'text-primary-500'
+                          ? 'text-[#312E81]'
                           : 'text-gray-400'
                       }
                     `}
@@ -103,7 +103,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                       text-xs mt-0.5 transition-colors duration-300
                       hidden sm:block
                       ${isActive
-                        ? 'text-primary-500'
+                        ? 'text-[#312E81]'
                         : isCompleted
                           ? 'text-gray-500'
                           : 'text-gray-400'
@@ -121,7 +121,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                       absolute top-6 left-[60%] w-full h-0.5
                       transition-all duration-500
                       ${isCompleted
-                        ? 'bg-gradient-to-r from-primary-500 to-primary-400'
+                        ? 'bg-gradient-to-r from-[#312E81] to-[#4A47A3]'
                         : 'bg-gray-200'
                       }
                     `}
@@ -141,7 +141,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
       <div className="mt-6 relative">
         <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full transition-all duration-500 ease-out"
+            className="h-full bg-gradient-to-r from-[#312E81] to-[#FFCCCB] rounded-full transition-all duration-500 ease-out"
             style={{
               width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`
             }}

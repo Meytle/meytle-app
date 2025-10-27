@@ -38,6 +38,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const serviceCategoryRoutes = require('./routes/serviceCategoryRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
@@ -97,6 +98,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/service-categories', serviceCategoryRoutes);
 app.use('/api/favorites', favoritesRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 handler
 app.use((req, res) => {

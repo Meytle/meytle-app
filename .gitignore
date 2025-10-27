@@ -170,7 +170,7 @@ playground.*
 
 # But keep these important docs
 !README.md
-!CLAUDE.md
+# CLAUDE.md should be in docs/ folder only
 !QUICK_SETUP.md
 !PROJECT_DOCUMENTATION.md
 !UI_DESIGN_SYSTEM.md

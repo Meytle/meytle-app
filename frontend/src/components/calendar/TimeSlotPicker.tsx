@@ -87,7 +87,7 @@ const TimeSlotPicker = ({
     return (
       <div className={`bg-white rounded-xl border border-neutral-200 p-6 ${className}`}>
         <div className="flex items-center gap-3 mb-6">
-          <FaClock className="w-5 h-5 text-primary-500 animate-spin" />
+          <FaClock className="w-5 h-5 text-[#312E81] animate-spin" />
           <h3 className="text-lg font-semibold text-neutral-900">Loading Available Times...</h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -103,10 +103,10 @@ const TimeSlotPicker = ({
     <div className={`${className}`}>
       <div className="mb-6">
         <div className="flex items-center gap-3">
-          <FaClock className="w-6 h-6 text-primary-500" />
+          <FaClock className="w-6 h-6 text-[#312E81]" />
           <h3 className="text-xl font-semibold text-neutral-900">Select Your Time</h3>
           {availableSlots.length > 0 && (
-            <span className="text-sm text-primary-600 bg-primary-100 px-3 py-1 rounded-full font-medium">
+            <span className="text-sm text-[#312E81] bg-primary-100 px-3 py-1 rounded-full font-medium">
               {availableSlots.length} available
             </span>
           )}

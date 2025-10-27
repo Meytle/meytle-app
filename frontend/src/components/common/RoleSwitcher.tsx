@@ -71,9 +71,9 @@ const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className = '' }) => {
                     <button
                       key={role}
                       onClick={() => handleRoleSwitch(role)}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-primary-50 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#f0effe] rounded-lg transition-colors"
                     >
-                      <RoleIcon className="w-4 h-4 text-primary-500" />
+                      <RoleIcon className="w-4 h-4 text-[#312E81]" />
                       <span className="text-sm font-medium">{roleLabels[role]}</span>
                     </button>
                   );

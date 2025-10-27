@@ -516,7 +516,7 @@ const BookingForm = ({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <FaCalendar className="w-5 h-5 text-primary-500" />
+                  <FaCalendar className="w-5 h-5 text-[#312E81]" />
                   Select Date
                 </h3>
                 <Calendar
@@ -562,7 +562,7 @@ const BookingForm = ({
                 
                 {isLoadingCategories ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#312E81]"></div>
                     <span className="ml-2 text-gray-600">Loading categories...</span>
                   </div>
                 ) : (
@@ -587,11 +587,11 @@ const BookingForm = ({
                           setSelectedCategory(category || null);
                         }
                       }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                       required
                     >
                       <option value="">-- Please Select a Service --</option>
-                      <option value="custom" className="font-semibold text-primary-600">
+                      <option value="custom" className="font-semibold text-[#312E81]">
                         ✨ Custom Service Request (Specify Your Own)
                       </option>
                       {serviceCategories.length > 0 && (
@@ -627,7 +627,7 @@ const BookingForm = ({
                         value={customServiceName}
                         onChange={(e) => setCustomServiceName(e.target.value)}
                         placeholder="e.g., Help with moving, Python tutoring, Event planning"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                         maxLength={255}
                         required
                       />
@@ -644,7 +644,7 @@ const BookingForm = ({
                         value={customServiceDescription}
                         onChange={(e) => setCustomServiceDescription(e.target.value)}
                         placeholder="Provide additional details about what you need help with..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                         rows={3}
                         maxLength={1000}
                       />
@@ -655,7 +655,7 @@ const BookingForm = ({
 
                     <div className="p-4 bg-blue-50 rounded-lg">
                       <div className="flex items-start gap-2">
-                        <FaDollarSign className="w-4 h-4 text-blue-600 mt-0.5" />
+                        <FaDollarSign className="w-4 h-4 text-[#312E81] mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-blue-900">
                             Pricing for Custom Services
@@ -691,7 +691,7 @@ const BookingForm = ({
                   Meeting Type
                 </h3>
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <FaMapMarkerAlt className="w-5 h-5 text-primary-500" />
+                  <FaMapMarkerAlt className="w-5 h-5 text-[#312E81]" />
                   <span className="text-gray-700">In-Person Meeting</span>
                   <Badge variant="info" size="sm">Default</Badge>
                 </div>
@@ -777,7 +777,7 @@ const BookingForm = ({
                       value={formData.meetingLocation}
                       onChange={(e) => handleInputChange('meetingLocation', e.target.value)}
                       placeholder="e.g., Central Park, Coffee Shop"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -791,7 +791,7 @@ const BookingForm = ({
                     onChange={(e) => handleInputChange('specialRequests', e.target.value)}
                     placeholder="Any special requests or preferences..."
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                   />
                 </div>
               </div>

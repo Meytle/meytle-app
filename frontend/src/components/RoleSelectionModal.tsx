@@ -59,7 +59,7 @@ const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
           >
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               {/* Header */}
-              <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
+              <div className="relative bg-gradient-to-r from-[#312E81] to-[#312E81] p-6 text-white">
                 {canClose && (
                   <button
                     onClick={onClose}
@@ -87,11 +87,11 @@ const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
                     onHoverStart={() => setHoveredRole('client')}
                     onHoverEnd={() => setHoveredRole(null)}
                     onClick={() => handleRoleSelect('client')}
-                    className="relative cursor-pointer rounded-xl border-2 transition-all duration-300 border-gray-200 hover:border-purple-400 hover:shadow-lg bg-white"
+                    className="relative cursor-pointer rounded-xl border-2 transition-all duration-300 border-gray-200 hover:border-[#4A47A3] hover:shadow-lg bg-white"
                   >
 
                     <div className="p-6">
-                      <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+                      <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-[#4A47A3] to-[#312E81] text-white">
                         <FaUserTie className="w-8 h-8" />
                       </div>
 
@@ -129,11 +129,11 @@ const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
                     onHoverStart={() => setHoveredRole('companion')}
                     onHoverEnd={() => setHoveredRole(null)}
                     onClick={() => handleRoleSelect('companion')}
-                    className="relative cursor-pointer rounded-xl border-2 transition-all duration-300 border-gray-200 hover:border-pink-400 hover:shadow-lg bg-white"
+                    className="relative cursor-pointer rounded-xl border-2 transition-all duration-300 border-gray-200 hover:border-[#4A47A3] hover:shadow-lg bg-white"
                   >
 
                     <div className="p-6">
-                      <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 text-white">
+                      <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-[#4A47A3] to-[#312E81] text-white">
                         <FaUserFriends className="w-8 h-8" />
                       </div>
 
@@ -158,7 +158,7 @@ const RoleSelectionModal: React.FC<RoleSelectionModalProps> = ({
                         </li>
                       </ul>
 
-                      <div className="text-center py-2 rounded-lg font-medium transition-all bg-pink-100 text-pink-700 hover:bg-pink-200">
+                      <div className="text-center py-2 rounded-lg font-medium transition-all bg-blue-100 text-blue-700 hover:bg-blue-200">
                         Continue as Companion
                       </div>
                     </div>

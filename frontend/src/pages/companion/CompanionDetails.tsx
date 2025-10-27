@@ -373,7 +373,7 @@ const CompanionDetails = () => {
           <h2 className="text-2xl font-bold text-gray-900">Companion not found</h2>
           <button
             onClick={() => navigate('/browse-companions')}
-            className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            className="mt-4 px-6 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)]"
           >
             Browse Companions
           </button>
@@ -412,7 +412,7 @@ const CompanionDetails = () => {
           <div className="space-y-6">
             {/* Profile Header */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="relative h-64 bg-gradient-to-br from-primary-400 to-secondary-400">
+              <div className="relative h-64 bg-gradient-to-br from-[#312E81] to-[#FFCCCB]">
                 {companion.profile_photo_url ? (
                   <img
                     src={`http://localhost:5000${companion.profile_photo_url}`}
@@ -470,7 +470,7 @@ const CompanionDetails = () => {
                   <div className="text-right">
                     {companion.hourly_rate && companion.hourly_rate > 0 ? (
                       <>
-                        <div className="text-3xl font-bold text-primary-600">
+                        <div className="text-3xl font-bold text-[#312E81]">
                           ${companion.hourly_rate}
                         </div>
                         <div className="text-sm text-gray-500">per hour</div>
@@ -495,7 +495,7 @@ const CompanionDetails = () => {
                       onClick={() => setActiveTab(tab as any)}
                       className={`flex-1 px-6 py-4 font-medium capitalize transition-colors ${
                         activeTab === tab
-                          ? 'text-primary-600 border-b-2 border-primary-600'
+                          ? 'text-[#312E81] border-b-2 border-[#312E81]'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
@@ -521,7 +521,7 @@ const CompanionDetails = () => {
                     {companion.services_offered && companion.services_offered.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <FaServicestack className="text-primary-600" />
+                          <FaServicestack className="text-[#312E81]" />
                           Services Offered
                         </h3>
                         <div className="flex flex-wrap gap-2">
@@ -541,7 +541,7 @@ const CompanionDetails = () => {
                     {companion.languages && companion.languages.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <FaLanguage className="text-primary-600" />
+                          <FaLanguage className="text-[#312E81]" />
                           Languages
                         </h3>
                         <div className="flex flex-wrap gap-2">
@@ -561,7 +561,7 @@ const CompanionDetails = () => {
                     {companion.interests && companion.interests.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <FaHeart className="text-primary-600" />
+                          <FaHeart className="text-[#312E81]" />
                           Interests
                         </h3>
                         <div className="flex flex-wrap gap-2">
@@ -595,7 +595,7 @@ const CompanionDetails = () => {
                     {/* Weekly Availability Section */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
                       <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                        <FaCalendarAlt className="text-primary-600" />
+                        <FaCalendarAlt className="text-[#312E81]" />
                         Weekly Availability
                       </h3>
 
@@ -615,8 +615,8 @@ const CompanionDetails = () => {
                               }}
                               className={`relative p-3 rounded-xl border-2 transition-all duration-300 ${
                                 isSelected
-                                  ? 'border-primary-500 bg-primary-50 shadow-lg scale-105'
-                                  : 'border-gray-200 hover:border-primary-300 hover:shadow-md'
+                                  ? 'border-[#312E81] bg-primary-50 shadow-lg scale-105'
+                                  : 'border-gray-200 hover:border-[#312E81] hover:shadow-md'
                               } ${status === 'unavailable' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                               title={`${day.dayFull.charAt(0).toUpperCase() + day.dayFull.slice(1)} - ${status.replace('_', ' ')}`}
                               disabled={status === 'unavailable'}
@@ -626,7 +626,7 @@ const CompanionDetails = () => {
                                   {day.dayName}
                                 </div>
                                 {day.isToday && (
-                                  <div className="text-xs font-bold text-primary-600 mb-1">
+                                  <div className="text-xs font-bold text-[#312E81] mb-1">
                                     Today
                                   </div>
                                 )}
@@ -671,7 +671,7 @@ const CompanionDetails = () => {
                     {selectedDayIndex !== null && (
                       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
                         <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <FaClock className="text-primary-600" />
+                          <FaClock className="text-[#312E81]" />
                           Available Times for {getWeekDates()[selectedDayIndex].dayFull.charAt(0).toUpperCase() + getWeekDates()[selectedDayIndex].dayFull.slice(1)}
                         </h4>
 
@@ -714,8 +714,8 @@ const CompanionDetails = () => {
                                     }}
                                     className={`p-3 rounded-lg border-2 transition-all ${
                                       isSelectedSlot
-                                        ? 'border-primary-500 bg-primary-50 shadow-md'
-                                        : 'border-gray-200 hover:border-primary-300 hover:shadow-sm'
+                                        ? 'border-[#312E81] bg-primary-50 shadow-md'
+                                        : 'border-gray-200 hover:border-[#312E81] hover:shadow-sm'
                                     }`}
                                   >
                                     <div className="text-center">
@@ -749,7 +749,7 @@ const CompanionDetails = () => {
                         </p>
                         <button
                           onClick={handleRequestBooking}
-                          className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-indigo-700 shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
+                          className="px-8 py-3 bg-gradient-to-r from-[#312E81] to-[#1E1B4B] text-white font-semibold rounded-lg hover:shadow-[0_0_20px_rgba(255,204,203,0.3)] shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
                         >
                           <FaCalendarAlt />
                           Request Custom Booking

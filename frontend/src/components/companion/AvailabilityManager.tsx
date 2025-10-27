@@ -472,11 +472,11 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <FaClock className="w-6 h-6 text-purple-600" />
+          <FaClock className="w-6 h-6 text-[#312E81]" />
           <h2 className="text-xl font-semibold text-gray-900">Availability Schedule</h2>
         </div>
         {isSaving && (
-          <span className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full font-medium animate-pulse">
+          <span className="px-3 py-1 text-sm bg-[#f0effe] text-[#1E1B4B] rounded-full font-medium animate-pulse">
             Saving...
           </span>
         )}
@@ -494,7 +494,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
           </p>
           <button
             onClick={() => navigate('/companion-profile#services-section')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="px-4 py-2 bg-[#312E81] text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             Go to Profile → Add Services
           </button>
@@ -558,7 +558,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => toggleEditMode(globalIndex)}
-                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                  className="p-1.5 text-[#312E81] hover:bg-blue-50 rounded transition-colors"
                                   title="Edit time slot"
                                 >
                                   <FaEdit className="w-3.5 h-3.5" />
@@ -577,7 +577,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                                 {slot.services.map((service, idx) => (
                                   <span
                                     key={idx}
-                                    className="inline-block px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded"
+                                    className="inline-block px-2 py-1 text-xs bg-[#f0effe] text-[#1E1B4B] rounded"
                                   >
                                     {service}
                                   </span>
@@ -596,7 +596,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                                   type="checkbox"
                                   checked={slot.is_available}
                                   onChange={(e) => updateTimeSlot(globalIndex, 'is_available', e.target.checked)}
-                                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                  className="w-4 h-4 text-[#312E81] rounded focus:ring-[#312E81]"
                                 />
                                 <span className="text-sm font-medium text-gray-700">Available</span>
                               </div>
@@ -606,7 +606,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                                 <select
                                   value={slot.start_time}
                                   onChange={(e) => updateTimeSlot(globalIndex, 'start_time', e.target.value)}
-                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                                 >
                                   {TIME_SLOTS.map(time => (
                                     <option key={time} value={time}>
@@ -621,7 +621,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                                 <select
                                   value={slot.end_time}
                                   onChange={(e) => updateTimeSlot(globalIndex, 'end_time', e.target.value)}
-                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                                 >
                                   {TIME_SLOTS.filter(time => timeToMinutes(time) > timeToMinutes(slot.start_time)).map(time => (
                                     <option key={time} value={time}>
@@ -643,7 +643,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                             {/* Services Selection */}
                             <div className="border-t border-gray-200 pt-3">
                               <div className="flex items-center gap-2 mb-2">
-                                <FaServicestack className="w-4 h-4 text-purple-600" />
+                                <FaServicestack className="w-4 h-4 text-[#312E81]" />
                                 <label className="text-sm font-medium text-gray-700">
                                   Available Services for this time slot:
                                 </label>
@@ -652,13 +652,13 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
                                 {companionServices.map(service => (
                                   <label
                                     key={service}
-                                    className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-purple-50 transition-colors"
+                                    className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-[#f9f8ff] transition-colors"
                                   >
                                     <input
                                       type="checkbox"
                                       checked={slot.services?.includes(service) || false}
                                       onChange={() => toggleService(globalIndex, service)}
-                                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                      className="w-4 h-4 text-[#312E81] rounded focus:ring-[#312E81]"
                                     />
                                     <span className="text-xs text-gray-700">{service}</span>
                                   </label>
@@ -695,18 +695,18 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
 
       {/* Note about adding more services */}
       {companionServices.length > 0 && (
-        <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+        <div className="mt-4 p-4 bg-[#f9f8ff] rounded-lg">
           <div className="flex items-start gap-3">
-            <FaServicestack className="w-5 h-5 text-purple-600 mt-1" />
+            <FaServicestack className="w-5 h-5 text-[#312E81] mt-1" />
             <div>
-              <h4 className="font-semibold text-purple-900 mb-1">Want to add more services?</h4>
-              <p className="text-sm text-purple-800 mb-2">
+              <h4 className="font-semibold text-[#1E1B4B] mb-1">Want to add more services?</h4>
+              <p className="text-sm text-[#1E1B4B] mb-2">
                 You can only select from services you've registered in your profile.
                 To add more services to offer, please update your profile.
               </p>
               <button
                 onClick={() => navigate('/companion-profile#services-section')}
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium underline"
+                className="text-sm text-[#312E81] hover:text-[#1E1B4B] font-medium underline"
               >
                 Edit Profile → Manage Services
               </button>

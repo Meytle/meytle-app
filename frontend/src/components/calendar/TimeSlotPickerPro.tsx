@@ -196,14 +196,14 @@ const TimeSlotPickerPro = ({
   return (
     <div className={`bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
+      <div className="bg-gradient-to-r from-[#312E81] to-[#312E81] text-white p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <FaClock className="w-6 h-6" />
               Select Time
             </h2>
-            <p className="text-purple-100 mt-1">
+            <p className="text-[#f0effe] mt-1">
               {availableSlots.length} time slot{availableSlots.length !== 1 ? 's' : ''} available
             </p>
           </div>
@@ -214,7 +214,7 @@ const TimeSlotPickerPro = ({
               onClick={() => setViewMode('grouped')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 viewMode === 'grouped' ?
-                  'bg-white text-purple-600' :
+                  'bg-white text-[#312E81]' :
                   'bg-white/20 text-white hover:bg-white/30'
               }`}
             >
@@ -224,7 +224,7 @@ const TimeSlotPickerPro = ({
               onClick={() => setViewMode('list')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 viewMode === 'list' ?
-                  'bg-white text-purple-600' :
+                  'bg-white text-[#312E81]' :
                   'bg-white/20 text-white hover:bg-white/30'
               }`}
             >
@@ -239,7 +239,7 @@ const TimeSlotPickerPro = ({
         <div className="p-4 bg-blue-50 border-b border-blue-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <FaCalendarCheck className="w-5 h-5 text-blue-600" />
+              <FaCalendarCheck className="w-5 h-5 text-[#312E81]" />
               <div>
                 <div className="font-semibold text-blue-900">Recommended Time</div>
                 <div className="text-sm text-blue-700">
@@ -249,7 +249,7 @@ const TimeSlotPickerPro = ({
             </div>
             <button
               onClick={() => handleSlotClick(recommendedSlot)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-[#312E81] text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Select This Time
             </button>
@@ -278,7 +278,7 @@ const TimeSlotPickerPro = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-                          <Icon className="w-5 h-5 text-purple-600" />
+                          <Icon className="w-5 h-5 text-[#312E81]" />
                         </div>
                         <div className="text-left">
                           <h3 className="font-semibold text-gray-900">{group.label}</h3>
@@ -286,7 +286,7 @@ const TimeSlotPickerPro = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-full font-medium">
+                        <span className="px-3 py-1 bg-[#f0effe] text-[#1E1B4B] text-sm rounded-full font-medium">
                           {group.slots.length} slot{group.slots.length !== 1 ? 's' : ''}
                         </span>
                         <div className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
@@ -310,14 +310,14 @@ const TimeSlotPickerPro = ({
                             className={`
                               relative p-4 rounded-xl border-2 transition-all duration-200 hover:scale-105
                               ${isSelected ?
-                                'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg' :
-                                'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                                'border-[#312E81] bg-gradient-to-br from-[#f9f8ff] to-blue-50 shadow-lg' :
+                                'border-gray-200 hover:border-[#a5a3e8] hover:bg-[#f9f8ff]'
                               }
                             `}
                           >
                             {isSelected && (
                               <div className="absolute top-2 right-2">
-                                <FaCheck className="w-4 h-4 text-purple-600" />
+                                <FaCheck className="w-4 h-4 text-[#312E81]" />
                               </div>
                             )}
 
@@ -364,14 +364,14 @@ const TimeSlotPickerPro = ({
                   className={`
                     relative p-6 rounded-xl border-2 transition-all duration-200 hover:scale-105
                     ${isSelected ?
-                      'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl' :
-                      'border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:shadow-lg'
+                      'border-[#312E81] bg-gradient-to-br from-[#f9f8ff] to-blue-50 shadow-xl' :
+                      'border-gray-200 hover:border-[#a5a3e8] hover:bg-[#f9f8ff] hover:shadow-lg'
                     }
                   `}
                 >
                   {isSelected && (
                     <div className="absolute top-3 right-3">
-                      <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-[#312E81] rounded-full flex items-center justify-center">
                         <FaCheck className="w-4 h-4 text-white" />
                       </div>
                     </div>
@@ -379,7 +379,7 @@ const TimeSlotPickerPro = ({
 
                   <div className="text-left">
                     <div className="flex items-center gap-2 mb-3">
-                      <FaClock className="w-5 h-5 text-purple-600" />
+                      <FaClock className="w-5 h-5 text-[#312E81]" />
                       <span className="font-bold text-xl text-gray-900">
                         {formatTime(slot.startTime)}
                       </span>
@@ -429,16 +429,16 @@ const TimeSlotPickerPro = ({
 
         {/* Services Info */}
         {services.length > 0 && (
-          <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-200">
+          <div className="mt-6 p-4 bg-[#f9f8ff] rounded-xl border border-[#d5d3f7]">
             <div className="flex items-center gap-2 mb-2">
-              <FaInfoCircle className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-semibold text-purple-700">Available Services</span>
+              <FaInfoCircle className="w-4 h-4 text-[#312E81]" />
+              <span className="text-sm font-semibold text-[#1E1B4B]">Available Services</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {services.map((service, index) => (
                 <span
                   key={index}
-                  className="text-xs bg-white text-purple-700 px-3 py-1 rounded-full border border-purple-200"
+                  className="text-xs bg-white text-[#1E1B4B] px-3 py-1 rounded-full border border-[#d5d3f7]"
                 >
                   {service}
                 </span>

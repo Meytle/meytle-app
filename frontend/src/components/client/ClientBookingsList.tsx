@@ -48,7 +48,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
       case 'confirmed':
         return <FaCheckCircle className="text-green-500" />;
       case 'completed':
-        return <FaCheckCircle className="text-blue-500" />;
+        return <FaCheckCircle className="text-[#312E81]" />;
       case 'cancelled':
         return <FaTimesCircle className="text-red-500" />;
       case 'no_show':
@@ -65,7 +65,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
       case 'confirmed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-[#d5d3f7]';
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'no_show':
@@ -223,7 +223,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         </p>
         <button
           onClick={() => navigate('/browse-companions')}
-          className="px-6 py-3 bg-gradient-to-r from-primary-600 to-secondary-500 text-white font-medium rounded-lg hover:from-primary-700 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg"
+          className="px-6 py-3 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white font-medium rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 shadow-md"
         >
           Browse Companions
         </button>
@@ -238,19 +238,19 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         {upcomingBookings.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FaClock className="text-primary-600" />
+              <FaClock className="text-[#312E81]" />
               Upcoming Bookings ({upcomingBookings.length})
             </h3>
             <div className="space-y-4">
               {upcomingBookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:border-primary-300"
+                  className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:border-[#312E81] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)]"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                     {/* Companion Info */}
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white text-xl font-bold shadow-md">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#4A47A3] to-[#FFCCCB] flex items-center justify-center text-white text-xl font-bold shadow-md">
                         {booking.companion_name?.charAt(0) || 'C'}
                       </div>
                       <div className="flex-1">
@@ -376,7 +376,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                         {booking.status === 'completed' && !booking.has_review && (
                           <button
                             onClick={() => handleLeaveReview(booking)}
-                            className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+                            className="px-3 py-1.5 text-sm bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-colors flex items-center gap-2"
                           >
                             <FaStar className="text-xs" />
                             Review
@@ -415,7 +415,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
               <textarea
                 value={cancellationReason}
                 onChange={(e) => setCancellationReason(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                 rows={3}
                 placeholder="Let us know why you're cancelling..."
               />

@@ -119,7 +119,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <FaCalendarWeek className="w-5 h-5 text-primary-500" />
+          <FaCalendarWeek className="w-5 h-5 text-[#312E81]" />
           <h3 className="text-lg font-semibold text-gray-800">Weekly Availability</h3>
         </div>
         <div className="flex items-center gap-1 text-sm text-gray-500">
@@ -146,7 +146,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
                 className={`
                   relative p-3 rounded-lg border-2 transition-all duration-200
                   ${getStatusColor(status)}
-                  ${isToday ? 'ring-2 ring-primary-400 ring-offset-2' : ''}
+                  ${isToday ? 'ring-2 ring-[#4A47A3] ring-offset-2' : ''}
                   ${slots.length > 0 ? 'cursor-pointer hover:scale-105 hover:shadow-md' : ''}
                 `}
                 onClick={() => {
@@ -195,7 +195,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
 
               {/* Today Indicator */}
               {isToday && (
-                <div className="absolute -top-2 -right-2 bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                <div className="absolute -top-2 -right-2 bg-[#312E81] text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-[0_0_15px_rgba(255,204,203,0.3)]">
                   Today
                 </div>
               )}

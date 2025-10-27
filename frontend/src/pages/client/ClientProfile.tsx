@@ -362,7 +362,7 @@ const ClientProfile = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#312E81]"></div>
       </div>
     );
   }
@@ -394,14 +394,14 @@ const ClientProfile = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
               <div className="flex items-center gap-2 mb-6">
-                <FaUser className="text-purple-500 w-5 h-5" />
+                <FaUser className="text-[#312E81] w-5 h-5" />
                 <h2 className="text-xl font-semibold text-gray-900">Profile Summary</h2>
               </div>
 
               <div className="flex flex-col items-center">
                 {/* Profile Photo */}
                 <div className="mb-4">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-4xl font-bold">
+                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-[#4A47A3] to-[#4A47A3] flex items-center justify-center text-white text-4xl font-bold">
                       {profileData.profilePhoto || profilePhotoPreview ? (
                       <img src={profilePhotoPreview || profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
@@ -414,7 +414,7 @@ const ClientProfile = () => {
                 <h3 className="text-2xl font-semibold text-gray-900 mb-2">{profileData.fullName || 'Your Name'}</h3>
                 
                 {/* Role Badge */}
-                <span className="inline-block bg-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium mb-4">
+                <span className="inline-block bg-[#312E81] text-white px-4 py-1 rounded-full text-sm font-medium mb-4">
                   Client
                 </span>
 
@@ -481,7 +481,7 @@ const ClientProfile = () => {
             {/* Basic Information */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <div className="flex items-center gap-2 mb-6">
-                <FaUser className="text-purple-500 w-5 h-5" />
+                <FaUser className="text-[#312E81] w-5 h-5" />
                 <h2 className="text-xl font-semibold text-gray-900">Edit Profile</h2>
               </div>
 
@@ -492,7 +492,7 @@ const ClientProfile = () => {
                     Profile Photo
                   </label>
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xl font-bold">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#4A47A3] to-[#4A47A3] flex items-center justify-center text-white text-xl font-bold">
                       {profileData.profilePhoto || profilePhotoPreview ? (
                         <img src={profilePhotoPreview || profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
@@ -530,7 +530,7 @@ const ClientProfile = () => {
                     type="text"
                     value={profileData.fullName}
                     onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -565,7 +565,7 @@ const ClientProfile = () => {
                       value={profileData.addressLine}
                       onChange={(e) => setProfileData({ ...profileData, addressLine: e.target.value })}
                       placeholder="123 Main Street, Apt 4B"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                       required
                     />
                   </div>
@@ -602,7 +602,7 @@ const ClientProfile = () => {
                             value={profileData.city}
                             onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
                             placeholder="Enter your city"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                             required
                           />
                         </div>
@@ -614,7 +614,7 @@ const ClientProfile = () => {
                             <select
                               value={profileData.state}
                               onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                               required
                             >
                               <option value="">Select {getStateLabel()}</option>
@@ -639,7 +639,7 @@ const ClientProfile = () => {
                       <select
                         value={profileData.country}
                         onChange={(e) => setProfileData({ ...profileData, country: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                         required
                       >
                         <option value="">Select Country</option>
@@ -661,7 +661,7 @@ const ClientProfile = () => {
                         value={profileData.postalCode}
                         onChange={(e) => setProfileData({ ...profileData, postalCode: e.target.value })}
                         placeholder="10001"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                         required
                       />
                     </div>
@@ -678,7 +678,7 @@ const ClientProfile = () => {
                     onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                     placeholder="Tell us about yourself..."
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent resize-none"
                   />
                 </div>
 
@@ -713,7 +713,7 @@ const ClientProfile = () => {
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-[#312E81] to-[#312E81] text-white py-3 px-6 rounded-lg font-medium hover:from-[#312E81] hover:to-[#312E81] transition-all duration-200 disabled:opacity-50"
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -738,7 +738,7 @@ const ClientProfile = () => {
                     <h3 className="text-sm font-medium text-gray-900">Account Type</h3>
                     <p className="text-xs text-gray-500 mt-1">You are registered as a client</p>
                   </div>
-                  <span className="inline-block bg-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  <span className="inline-block bg-[#312E81] text-white px-4 py-1 rounded-full text-sm font-medium">
                     Client
                   </span>
                 </div>
@@ -749,7 +749,7 @@ const ClientProfile = () => {
                     <h3 className="text-sm font-medium text-gray-900">Email Verification</h3>
                     <p className="text-xs text-gray-500 mt-1">Your email is verified</p>
                   </div>
-                  <span className="inline-flex items-center gap-2 bg-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  <span className="inline-flex items-center gap-2 bg-[#312E81] text-white px-4 py-1 rounded-full text-sm font-medium">
                     <FaCheck className="w-3 h-3" />
                     Verified
                   </span>

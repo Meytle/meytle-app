@@ -21,12 +21,12 @@ import FavoriteButton from '../../components/common/FavoriteButton';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import QuickBookingModal from '../../components/booking/QuickBookingModal';
 import type { Companion } from '../../types';
-import { API_CONFIG } from '../../constants';
+import { API_CONFIG, ROUTES } from '../../constants';
 import { useAuth } from '../../hooks/useAuth';
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteCompanion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,24 +142,29 @@ const Favorites: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary-600 to-secondary-600 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-              <FaHeart className="text-white" />
-              My Favorites
-            </h1>
-            <p className="text-white/90">
-              {favorites.length} favorite companion{favorites.length !== 1 ? 's' : ''}
-            </p>
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Favorites</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                {favorites.length} favorite companion{favorites.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            <button
+              onClick={() => navigate(ROUTES.CLIENT_DASHBOARD)}
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+            >
+              ← Back to Dashboard
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search and Filter Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -169,7 +174,7 @@ const Favorites: React.FC = () => {
                   placeholder="Search favorites by name or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-[#312E81]"
                 />
               </div>
             </div>
@@ -177,7 +182,7 @@ const Favorites: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-[#312E81]"
               >
                 <option value="recent">Recently Added</option>
                 <option value="name">Name (A-Z)</option>
@@ -193,10 +198,10 @@ const Favorites: React.FC = () => {
             {filteredAndSortedFavorites.map((companion) => (
               <div
                 key={companion.id}
-                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full"
               >
                 {/* Image */}
-                <div className="relative h-48 bg-gradient-to-br from-primary-400 to-secondary-400">
+                <div className="relative h-48 bg-gradient-to-br from-[#4A47A3] to-[#FFCCCB]">
                   {companion.profile_photo_url ? (
                     <img
                       src={`http://localhost:5000${companion.profile_photo_url}`}
@@ -240,8 +245,10 @@ const Favorites: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <div className="p-5">
-                  <div className="mb-3">
+                <div className="p-5 flex flex-col flex-1">
+                  {/* Top section - flexible content */}
+                  <div className="flex-grow">
+                    <div className="mb-3">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">
                       {companion.name}
                     </h3>
@@ -278,19 +285,20 @@ const Favorites: React.FC = () => {
                     </div>
                     {companion.hourly_rate && (
                       <div className="text-right">
-                        <span className="text-lg font-bold text-primary-600">
+                        <span className="text-lg font-bold text-[#312E81]">
                           ${companion.hourly_rate}
                         </span>
                         <span className="text-xs text-gray-500">/hr</span>
                       </div>
                     )}
                   </div>
+                  </div>
 
-                  {/* Book Now Button */}
-                  <div className="mt-4 pt-4 border-t">
+                  {/* Book Now Button - Always at bottom */}
+                  <div className="mt-auto pt-4 border-t">
                     <button
                       onClick={(e) => handleBookCompanion(e, companion)}
-                      className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-3 rounded-lg hover:shadow-lg hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-300 font-semibold flex items-center justify-center gap-2"
                     >
                       <FaCalendarAlt />
                       Book Now
@@ -318,7 +326,7 @@ const Favorites: React.FC = () => {
             </p>
             <button
               onClick={() => setSearchTerm('')}
-              className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+              className="mt-4 px-4 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)]"
             >
               Clear Search
             </button>
@@ -334,14 +342,14 @@ const Favorites: React.FC = () => {
             </p>
             <button
               onClick={() => navigate('/browse-companions')}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-lg hover:shadow-lg transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white rounded-lg hover:shadow-lg hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all"
             >
               <FaUserPlus />
               Browse Companions
             </button>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Booking Modal */}
       {selectedCompanion && (

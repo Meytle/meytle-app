@@ -114,10 +114,10 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
               className={`
                 p-4 rounded-lg border-2 transition-all duration-200 text-center
                 ${isSelected
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  ? 'border-[#312E81] bg-[#f0effe] text-[#312E81]'
                   : isDisabled
                   ? 'border-neutral-200 bg-neutral-50 text-neutral-400 cursor-not-allowed'
-                  : 'border-neutral-200 hover:border-primary-300 hover:bg-primary-50'
+                  : 'border-neutral-200 hover:border-[#312E81] hover:bg-[#f0effe]'
                 }
               `}
             >

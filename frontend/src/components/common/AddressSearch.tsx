@@ -238,7 +238,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
             placeholder={placeholder}
             required={required}
             disabled={disabled}
-            className={`w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            className={`w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#312E81] ${
               error ? 'border-red-500' : 'border-gray-300'
             } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           />
@@ -281,7 +281,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
       <button
         type="button"
         onClick={getCurrentLocation}
-        className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+        className="text-sm text-[#312E81] hover:text-[#1E1B4B] flex items-center gap-1"
         disabled={disabled || isLoading}
       >
         <FaMapMarkerAlt />

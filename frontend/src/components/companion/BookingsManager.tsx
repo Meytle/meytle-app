@@ -216,7 +216,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className}`}>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <FaCalendar className="w-6 h-6 text-purple-600" />
+          <FaCalendar className="w-6 h-6 text-[#312E81]" />
           <h2 className="text-xl font-semibold text-gray-900">My Bookings</h2>
         </div>
         
@@ -227,7 +227,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
               onClick={() => setFilter(status as any)}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 filter === status
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-[#312E81] text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -243,7 +243,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
         // Pending Approvals View
         isLoadingApprovals ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#312E81]" />
           </div>
         ) : pendingApprovals.length === 0 ? (
           <div className="text-center py-12">
@@ -348,7 +348,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
 
             return weekdays.map(weekday => (
               <div key={weekday} className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-3 border-b border-gray-200">
+                <div className="bg-gradient-to-r from-[#f9f8ff] to-blue-50 px-4 py-3 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{getWeekdayIcon(weekday)}</span>
@@ -370,7 +370,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
                       <div key={booking.id} className="p-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#312E81] to-[#312E81] flex items-center justify-center">
                               <FaUser className="text-white" />
                             </div>
                             <div>
@@ -491,7 +491,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
             <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#312E81] to-[#312E81] flex items-center justify-center">
                     <FaUser className="text-white" />
                   </div>
                   <div>

@@ -144,7 +144,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#312E81] to-[#312E81] rounded-full flex items-center justify-center">
               <FaShieldAlt className="text-white text-lg" />
             </div>
             <div>
@@ -163,15 +163,15 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Info Box */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="bg-[#f9f8ff] border border-[#d5d3f7] rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <FaShieldAlt className="text-purple-600 text-lg flex-shrink-0 mt-0.5" />
+              <FaShieldAlt className="text-[#312E81] text-lg flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-purple-900 mb-2">Why Verification is Required</h3>
-                <p className="text-sm text-purple-700 mb-2">
+                <h3 className="font-semibold text-[#1E1B4B] mb-2">Why Verification is Required</h3>
+                <p className="text-sm text-[#1E1B4B] mb-2">
                   To ensure the safety and trust of our community, all clients must:
                 </p>
-                <ul className="text-sm text-purple-700 space-y-1 ml-4 list-disc">
+                <ul className="text-sm text-[#1E1B4B] space-y-1 ml-4 list-disc">
                   <li>Provide complete address information in your profile</li>
                   <li>Verify your identity with a government-issued ID</li>
                   <li>Be approved by our admin team (within 24 hours)</li>
@@ -184,7 +184,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
           {isCheckingAddress ? (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
-                <div className="animate-spin h-5 w-5 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                <div className="animate-spin h-5 w-5 border-2 border-[#312E81] border-t-transparent rounded-full"></div>
                 <p className="text-sm text-gray-600">Checking your profile information...</p>
               </div>
             </div>
@@ -240,7 +240,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
               type="date"
               value={dateOfBirth}
               onChange={(e) => setDateOfBirth(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
               required
               disabled={!hasCompleteAddress}
             />
@@ -256,7 +256,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
               value={governmentIdNumber}
               onChange={(e) => setGovernmentIdNumber(e.target.value)}
               placeholder="Enter your ID number"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
               required
               disabled={!hasCompleteAddress}
             />
@@ -269,7 +269,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
             </label>
             <div
               onClick={hasCompleteAddress ? triggerFileInput : undefined}
-              className={`border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-all ${hasCompleteAddress ? 'cursor-pointer hover:border-purple-500 hover:bg-purple-50' : 'cursor-not-allowed'}`}
+              className={`border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-all ${hasCompleteAddress ? 'cursor-pointer hover:border-[#312E81] hover:bg-[#f9f8ff]' : 'cursor-not-allowed'}`}
             >
               {idDocumentPreview ? (
                 <div className="space-y-3">
@@ -327,7 +327,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || isCheckingAddress || !hasCompleteAddress || !idDocumentFile || !dateOfBirth || !governmentIdNumber}
-            className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-violet-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-violet-600 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-[#312E81] to-[#312E81] text-white font-semibold rounded-lg hover:from-[#312E81] hover:to-[#312E81] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {!hasCompleteAddress ? (
               <>

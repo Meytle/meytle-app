@@ -73,7 +73,7 @@ npm run dev
 ### **Create Admin User**
 ```bash
 cd backend
-node setup-admin.js
+node utils/scripts/setup-admin.js
 ```
 
 **Default Admin Credentials:**
@@ -104,9 +104,10 @@ meytle/
 │   ├── middleware/            # Auth & validation middleware
 │   ├── routes/                # API endpoint definitions
 │   ├── services/              # External service integrations
-│   ├── scripts/               # Utility scripts
-│   │   ├── setup-admin.js     # Create admin & test data
-│   │   └── test-email.js      # Email configuration tester
+│   ├── utils/                 # Utility functions
+│   │   └── scripts/           # Utility scripts
+│   │       ├── setup-admin.js # Create admin & test data
+│   │       └── test-email.js  # Email configuration tester
 │   ├── uploads/               # File upload storage
 │   │   ├── profiles/          # Profile photos
 │   │   └── documents/         # Government IDs
@@ -292,12 +293,12 @@ CREATE TABLE companion_applications (
 
 ---
 
-## 🧪 Testing
+## 🚀 Running the Application
 
-### **Test Admin Functionality**
+### **Setup Admin Account**
 ```bash
 cd backend
-node test-admin-flow.js
+node utils/scripts/setup-admin.js
 ```
 
 ### **Access URLs**
@@ -355,7 +356,7 @@ FRONTEND_URL=http://localhost:5173
 1. **Start MySQL server**
 2. **Run backend:** `cd backend && npm start`
 3. **Run frontend:** `cd frontend && npm run dev`
-4. **Create admin:** `cd backend && node setup-admin.js`
+4. **Create admin:** `cd backend && node utils/scripts/setup-admin.js`
 5. **Test features:** Login and test functionality
 
 ---

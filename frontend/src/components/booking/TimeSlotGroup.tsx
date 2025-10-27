@@ -68,15 +68,15 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
     evening: {
       label: 'Evening',
       icon: <FaMoon className="w-5 h-5" />,
-      bgColor: 'from-indigo-50 to-purple-50',
-      iconColor: 'text-indigo-500',
+      bgColor: 'from-blue-50 to-blue-50',
+      iconColor: 'text-[#312E81]',
       description: '5:00 PM - 9:00 PM'
     },
     night: {
       label: 'Night',
       icon: <FaMoon className="w-5 h-5" />,
-      bgColor: 'from-purple-50 to-indigo-50',
-      iconColor: 'text-purple-600',
+      bgColor: 'from-blue-50 to-blue-50',
+      iconColor: 'text-[#1E1B4B]',
       description: '9:00 PM - 5:00 AM'
     }
   };
@@ -106,7 +106,7 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg p-3 text-center shadow-sm">
           <p className="text-sm text-gray-500">Available Slots</p>
-          <p className="text-xl font-bold text-primary-600">
+          <p className="text-xl font-bold text-[#312E81]">
             {slots.filter(s => s.available).length}
           </p>
         </div>
@@ -169,9 +169,9 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
                       className={`
                         relative p-4 rounded-lg border-2 transition-all duration-200
                         ${isSelected
-                          ? 'bg-gradient-to-r from-primary-500 to-secondary-500 border-primary-500 text-white shadow-lg scale-105'
+                          ? 'bg-gradient-to-r from-[#312E81] to-[#FFCCCB] border-[#312E81] text-white shadow-[0_0_15px_rgba(255,204,203,0.3)] scale-105'
                           : slot.available
-                            ? 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:shadow-md'
+                            ? 'bg-white border-gray-200 hover:border-[#312E81] hover:bg-[#f0effe] hover:shadow-md'
                             : 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                         }
                       `}
@@ -179,7 +179,7 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
                       {/* Selection Indicator */}
                       {isSelected && (
                         <div className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-lg">
-                          <FaCheck className="w-3 h-3 text-primary-500" />
+                          <FaCheck className="w-3 h-3 text-[#312E81]" />
                         </div>
                       )}
 
@@ -196,7 +196,7 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
                         inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-xs font-medium
                         ${isSelected
                           ? 'bg-white/20 text-white'
-                          : 'bg-primary-100 text-primary-700'
+                          : 'bg-[#f0effe] text-[#312E81]'
                         }
                       `}>
                         <FaClock className="w-3 h-3" />
@@ -226,16 +226,16 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
       })}
 
       {/* Duration Selector (Quick Options) */}
-      <div className="bg-gradient-to-r from-primary-50 to-secondary-50 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-[#f0effe] to-[#ffe4e3] rounded-xl p-6">
         <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <FaClock className="w-5 h-5 text-primary-500" />
+          <FaClock className="w-5 h-5 text-[#312E81]" />
           Quick Duration Selection
         </h4>
         <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 4].map(hours => (
             <button
               key={hours}
-              className="px-4 py-2 rounded-lg bg-white border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-all duration-200"
+              className="px-4 py-2 rounded-lg bg-white border-2 border-gray-200 hover:border-[#312E81] hover:bg-[#f0effe] transition-all duration-200"
               onClick={() => {
                 // Find first available slot with this duration
                 const matchingSlot = slots.find(s => s.available && s.duration === hours);

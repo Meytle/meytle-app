@@ -74,7 +74,7 @@ const ClientDashboard = () => {
       case 'confirmed':
         return <FaCheckCircle className="text-green-500" />;
       case 'completed':
-        return <FaCheckCircle className="text-blue-500" />;
+        return <FaCheckCircle className="text-[#312E81]" />;
       case 'cancelled':
         return <FaTimesCircle className="text-red-500" />;
       default:
@@ -157,7 +157,7 @@ const ClientDashboard = () => {
             {/* My Bookings Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
-                <FaCalendarAlt className="text-primary-600 text-xl" />
+                <FaCalendarAlt className="text-[#312E81] text-xl" />
                 <h2 className="text-xl font-bold text-gray-900">My Bookings</h2>
               </div>
               
@@ -178,7 +178,7 @@ const ClientDashboard = () => {
                   </p>
                   <button
                     onClick={handleBrowseCompanions}
-                    className="mt-6 px-6 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-500 text-white font-medium rounded-lg hover:from-primary-700 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                    className="mt-6 px-6 py-2.5 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white font-medium rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 shadow-md hover:shadow-lg"
                   >
                     Browse Companions
                   </button>
@@ -190,7 +190,7 @@ const ClientDashboard = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-white font-semibold">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#4A47A3] to-[#FFC7C7] flex items-center justify-center text-white font-semibold">
                               {booking.companion_name?.charAt(0) || 'C'}
                             </div>
                             <div>
@@ -243,7 +243,7 @@ const ClientDashboard = () => {
                             {booking.status === 'completed' && !booking.has_review && (
                               <button
                                 onClick={() => toast('Review feature coming soon', { icon: '⭐' })}
-                                className="text-xs px-3 py-1 border border-primary-300 text-primary-600 rounded hover:bg-primary-50 transition-colors"
+                                className="text-xs px-3 py-1 border border-[#312E81]/30 text-[#312E81] rounded hover:bg-[#312E81]/10 transition-colors"
                               >
                                 Leave Review
                               </button>
@@ -263,75 +263,114 @@ const ClientDashboard = () => {
               )}
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
-                {verificationStatus === 'approved' && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                    <FaCheckCircle />
-                    Verified
-                  </div>
-                )}
+            {/* Become a Companion */}
+            <div className="bg-gradient-to-br from-[#F5F4FB] to-[#FFF0F0] rounded-lg shadow-md border-2 border-[#312E81]/20 p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#312E81] to-[#FFCCCB] rounded-full flex items-center justify-center">
+                  <FaUserTie className="text-white text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">Want to Earn?</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Become a companion and start earning money by offering your time and company!
+                  </p>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={handleBrowseCompanions}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 group"
-                >
-                  <FaSearch className="text-2xl text-gray-400 group-hover:text-primary-600 transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">Browse Companions</h3>
-                    <p className="text-sm text-gray-500">Find your perfect match</p>
-                  </div>
-                </button>
 
-                <button
-                  onClick={() => navigate('/favorites')}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-secondary-500 hover:bg-secondary-50 transition-all duration-200 group"
-                >
-                  <FaHeart className="text-2xl text-gray-400 group-hover:text-secondary-600 transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">My Favorites</h3>
-                    <p className="text-sm text-gray-500">Saved companions</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => navigate(ROUTES.CLIENT_PROFILE)}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all duration-200 group"
-                >
-                  <FaUser className="text-2xl text-gray-400 group-hover:text-accent-600 transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">My Profile</h3>
-                    <p className="text-sm text-gray-500">Edit your information</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => toast('Payment methods feature coming soon!', { icon: '💳' })}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-all duration-200 group"
-                >
-                  <FaCreditCard className="text-2xl text-gray-400 group-hover:text-success-600 transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">Payment Methods</h3>
-                    <p className="text-sm text-gray-500">Manage payments</p>
-                  </div>
-                </button>
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FaMoneyBillWave className="text-success-600" />
+                  <span className="text-sm font-semibold text-gray-900">Earn up to $50/hour</span>
+                </div>
+                <ul className="space-y-1 text-xs text-gray-600 ml-6">
+                  <li>• Flexible schedule</li>
+                  <li>• Choose your clients</li>
+                  <li>• Safe and secure platform</li>
+                </ul>
               </div>
+
+              <button
+                onClick={() => navigate(ROUTES.COMPANION_APPLICATION)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white font-semibold rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                <FaUserTie />
+                Apply as Companion
+              </button>
+
+              <p className="text-xs text-[#1E1B4B] mt-3 text-center">
+                ✨ Join 500+ companions already earning
+              </p>
             </div>
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Quick Actions</h2>
+                {verificationStatus === 'approved' && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                    <FaCheckCircle className="text-xs" />
+                    <span className="text-xs">Verified</span>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <button
+                  onClick={handleBrowseCompanions}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#312E81] hover:bg-[#312E81]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
+                >
+                  <FaSearch className="text-xl text-gray-400 group-hover:text-[#312E81] transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">Browse Companions</h3>
+                    <p className="text-xs text-gray-500">Find your perfect match</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/favorites')}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#FFCCCB] hover:bg-[#FFCCCB]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
+                >
+                  <FaHeart className="text-xl text-gray-400 group-hover:text-[#FF9F9F] transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">My Favorites</h3>
+                    <p className="text-xs text-gray-500">Saved companions</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate(ROUTES.CLIENT_PROFILE)}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all duration-200 group"
+                >
+                  <FaUser className="text-xl text-gray-400 group-hover:text-accent-600 transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">My Profile</h3>
+                    <p className="text-xs text-gray-500">Edit your information</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => toast('Payment methods feature coming soon!', { icon: '💳' })}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-all duration-200 group"
+                >
+                  <FaCreditCard className="text-xl text-gray-400 group-hover:text-success-600 transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">Payment Methods</h3>
+                    <p className="text-xs text-gray-500">Manage payments</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* Identity Verification Box */}
             {verificationStatus !== 'approved' && (
               <div className={`rounded-lg shadow-md border-2 p-6 ${
                 verificationStatus === 'pending'
                   ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200'
                   : verificationStatus === 'rejected'
-                  ? 'bg-gradient-to-br from-red-50 to-pink-50 border-red-200'
-                  : 'bg-gradient-to-br from-primary-50 to-secondary-50 border-primary-200'
+                  ? 'bg-gradient-to-br from-red-50 to-blue-50 border-red-200'
+                  : 'bg-gradient-to-br from-[#F5F4FB] to-[#FFF0F0] border-[#312E81]/20'
               }`}>
                 {verificationStatus === 'pending' ? (
                   <>
@@ -359,7 +398,7 @@ const ClientDashboard = () => {
                     </p>
                     <button
                       onClick={handleVerifyIdentity}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-[#1E1B4B] text-white font-semibold rounded-lg hover:from-red-600 hover:to-[#1E1B4B] transition-all duration-200 shadow-md hover:shadow-lg"
                     >
                       <FaIdCard />
                       Resubmit Verification
@@ -368,7 +407,7 @@ const ClientDashboard = () => {
                 ) : (
                   <>
                     <div className="flex items-start gap-3 mb-4">
-                      <FaIdCard className="text-primary-600 text-2xl flex-shrink-0 mt-1" />
+                      <FaIdCard className="text-[#312E81] text-2xl flex-shrink-0 mt-1" />
                       <h3 className="text-lg font-bold text-gray-900">Verify Your Identity</h3>
                     </div>
                     <p className="text-gray-700 text-sm mb-5 leading-relaxed">
@@ -376,12 +415,12 @@ const ClientDashboard = () => {
                     </p>
                     <button
                       onClick={handleVerifyIdentity}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white font-semibold rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
                     >
                       <FaIdCard />
                       Verify Now
                     </button>
-                    <p className="text-xs text-primary-700 mt-3 text-center">
+                    <p className="text-xs text-[#1E1B4B] mt-3 text-center">
                       🔒 Your information is secure and encrypted
                     </p>
                   </>
@@ -399,7 +438,7 @@ const ClientDashboard = () => {
                 </div>
                 <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                   <span className="text-gray-600 text-sm">Upcoming</span>
-                  <span className="text-2xl font-bold text-primary-600">
+                  <span className="text-2xl font-bold text-[#312E81]">
                     {bookings.filter(b => ['pending', 'confirmed'].includes(b.status)).length}
                   </span>
                 </div>
@@ -410,45 +449,6 @@ const ClientDashboard = () => {
                   </span>
                 </div>
               </div>
-            </div>
-
-            {/* Become a Companion */}
-            <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg shadow-md border-2 border-primary-200 p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center">
-                  <FaUserTie className="text-white text-xl" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Want to Earn?</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    Become a companion and start earning money by offering your time and company!
-                  </p>
-                </div>
-              </div>
-              
-              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FaMoneyBillWave className="text-success-600" />
-                  <span className="text-sm font-semibold text-gray-900">Earn up to $50/hour</span>
-                </div>
-                <ul className="space-y-1 text-xs text-gray-600 ml-6">
-                  <li>• Flexible schedule</li>
-                  <li>• Choose your clients</li>
-                  <li>• Safe and secure platform</li>
-                </ul>
-              </div>
-
-              <button
-                onClick={() => navigate(ROUTES.COMPANION_APPLICATION)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-secondary-500 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-secondary-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-              >
-                <FaUserTie />
-                Apply as Companion
-              </button>
-              
-              <p className="text-xs text-primary-700 mt-3 text-center">
-                ✨ Join 500+ companions already earning
-              </p>
             </div>
 
           </div>

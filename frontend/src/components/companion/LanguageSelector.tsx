@@ -82,7 +82,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FaGlobe className="text-purple-600" />
+          <FaGlobe className="text-[#312E81]" />
           <span className="font-medium text-gray-700">Languages Spoken</span>
         </div>
         <span className="text-sm text-gray-500">
@@ -98,7 +98,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
               language === 'English'
                 ? 'bg-green-100 text-green-700'
-                : 'bg-purple-100 text-purple-700'
+                : 'bg-[#f0effe] text-[#1E1B4B]'
             }`}
           >
             <span>{language}</span>
@@ -125,7 +125,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search languages..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#a5a3e8]"
         />
       </div>
 
@@ -145,8 +145,8 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 isSelected
                   ? isEnglish
                     ? 'bg-green-100 text-green-700 border border-green-300 cursor-not-allowed'
-                    : 'bg-purple-100 text-purple-700 border border-purple-300'
-                  : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-purple-200'
+                    : 'bg-[#f0effe] text-[#1E1B4B] border border-[#a5a3e8]'
+                  : 'bg-gray-50 text-gray-700 border border-gray-200 hover:border-[#d5d3f7]'
               } ${
                 !isSelected && selectedLanguages.length >= maxSelections
                   ? 'opacity-50 cursor-not-allowed'
@@ -164,7 +164,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <button
           type="button"
           onClick={() => setShowAllLanguages(!showAllLanguages)}
-          className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+          className="text-sm text-[#312E81] hover:text-[#1E1B4B] font-medium"
         >
           {showAllLanguages ? 'Show Less' : `Show ${filteredLanguages.length - 10} More Languages`}
         </button>

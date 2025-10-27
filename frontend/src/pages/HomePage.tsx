@@ -45,9 +45,9 @@ const HomePage = React.memo(() => {
 
   // Memoized arrays to prevent re-creation on every render
   const trustMetrics = useMemo(() => [
-    { label: '100% Verified', color: 'text-purple-600' },
-    { label: '4.9 Rating', color: 'text-pink-600' },
-    { label: 'Instant Connect', color: 'text-indigo-600' }
+    { label: '100% Verified', color: 'text-[#312E81]' },
+    { label: '4.9 Rating', color: 'text-[#312E81]' },
+    { label: 'Instant Connect', color: 'text-[#312E81]' }
   ], []);
 
   const services = useMemo(() => [
@@ -55,84 +55,84 @@ const HomePage = React.memo(() => {
       icon: FaCoffee,
       title: 'Coffee Date',
       description: 'Enjoy meaningful conversations over your favorite brew',
-      color: 'from-purple-500 to-pink-500',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaUtensils,
       title: 'Dinner Date',
       description: 'Fine dining experiences with great company',
-      color: 'from-pink-500 to-rose-500',
+      color: 'from-[#FFCCCB] to-[#312E81]',
       popular: true
     },
     {
       icon: FaFilm,
       title: 'Movie Night',
       description: 'Cinema experiences and film discussions',
-      color: 'from-indigo-500 to-purple-500',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaShoppingBag,
       title: 'Shopping',
       description: 'Personal shopping assistance and style advice',
-      color: 'from-purple-500 to-indigo-500',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaTheaterMasks,
       title: 'Cultural Activities',
       description: 'Museums, galleries, and cultural events',
-      color: 'from-rose-500 to-pink-500',
+      color: 'from-[#FFCCCB] to-[#312E81]',
       popular: false
     },
     {
       icon: FaMusic,
       title: 'Concerts & Events',
       description: 'Live music and entertainment experiences',
-      color: 'from-pink-500 to-purple-500',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: true
     },
     {
       icon: FaMapMarkedAlt,
       title: 'Travel Companion',
       description: 'Explore new destinations together',
-      color: 'from-indigo-500 to-blue-500',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaMountain,
       title: 'Outdoor Activities',
       description: 'Hiking, sports, and adventure activities',
-      color: 'from-purple-600 to-indigo-600',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaDumbbell,
       title: 'Gym & Fitness',
       description: 'Stay motivated with a workout buddy',
-      color: 'from-pink-600 to-purple-600',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaBook,
       title: 'Study & Work',
       description: 'Productive co-working and study sessions',
-      color: 'from-blue-500 to-indigo-500',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaGamepad,
       title: 'Gaming',
       description: 'Gaming sessions and esports events',
-      color: 'from-purple-600 to-blue-600',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     },
     {
       icon: FaCamera,
       title: 'Photography',
       description: 'Capture memories with a creative companion',
-      color: 'from-indigo-600 to-purple-600',
+      color: 'from-[#312E81] to-[#1E1B4B]',
       popular: false
     }
   ], []);
@@ -143,21 +143,21 @@ const HomePage = React.memo(() => {
       title: 'Create Account',
       description: '30-second signup',
       icon: '👤',
-      color: 'from-purple-500 to-pink-500'
+      color: 'from-[#312E81] to-[#1E1B4B]'
     },
     {
       number: '2',
       title: 'Find Match',
       description: 'Browse profiles',
       icon: '🔍',
-      color: 'from-pink-500 to-rose-500'
+      color: 'from-[#FFCCCB] to-[#312E81]'
     },
     {
       number: '3',
       title: 'Start Adventure',
       description: 'Connect instantly',
       icon: '🚀',
-      color: 'from-rose-500 to-purple-500'
+      color: 'from-[#FFCCCB] to-[#312E81]'
     }
   ], []);
 
@@ -201,24 +201,24 @@ const HomePage = React.memo(() => {
         <section className="relative overflow-hidden">
         {/* OPTIMIZED: Soft gradient orbs for light background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-40 w-80 h-80 bg-pink-300 rounded-full opacity-30" />
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-rose-300 rounded-full opacity-30" />
-          <div className="absolute -bottom-40 left-1/2 w-80 h-80 bg-orange-200 rounded-full opacity-30" />
+          <div className="absolute -top-40 -left-40 w-80 h-80 bg-[#312E81] rounded-full opacity-20 blur-3xl" />
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#FFCCCB] rounded-full opacity-30 blur-3xl" />
+          <div className="absolute -bottom-40 left-1/2 w-80 h-80 bg-[#FFE5E5] rounded-full opacity-25 blur-3xl" />
         </div>
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 py-24 text-center">
           {/* Badge */}
-          <div className={`inline-flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm text-gray-800 rounded-full text-sm font-medium border border-pink-300 shadow-lg mb-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+          <div className={`inline-flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm text-gray-800 rounded-full text-sm font-medium border border-[#a5a3e8] shadow-lg mb-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-600"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#312E81] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#312E81]"></span>
             </span>
             5 people joined in the last hour
           </div>
 
           {/* Main Headline */}
           <h1 className={`text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 transition-all duration-1000 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            Meet <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">Amazing</span> People
+            Meet <span className="bg-gradient-to-r from-[#312E81] to-[#1E1B4B] bg-clip-text text-transparent">Amazing</span> People
           </h1>
 
           {/* Subheadline */}
@@ -232,7 +232,7 @@ const HomePage = React.memo(() => {
           <div className={`transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <button
               onClick={handleGetStarted}
-              className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-pink-600 to-purple-700 text-white font-bold text-lg rounded-full transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:shadow-purple-600/30 shadow-lg"
+              className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#312E81] to-[#1E1B4B] text-white font-bold text-lg rounded-full transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 shadow-[0_0_20px_rgba(255,204,203,0.3)] shadow-lg"
             >
               Start Free Today
               <FaArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -268,7 +268,7 @@ const HomePage = React.memo(() => {
               <span className="text-gray-500">•</span>
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <FaStar key={i} className="w-4 h-4 text-pink-500" />
+                  <FaStar key={i} className="w-4 h-4 text-[#312E81]" />
                 ))}
                 <span className="ml-2 font-medium">4.9/5 from 500+ reviews</span>
               </div>
@@ -283,7 +283,7 @@ const HomePage = React.memo(() => {
           {/* Section Header */}
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Discover Your Next <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">Adventure</span>
+              Discover Your Next <span className="bg-gradient-to-r from-[#312E81] to-[#1E1B4B] bg-clip-text text-transparent">Adventure</span>
             </h2>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto">
               From vibrant coffee dates to exciting concert nights, explore colorful experiences with amazing companions who share your passion for life.
@@ -297,11 +297,11 @@ const HomePage = React.memo(() => {
               return (
                 <div
                   key={index}
-                  className="relative group bg-white/80 backdrop-blur-md rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-pink-500/25 transition-all duration-300 hover:-translate-y-1 border border-pink-200"
+                  className="relative group bg-white/80 backdrop-blur-md rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:shadow-[#FFCCCB]/25 transition-all duration-300 hover:-translate-y-1 border border-[#d5d3f7]"
                 >
                   {/* Popular Badge */}
                   {service.popular && (
-                    <div className="absolute -top-3 -right-3 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-semibold rounded-full">
+                    <div className="absolute -top-3 -right-3 px-3 py-1 bg-gradient-to-r from-[#312E81] to-[#1E1B4B] text-white text-xs font-semibold rounded-full shadow-[0_0_15px_rgba(255,204,203,0.4)]">
                       Popular
                     </div>
                   )}
@@ -341,7 +341,7 @@ const HomePage = React.memo(() => {
           {/* Steps */}
           <div className="relative">
             {/* Progress Line - Desktop Only */}
-            <div className="hidden md:block absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-2xl h-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500" />
+            <div className="hidden md:block absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-2xl h-0.5 bg-gradient-to-r from-[#312E81] via-[#4A47A3] to-[#312E81]" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
               {steps.map((step, index) => (
@@ -349,7 +349,7 @@ const HomePage = React.memo(() => {
                   {/* Step Circle */}
                   <div className="relative inline-flex items-center justify-center w-32 h-32 mb-6">
                     <div className={`absolute inset-0 bg-gradient-to-r ${step.color} rounded-full opacity-30 animate-pulse`} />
-                    <div className="relative w-28 h-28 bg-white/80 backdrop-blur-md rounded-full shadow-xl flex items-center justify-center border-4 border-pink-200">
+                    <div className="relative w-28 h-28 bg-white/80 backdrop-blur-md rounded-full shadow-xl flex items-center justify-center border-4 border-[#d5d3f7]">
                       <span className="text-5xl">{step.icon}</span>
                     </div>
                     <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gradient-to-r ${step.color} text-white text-sm font-bold rounded-full`}>
@@ -380,13 +380,13 @@ const HomePage = React.memo(() => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={handleGetStarted}
-                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-full hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 shadow-lg"
+                className="px-8 py-4 btn-gradient-primary text-white font-bold text-lg rounded-full hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] transition-all duration-300 hover:-translate-y-0.5 shadow-[0_10px_25px_rgba(30,27,75,0.2)]"
               >
                 Join Free Now
               </button>
               <button
                 onClick={handleSignIn}
-                className="px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-800 font-semibold text-lg rounded-full border-2 border-pink-300 hover:bg-white hover:border-pink-400 transition-all duration-300 shadow-lg"
+                className="px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-800 font-semibold text-lg rounded-full border-2 border-[#a5a3e8] hover:bg-white hover:border-[#4A47A3] transition-all duration-300 shadow-lg"
               >
                 I Have an Account
               </button>
@@ -394,7 +394,7 @@ const HomePage = React.memo(() => {
 
             {/* Trust Badge */}
             <div className="mt-10 inline-flex items-center gap-3 text-sm text-gray-600">
-              <FaShieldAlt className="w-5 h-5 text-pink-500" />
+              <FaShieldAlt className="w-5 h-5 text-[#312E81]" />
               <span>SSL Secured • ID Verified • Safe Payments</span>
             </div>
           </div>

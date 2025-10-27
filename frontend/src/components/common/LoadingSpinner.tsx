@@ -17,8 +17,8 @@ const sizeClasses = {
 };
 
 const colorClasses = {
-  primary: 'border-primary-600',
-  secondary: 'border-secondary-600',
+  primary: 'border-[#312E81]',
+  secondary: 'border-[#FFCCCB]',
   accent: 'border-accent-600',
 };
 

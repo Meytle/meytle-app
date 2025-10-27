@@ -344,9 +344,9 @@ const CompanionApplication = () => {
   // Show loading state while checking for existing application
   if (isCheckingApplication) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#f9f8ff] to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#312E81] mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Checking application status...</p>
         </div>
       </div>
@@ -354,11 +354,11 @@ const CompanionApplication = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#f9f8ff] to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#312E81] to-[#312E81] bg-clip-text text-transparent mb-4">
             Companion Application
           </h1>
           <p className="text-gray-600">
@@ -377,7 +377,7 @@ const CompanionApplication = () => {
               </label>
               <div className="relative">
                 {profilePhotoPreview ? (
-                  <div className="relative w-full h-64 rounded-xl overflow-hidden border-2 border-purple-200">
+                  <div className="relative w-full h-64 rounded-xl overflow-hidden border-2 border-[#d5d3f7]">
                     <img 
                       src={profilePhotoPreview} 
                       alt="Profile preview" 
@@ -395,9 +395,9 @@ const CompanionApplication = () => {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-purple-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all duration-200">
+                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-[#a5a3e8] rounded-xl cursor-pointer hover:border-[#312E81] hover:bg-[#f9f8ff] transition-all duration-200">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <FaUpload className="w-12 h-12 text-purple-400 mb-4" />
+                      <FaUpload className="w-12 h-12 text-[#4A47A3] mb-4" />
                       <p className="text-lg font-semibold text-gray-700 mb-2">Upload Profile Photo</p>
                       <p className="text-sm text-gray-500">Upload a clear photo of yourself</p>
                       <p className="text-xs text-gray-400 mt-2">PNG, JPG up to 5MB</p>
@@ -420,7 +420,7 @@ const CompanionApplication = () => {
               </label>
               <div className="relative">
                 {idPreview ? (
-                  <div className="relative w-full h-64 rounded-xl overflow-hidden border-2 border-purple-200">
+                  <div className="relative w-full h-64 rounded-xl overflow-hidden border-2 border-[#d5d3f7]">
                     <img 
                       src={idPreview} 
                       alt="ID preview" 
@@ -438,9 +438,9 @@ const CompanionApplication = () => {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-purple-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all duration-200">
+                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-[#a5a3e8] rounded-xl cursor-pointer hover:border-[#312E81] hover:bg-[#f9f8ff] transition-all duration-200">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <FaCamera className="w-12 h-12 text-purple-400 mb-4" />
+                      <FaCamera className="w-12 h-12 text-[#4A47A3] mb-4" />
                       <p className="text-lg font-semibold text-gray-700 mb-2">Upload Legal ID</p>
                       <p className="text-sm text-gray-500">Upload driver's license, passport, or national ID</p>
                       <p className="text-xs text-gray-400 mt-2">PNG, JPG up to 5MB</p>
@@ -467,7 +467,7 @@ const CompanionApplication = () => {
                 value={formData.dateOfBirth}
                 onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                 max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all"
                 required
               />
               <p className="text-xs text-gray-500 mt-2">You must be at least 18 years old</p>
@@ -484,7 +484,7 @@ const CompanionApplication = () => {
                 placeholder="Enter your ID number"
                 value={formData.governmentIdNumber}
                 onChange={(e) => setFormData({ ...formData, governmentIdNumber: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all"
                 required
               />
             </div>
@@ -506,7 +506,7 @@ const CompanionApplication = () => {
             {/* Current Address Section */}
             <div>
               <div className="flex items-center mb-4">
-                <FaMapMarkerAlt className="text-purple-500 mr-2" />
+                <FaMapMarkerAlt className="text-[#312E81] mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">Current Address</h3>
               </div>
 
@@ -521,7 +521,7 @@ const CompanionApplication = () => {
                   placeholder="Street address, P.O. box, apartment, suite, etc."
                   value={formData.addressLine}
                   onChange={(e) => setFormData({ ...formData, addressLine: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all"
                   required
                 />
               </div>
@@ -538,7 +538,7 @@ const CompanionApplication = () => {
                     placeholder="Enter your city"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all"
                     required
                   />
                 </div>
@@ -554,7 +554,7 @@ const CompanionApplication = () => {
                     placeholder="Enter postal/zip code"
                     value={formData.postalCode}
                     onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all"
                     required
                   />
                 </div>
@@ -570,7 +570,7 @@ const CompanionApplication = () => {
                     id="country"
                     value={formData.country}
                     onChange={handleCountryChange}
-                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all bg-white"
+                    className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all bg-white"
                     required
                   >
                     <option value="">Select a country</option>
@@ -592,7 +592,7 @@ const CompanionApplication = () => {
                       id="state"
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all bg-white"
+                      className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all bg-white"
                       required
                       disabled={!formData.country}
                     >
@@ -610,7 +610,7 @@ const CompanionApplication = () => {
                       placeholder={formData.country ? "Enter state/province" : "Select country first"}
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all"
                       required
                       disabled={!formData.country}
                     />
@@ -630,7 +630,7 @@ const CompanionApplication = () => {
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                 rows={4}
-                className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all resize-none"
+                className="w-full px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all resize-none"
               />
               <p className="text-xs text-gray-500 mt-2">Tell potential clients about yourself</p>
             </div>
@@ -645,7 +645,7 @@ const CompanionApplication = () => {
                   selectedInterests={formData.interests}
                   onInterestsChange={(interests) => setFormData({ ...formData, interests })}
                   maxSelections={8}
-                  className="border-2 border-purple-200 rounded-xl p-4"
+                  className="border-2 border-[#d5d3f7] rounded-xl p-4"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-2">Select activities you enjoy to help clients find you</p>
@@ -690,7 +690,7 @@ const CompanionApplication = () => {
                   placeholder="50"
                   value={formData.hourlyRate}
                   onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
-                  className="w-32 px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all text-lg font-semibold"
+                  className="w-32 px-4 py-3 border-2 border-[#d5d3f7] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a5a3e8] focus:border-transparent transition-all text-lg font-semibold"
                   required
                 />
                 <span className="text-gray-600 ml-2">/hour</span>
@@ -706,7 +706,7 @@ const CompanionApplication = () => {
                   type="checkbox"
                   checked={formData.backgroundCheckConsent}
                   onChange={(e) => setFormData({ ...formData, backgroundCheckConsent: e.target.checked })}
-                  className="w-5 h-5 text-purple-600 border-2 border-gray-300 rounded focus:ring-purple-500 focus:ring-2 mt-0.5"
+                  className="w-5 h-5 text-[#312E81] border-2 border-gray-300 rounded focus:ring-[#312E81] focus:ring-2 mt-0.5"
                   required
                 />
                 <label htmlFor="backgroundCheck" className="ml-3 text-sm text-gray-700">
@@ -721,16 +721,16 @@ const CompanionApplication = () => {
                   type="checkbox"
                   checked={formData.termsAccepted}
                   onChange={(e) => setFormData({ ...formData, termsAccepted: e.target.checked })}
-                  className="w-5 h-5 text-purple-600 border-2 border-gray-300 rounded focus:ring-purple-500 focus:ring-2 mt-0.5"
+                  className="w-5 h-5 text-[#312E81] border-2 border-gray-300 rounded focus:ring-[#312E81] focus:ring-2 mt-0.5"
                   required
                 />
                 <label htmlFor="terms" className="ml-3 text-sm text-gray-700">
                   I accept the{' '}
-                  <a href="#" className="text-purple-600 hover:text-purple-700 font-semibold">
+                  <a href="#" className="text-[#312E81] hover:text-[#1E1B4B] font-semibold">
                     terms and conditions
                   </a>
                   {' '}and{' '}
-                  <a href="#" className="text-purple-600 hover:text-purple-700 font-semibold">
+                  <a href="#" className="text-[#312E81] hover:text-[#1E1B4B] font-semibold">
                     privacy policy
                   </a>{' '}
                   <span className="text-red-500">*</span>
@@ -743,7 +743,7 @@ const CompanionApplication = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || hasSubmittedSuccessfully}
-                className={`w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-8 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
+                className={`w-full bg-gradient-to-r from-[#312E81] to-[#312E81] text-white py-4 px-8 rounded-xl font-semibold text-lg hover:from-[#312E81] hover:to-[#312E81] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
                   isSubmitting || hasSubmittedSuccessfully ? 'opacity-75 cursor-not-allowed' : ''
                 }`}
               >
@@ -758,9 +758,9 @@ const CompanionApplication = () => {
         </div>
 
         {/* Info Note */}
-        <div className="mt-8 bg-purple-50 border border-purple-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-purple-900 mb-2">📋 What happens next?</h3>
-          <ul className="space-y-2 text-sm text-purple-800">
+        <div className="mt-8 bg-[#f9f8ff] border border-[#d5d3f7] rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-[#1E1B4B] mb-2">📋 What happens next?</h3>
+          <ul className="space-y-2 text-sm text-[#1E1B4B]">
             <li>• Our team will review your application within 24-48 hours</li>
             <li>• You'll receive an email notification once verified</li>
             <li>• All information is encrypted and kept confidential</li>

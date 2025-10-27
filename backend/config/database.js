@@ -1114,6 +1114,42 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Favorite companions table ready');
 
+    // Create notifications table
+    await promisePool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        type ENUM('booking', 'application', 'payment', 'account', 'system') NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        action_url VARCHAR(500),
+        is_read BOOLEAN DEFAULT FALSE,
+        read_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_unread (user_id, is_read),
+        INDEX idx_created (created_at DESC)
+      )
+    `);
+    console.log('✅ Notifications table ready');
+
+    // Create notification preferences table
+    await promisePool.query(`
+      CREATE TABLE IF NOT EXISTS notification_preferences (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL UNIQUE,
+        email_enabled BOOLEAN DEFAULT TRUE,
+        push_enabled BOOLEAN DEFAULT FALSE,
+        booking_notifications BOOLEAN DEFAULT TRUE,
+        payment_notifications BOOLEAN DEFAULT TRUE,
+        marketing_notifications BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    console.log('✅ Notification preferences table ready');
+
     // Drop and recreate audit log table to fix constraint issues
     try {
       await promisePool.query('DROP TABLE IF EXISTS availability_audit_log');

@@ -21,8 +21,8 @@ const Card: React.FC<CardProps> = ({
   const variantClasses = {
     default: 'bg-white border border-neutral-200',
     elevated: 'bg-white shadow-lg',
-    bordered: 'bg-white border-2 border-primary-200',
-    gradient: 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white',
+    bordered: 'bg-white border-2 border-[#e5e3ff]',
+    gradient: 'bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white shadow-[0_0_15px_rgba(255,204,203,0.3)]',
   };
 
   const paddingClasses = {

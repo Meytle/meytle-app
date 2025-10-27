@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaMapMarkerAlt, FaCalendarAlt, FaStar, FaEye, FaUserTie, FaExchangeAlt, FaShieldAlt, FaClock, FaCheckCircle, FaTimesCircle, FaExclamationTriangle } from 'react-icons/fa';
-import { API_CONFIG } from '../constants';
+import { API_CONFIG, ROUTES } from '../constants';
 import axios from 'axios';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import QuickBookingModal from '../components/booking/QuickBookingModal';
@@ -58,6 +58,21 @@ const BrowseCompanions = () => {
   const isCompanion = user?.activeRole === 'companion';
   const isClient = user?.activeRole === 'client';
   const hasClientRole = hasRole && hasRole('client');
+
+  // Get dashboard route based on user role
+  const getDashboardRoute = () => {
+    if (!user) return ROUTES.HOME;
+    switch (user.activeRole) {
+      case 'admin':
+        return ROUTES.ADMIN_DASHBOARD;
+      case 'companion':
+        return ROUTES.COMPANION_DASHBOARD;
+      case 'client':
+        return ROUTES.CLIENT_DASHBOARD;
+      default:
+        return '/dashboard'; // Will use the redirect route
+    }
+  };
 
   // Check client verification status on mount
   useEffect(() => {
@@ -265,7 +280,7 @@ const BrowseCompanions = () => {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={fetchCompanions}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            className="bg-[#312E81] text-white px-6 py-2 rounded-lg hover:bg-[#1E1B4B] transition-colors"
           >
             Try Again
           </button>
@@ -284,8 +299,8 @@ const BrowseCompanions = () => {
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
               {/* Icon */}
               <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-purple-100 to-violet-100 rounded-full mb-4">
-                  <FaShieldAlt className="text-purple-600 text-5xl" />
+                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-[#f0effe] to-[#f0effe] rounded-full mb-4">
+                  <FaShieldAlt className="text-[#312E81] text-5xl" />
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   Identity Verification Required
@@ -311,20 +326,20 @@ const BrowseCompanions = () => {
               </div>
 
               {/* Requirements */}
-              <div className="bg-purple-50 rounded-lg p-6 mb-6">
-                <h3 className="font-semibold text-purple-900 mb-3">What you'll need:</h3>
+              <div className="bg-[#f9f8ff] rounded-lg p-6 mb-6">
+                <h3 className="font-semibold text-[#1E1B4B] mb-3">What you'll need:</h3>
                 <ul className="space-y-2">
                   <li className="flex items-start gap-2">
-                    <FaCheckCircle className="text-purple-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-purple-700">Complete address information in your profile</span>
+                    <FaCheckCircle className="text-[#312E81] mt-0.5 flex-shrink-0" />
+                    <span className="text-[#1E1B4B]">Complete address information in your profile</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <FaCheckCircle className="text-purple-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-purple-700">Government-issued photo ID</span>
+                    <FaCheckCircle className="text-[#312E81] mt-0.5 flex-shrink-0" />
+                    <span className="text-[#1E1B4B]">Government-issued photo ID</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <FaCheckCircle className="text-purple-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-purple-700">Date of birth and ID number</span>
+                    <FaCheckCircle className="text-[#312E81] mt-0.5 flex-shrink-0" />
+                    <span className="text-[#1E1B4B]">Date of birth and ID number</span>
                   </li>
                 </ul>
               </div>
@@ -334,21 +349,21 @@ const BrowseCompanions = () => {
                 <h3 className="font-semibold text-gray-900 mb-3">Verification Process:</h3>
                 <ol className="space-y-3">
                   <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">1</span>
+                    <span className="flex-shrink-0 w-7 h-7 bg-[#312E81] text-white rounded-full flex items-center justify-center text-sm font-semibold">1</span>
                     <div>
                       <p className="font-medium text-gray-800">Complete Your Profile</p>
                       <p className="text-sm text-gray-600">Add your full address information</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">2</span>
+                    <span className="flex-shrink-0 w-7 h-7 bg-[#312E81] text-white rounded-full flex items-center justify-center text-sm font-semibold">2</span>
                     <div>
                       <p className="font-medium text-gray-800">Submit Verification</p>
                       <p className="text-sm text-gray-600">Upload your ID and personal details</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">3</span>
+                    <span className="flex-shrink-0 w-7 h-7 bg-[#312E81] text-white rounded-full flex items-center justify-center text-sm font-semibold">3</span>
                     <div>
                       <p className="font-medium text-gray-800">Admin Review</p>
                       <p className="text-sm text-gray-600">We'll review within 24 hours</p>
@@ -369,7 +384,7 @@ const BrowseCompanions = () => {
                 {!hasLocation ? (
                   <button
                     onClick={() => navigate('/client-profile')}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-violet-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-[#312E81] to-[#312E81] text-white font-semibold rounded-lg hover:from-[#1E1B4B] hover:to-[#1E1B4B] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   >
                     <FaMapMarkerAlt />
                     Complete Profile First
@@ -377,7 +392,7 @@ const BrowseCompanions = () => {
                 ) : (
                   <button
                     onClick={() => setShowVerificationModal(true)}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-violet-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-gradient-to-r from-[#312E81] to-[#312E81] text-white font-semibold rounded-lg hover:from-[#1E1B4B] hover:to-[#1E1B4B] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   >
                     <FaShieldAlt />
                     {verificationStatus === 'rejected' ? 'Resubmit Verification' : 'Start Verification'}
@@ -430,7 +445,7 @@ const BrowseCompanions = () => {
               </div>
               <button
                 onClick={() => navigate('/client-dashboard')}
-                className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                className="w-full px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] transition-colors font-medium"
               >
                 Back to Dashboard
               </button>
@@ -460,7 +475,7 @@ const BrowseCompanions = () => {
               <div className="space-y-3">
                 <button
                   onClick={() => setShowVerificationModal(true)}
-                  className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                  className="w-full px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] transition-colors font-medium"
                 >
                   Submit New Verification
                 </button>
@@ -485,7 +500,7 @@ const BrowseCompanions = () => {
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
               <div className="mb-6">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full">
-                  <FaMapMarkerAlt className="text-blue-600 text-4xl" />
+                  <FaMapMarkerAlt className="text-[#312E81] text-4xl" />
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-3">
@@ -496,7 +511,7 @@ const BrowseCompanions = () => {
               </p>
               <button
                 onClick={() => navigate('/client-profile')}
-                className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                className="w-full px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] transition-colors font-medium"
               >
                 Update Profile Location
               </button>
@@ -515,8 +530,8 @@ const BrowseCompanions = () => {
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
             {/* Icon */}
             <div className="mb-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-purple-100 rounded-full">
-                <FaUserTie className="text-purple-600 text-4xl" />
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-[#f0effe] rounded-full">
+                <FaUserTie className="text-[#312E81] text-4xl" />
               </div>
             </div>
 
@@ -537,7 +552,7 @@ const BrowseCompanions = () => {
                 <>
                   <button
                     onClick={handleSwitchToClient}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] transition-colors font-medium"
                   >
                     <FaExchangeAlt />
                     Switch to Client Mode
@@ -563,7 +578,7 @@ const BrowseCompanions = () => {
                       // Then redirect to signup page
                       navigate('/signup');
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] transition-colors font-medium"
                   >
                     <FaUser />
                     Create Client Account
@@ -587,18 +602,23 @@ const BrowseCompanions = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header - Always Visible */}
-      <div className="bg-gradient-to-br from-purple-50 via-white to-violet-50 border-b border-purple-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-4">
-              Your Perfect Connection Awaits
-            </h1>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Handpicked companions ready to share life's beautiful moments with you.
-              <span className="block mt-2 text-lg text-purple-600 font-medium">
-                Every meeting is a new story waiting to unfold
-              </span>
-            </p>
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Browse Companions</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Find your perfect companion for memorable experiences
+              </p>
+            </div>
+            {isAuthenticated && (
+              <button
+                onClick={() => navigate(getDashboardRoute())}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              >
+                ← Back to Dashboard
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -610,7 +630,7 @@ const BrowseCompanions = () => {
             {/* Interests Filter */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <span className="text-purple-600">💜</span> Filter by Interests
+                <span className="text-[#312E81]">💜</span> Filter by Interests
               </h3>
               <div className="flex flex-wrap gap-2">
                 {availableInterests.map((interest) => {
@@ -627,7 +647,7 @@ const BrowseCompanions = () => {
                       }}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         isSelected
-                          ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-md'
+                          ? 'bg-gradient-to-r from-[#312E81] to-[#312E81] text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -649,7 +669,7 @@ const BrowseCompanions = () => {
             {/* Services Filter */}
             <div>
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <span className="text-violet-600">✨</span> Filter by Services
+                <span className="text-[#312E81]">✨</span> Filter by Services
               </h3>
               <div className="flex flex-wrap gap-2">
                 {availableServices.map((service) => {
@@ -666,7 +686,7 @@ const BrowseCompanions = () => {
                       }}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         isSelected
-                          ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-md'
+                          ? 'bg-gradient-to-r from-[#312E81] to-[#312E81] text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -720,10 +740,10 @@ const BrowseCompanions = () => {
               return (
                 <div
                   key={companion.id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
                 >
                   {/* Profile Photo - Cleaner, smaller */}
-                  <div className="relative h-56 bg-gradient-to-br from-purple-100 to-violet-100">
+                  <div className="relative h-56 bg-gradient-to-br from-[#f0effe] to-[#f0effe]">
                     {companion.profile_photo_url ? (
                       <img
                         src={`${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profile_photo_url}`}
@@ -736,7 +756,7 @@ const BrowseCompanions = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`${companion.profile_photo_url ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-400 to-violet-400`}>
+                    <div className={`${companion.profile_photo_url ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#4A47A3] to-[#4A47A3]`}>
                       <FaUser className="text-white text-5xl opacity-80" />
                     </div>
 
@@ -762,9 +782,11 @@ const BrowseCompanions = () => {
                   </div>
 
                   {/* Profile Info - Simplified */}
-                  <div className="p-5">
-                    {/* Name and Age */}
-                    <div className="mb-3">
+                  <div className="p-5 flex flex-col flex-1">
+                    {/* Top section - Name, Age, Interests */}
+                    <div className="flex-grow">
+                      {/* Name and Age */}
+                      <div className="mb-3">
                       <h3 className="text-xl font-bold text-gray-900 capitalize">
                         {displayName}
                       </h3>
@@ -776,7 +798,7 @@ const BrowseCompanions = () => {
                           <>
                             <span className="text-gray-400">•</span>
                             <span className="text-sm text-gray-600 flex items-center gap-1">
-                              <FaMapMarkerAlt className="text-purple-500" size={12} />
+                              <FaMapMarkerAlt className="text-[#312E81]" size={12} />
                               {companion.location}
                             </span>
                           </>
@@ -791,7 +813,7 @@ const BrowseCompanions = () => {
                           {companion.interests.slice(0, 3).map((interest, index) => (
                             <span
                               key={index}
-                              className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full"
+                              className="px-2.5 py-1 bg-[#f0effe] text-[#1E1B4B] text-xs font-medium rounded-full"
                             >
                               {interest}
                             </span>
@@ -804,9 +826,10 @@ const BrowseCompanions = () => {
                         </div>
                       </div>
                     )}
+                    </div>
 
-                    {/* Action Buttons - Cleaner */}
-                    <div className="flex gap-2">
+                    {/* Action Buttons - Always at bottom */}
+                    <div className="flex gap-2 mt-auto">
                       {isAuthenticated && user?.id === companion.id ? (
                         <button
                           disabled
@@ -817,7 +840,7 @@ const BrowseCompanions = () => {
                       ) : (
                         <button
                           onClick={() => handleViewProfile(companion.id)}
-                          className="w-full bg-gradient-to-r from-purple-600 to-violet-600 text-white py-2.5 px-4 rounded-lg hover:from-purple-700 hover:to-violet-700 transition-all font-medium text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-[#312E81] to-[#312E81] text-white py-2.5 px-4 rounded-lg hover:from-[#1E1B4B] hover:to-[#1E1B4B] transition-all font-medium text-sm shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                         >
                           <FaEye className="text-lg" />
                           <span>View Profile</span>

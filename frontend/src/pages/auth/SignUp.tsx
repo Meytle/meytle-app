@@ -4,6 +4,7 @@ import { FaEye, FaEyeSlash, FaEnvelope, FaUser, FaLock, FaArrowLeft, FaCheck } f
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import FloatingProfileImages from '../../components/common/FloatingProfileImages';
+import ProfileImageCarousel from '../../components/auth/ProfileImageCarousel';
 
 const SignUp = () => {
   const [name, setName] = useState('');
@@ -97,53 +98,8 @@ const SignUp = () => {
       {/* Right Side - Sign Up Form (40%) */}
       <div className="w-full lg:w-2/5 flex items-center justify-center bg-white">
         <div className="w-full max-w-md px-8 py-12">
-          {/* Three stick figures holding hands above form */}
-          <div className="flex justify-center mb-6">
-            <svg viewBox="0 0 300 120" className="w-64 h-24">
-              {/* Person 1 */}
-              <g>
-                <circle cx="75" cy="35" r="12" fill="none" stroke="#2D3748" strokeWidth="2" />
-                <circle cx="72" cy="33" r="1.5" fill="#2D3748" />
-                <circle cx="78" cy="33" r="1.5" fill="#2D3748" />
-                <path d="M 70 38 Q 75 41, 80 38" fill="none" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="75" y1="47" x2="75" y2="70" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="75" y1="55" x2="60" y2="65" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="75" y1="55" x2="90" y2="60" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="75" y1="70" x2="68" y2="85" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="75" y1="70" x2="82" y2="85" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-              </g>
-
-              {/* Person 2 (center) */}
-              <g>
-                <circle cx="150" cy="35" r="12" fill="none" stroke="#2D3748" strokeWidth="2" />
-                <circle cx="147" cy="33" r="1.5" fill="#2D3748" />
-                <circle cx="153" cy="33" r="1.5" fill="#2D3748" />
-                <path d="M 145 38 Q 150 41, 155 38" fill="none" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="150" y1="47" x2="150" y2="70" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="150" y1="55" x2="120" y2="60" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="150" y1="55" x2="180" y2="60" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="150" y1="70" x2="143" y2="85" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="150" y1="70" x2="157" y2="85" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-              </g>
-
-              {/* Person 3 */}
-              <g>
-                <circle cx="225" cy="35" r="12" fill="none" stroke="#2D3748" strokeWidth="2" />
-                <circle cx="222" cy="33" r="1.5" fill="#2D3748" />
-                <circle cx="228" cy="33" r="1.5" fill="#2D3748" />
-                <path d="M 220 38 Q 225 41, 230 38" fill="none" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="225" y1="47" x2="225" y2="70" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="225" y1="55" x2="210" y2="60" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="225" y1="55" x2="240" y2="65" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="225" y1="70" x2="218" y2="85" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-                <line x1="225" y1="70" x2="232" y2="85" stroke="#2D3748" strokeWidth="2" strokeLinecap="round" />
-              </g>
-
-              {/* Holding hands lines */}
-              <line x1="90" y1="60" x2="120" y2="60" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" />
-              <line x1="180" y1="60" x2="210" y2="60" stroke="#2D3748" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" />
-            </svg>
-          </div>
+          {/* Profile images carousel above form */}
+          <ProfileImageCarousel variant="signup" />
 
           {/* Join us heading */}
           <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
@@ -166,8 +122,19 @@ const SignUp = () => {
                   <p className="text-sm text-gray-600 font-medium">I am:</p>
                   <div className="grid grid-cols-2 gap-3">
                     <motion.div
+                      animate={{
+                        scale: selectedRole === 'client' ? 1.08 : selectedRole === 'companion' ? 0.92 : 1
+                      }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      transition={{
+                        duration: 0.2,
+                        ease: "easeOut"
+                      }}
+                      style={{
+                        willChange: 'transform',
+                        transform: 'translateZ(0)'
+                      }}
                       onClick={() => setSelectedRole('client')}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         selectedRole === 'client'
@@ -183,8 +150,19 @@ const SignUp = () => {
                     </motion.div>
 
                     <motion.div
+                      animate={{
+                        scale: selectedRole === 'companion' ? 1.08 : selectedRole === 'client' ? 0.92 : 1
+                      }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      transition={{
+                        duration: 0.2,
+                        ease: "easeOut"
+                      }}
+                      style={{
+                        willChange: 'transform',
+                        transform: 'translateZ(0)'
+                      }}
                       onClick={() => setSelectedRole('companion')}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         selectedRole === 'companion'
@@ -265,6 +243,7 @@ const SignUp = () => {
                       type="button"
                       className="absolute inset-y-0 right-0 pr-4 flex items-center"
                       onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
                     >
                       {showPassword ? (
                         <FaEyeSlash className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />

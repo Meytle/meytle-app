@@ -235,7 +235,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
                   currentStep >= step.number
-                    ? 'bg-primary-600 text-white'
+                    ? 'bg-[#312E81] text-white'
                     : 'bg-gray-200 text-gray-500'
                 }`}
               >
@@ -246,7 +246,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                 )}
               </div>
               <span className={`text-xs mt-1 ${
-                currentStep >= step.number ? 'text-primary-600' : 'text-gray-500'
+                currentStep >= step.number ? 'text-[#312E81]' : 'text-gray-500'
               }`}>
                 {step.title}
               </span>
@@ -254,7 +254,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
             {index < steps.length - 1 && (
               <div
                 className={`flex-1 h-0.5 mx-2 transition-colors ${
-                  currentStep > step.number ? 'bg-primary-600' : 'bg-gray-200'
+                  currentStep > step.number ? 'bg-[#312E81]' : 'bg-gray-200'
                 }`}
               />
             )}
@@ -290,7 +290,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
           >
             <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-primary-600 to-secondary-500 px-6 py-4">
+              <div className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-white">
                     Book {companionName}
@@ -327,13 +327,13 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                       className="space-y-4"
                     >
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <FaServicestack className="text-primary-600" />
+                        <FaServicestack className="text-[#312E81]" />
                         Select Service
                       </h3>
 
                       {isLoadingServices ? (
                         <div className="flex items-center justify-center py-8">
-                          <FaSpinner className="w-6 h-6 text-primary-600 animate-spin" />
+                          <FaSpinner className="w-6 h-6 text-[#312E81] animate-spin" />
                         </div>
                       ) : (
                         <>
@@ -350,7 +350,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                                       selectedService: e.target.value
                                     }));
                                   }}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                                 >
                                   <option value="">-- Please Select a Service --</option>
                                   {availableServices.length > 0 ? (
@@ -390,7 +390,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                       className="space-y-4"
                     >
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <FaMapMarkerAlt className="text-primary-600" />
+                        <FaMapMarkerAlt className="text-[#312E81]" />
                         Meeting Location
                       </h3>
 
@@ -418,7 +418,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                           value={bookingData.specialRequests}
                           onChange={(e) => setBookingData(prev => ({ ...prev, specialRequests: e.target.value }))}
                           placeholder="Any special requests or preferences..."
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                           rows={3}
                         />
                       </div>
@@ -435,7 +435,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                       className="space-y-6"
                     >
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <FaCheckCircle className="text-primary-600" />
+                        <FaCheckCircle className="text-[#312E81]" />
                         Review & Confirm
                       </h3>
 
@@ -506,7 +506,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                                 </div>
                                 <div className="flex justify-between pt-2 border-t text-base font-bold">
                                   <span>Total</span>
-                                  <span className="text-primary-600">${total.toFixed(2)}</span>
+                                  <span className="text-[#312E81]">${total.toFixed(2)}</span>
                                 </div>
                               </div>
                             </div>
@@ -539,7 +539,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                 {currentStep < totalSteps ? (
                   <button
                     onClick={handleNext}
-                    className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+                    className="px-6 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all flex items-center gap-2"
                   >
                     Next
                     <FaArrowRight />
@@ -548,7 +548,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="px-6 py-2 bg-gradient-to-r from-primary-600 to-secondary-500 text-white rounded-lg hover:from-primary-700 hover:to-secondary-600 flex items-center gap-2 disabled:opacity-50"
+                    className="px-6 py-2 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white rounded-lg hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>

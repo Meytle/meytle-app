@@ -350,7 +350,7 @@ const AdminDashboard = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#312E81] mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading admin dashboard...</p>
         </div>
       </div>
@@ -362,7 +362,7 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <div className="flex">
         <aside className="w-64 bg-white border-r border-gray-200 min-h-screen p-4">
-          <div className="flex items-center gap-3 mb-8 p-3 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg">
+          <div className="flex items-center gap-3 mb-8 p-3 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] rounded-lg shadow-[0_0_15px_rgba(255,204,203,0.3)]">
             <FaUserShield className="text-white text-2xl" />
             <h2 className="text-xl font-bold text-white">Admin Panel</h2>
           </div>
@@ -372,7 +372,7 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === 'dashboard'
-                  ? 'bg-primary-100 text-primary-600 font-medium'
+                  ? 'bg-[#f0effe] text-[#312E81] font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -384,7 +384,7 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('applications')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === 'applications'
-                  ? 'bg-primary-100 text-primary-600 font-medium'
+                  ? 'bg-[#f0effe] text-[#312E81] font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -401,7 +401,7 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('clientVerifications')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === 'clientVerifications'
-                  ? 'bg-primary-100 text-primary-600 font-medium'
+                  ? 'bg-[#f0effe] text-[#312E81] font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -418,7 +418,7 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('users')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === 'users'
-                  ? 'bg-primary-100 text-primary-600 font-medium'
+                  ? 'bg-[#f0effe] text-[#312E81] font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -430,7 +430,7 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('earnings')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === 'earnings'
-                  ? 'bg-primary-100 text-primary-600 font-medium'
+                  ? 'bg-[#f0effe] text-[#312E81] font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -442,7 +442,7 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('categories')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 activeTab === 'categories'
-                  ? 'bg-primary-100 text-primary-600 font-medium'
+                  ? 'bg-[#f0effe] text-[#312E81] font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
@@ -465,7 +465,7 @@ const AdminDashboard = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-600 font-medium">Total Users</h3>
-                    <FaUsers className="text-primary-500 text-2xl" />
+                    <FaUsers className="text-[#312E81] text-2xl" />
                   </div>
                   <p className="text-3xl font-bold text-gray-900 mb-2">{stats.users.total}</p>
                   <p className="text-sm text-gray-500">{stats.users.clients} clients, {stats.users.companions} companions</p>
@@ -474,7 +474,7 @@ const AdminDashboard = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-600 font-medium">Pending Applications</h3>
-                    <FaFileAlt className="text-primary-500 text-2xl" />
+                    <FaFileAlt className="text-[#312E81] text-2xl" />
                   </div>
                   <p className="text-3xl font-bold text-gray-900 mb-2">{stats.pendingApplications}</p>
                   <p className="text-sm text-gray-500">Requires review</p>
@@ -492,7 +492,7 @@ const AdminDashboard = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-600 font-medium">Total Earnings</h3>
-                    <FaDollarSign className="text-primary-500 text-2xl" />
+                    <FaDollarSign className="text-[#312E81] text-2xl" />
                   </div>
                   <p className="text-3xl font-bold text-gray-900 mb-2">${stats.earnings.total.toFixed(2)}</p>
                   <p className="text-sm text-gray-500">Platform commission</p>
@@ -501,7 +501,7 @@ const AdminDashboard = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-gray-600 font-medium">Total Bookings</h3>
-                    <FaCalendarCheck className="text-primary-500 text-2xl" />
+                    <FaCalendarCheck className="text-[#312E81] text-2xl" />
                   </div>
                   <p className="text-3xl font-bold text-gray-900 mb-2">{stats.bookings.total}</p>
                   <p className="text-sm text-gray-500">{stats.bookings.avgRating} avg rating</p>
@@ -515,7 +515,7 @@ const AdminDashboard = () => {
                   <p className="text-gray-600 mb-4">{applications.length} applications waiting for review</p>
                   <button
                     onClick={() => setActiveTab('applications')}
-                    className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-4 rounded-lg font-medium hover:from-primary-600 hover:to-secondary-600 transition-all"
+                    className="w-full bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-2 px-4 rounded-lg font-medium hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all"
                   >
                     Review Applications
                   </button>
@@ -658,7 +658,7 @@ const AdminDashboard = () => {
                         <textarea
                           value={rejectionReason}
                           onChange={(e) => setRejectionReason(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                           rows={3}
                           placeholder="Enter reason for rejection..."
                         />
@@ -830,7 +830,7 @@ const AdminDashboard = () => {
                                     };
                                   }
                                 }}
-                                className="text-primary-600 hover:text-primary-900"
+                                className="text-[#312E81] hover:text-[#1E1B4B]"
                               >
                                 <FaEye />
                               </button>
@@ -889,8 +889,8 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.activeRole === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            user.activeRole === 'companion' ? 'bg-pink-100 text-pink-800' :
+                            user.activeRole === 'admin' ? 'bg-[#f0effe] text-[#312E81]' :
+                            user.activeRole === 'companion' ? 'bg-blue-100 text-blue-800' :
                             'bg-blue-100 text-blue-800'
                           }`}>
                             {user.activeRole}
@@ -937,7 +937,7 @@ const AdminDashboard = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Service Categories</h1>
                 <button
                   onClick={openCreateModal}
-                  className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-6 rounded-lg font-medium hover:from-primary-600 hover:to-secondary-600 transition-all flex items-center gap-2"
+                  className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-2 px-6 rounded-lg font-medium hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all flex items-center gap-2"
                 >
                   <FaPlus /> Create New Category
                 </button>
@@ -950,7 +950,7 @@ const AdminDashboard = () => {
                   <p className="text-gray-600 mb-4">Create your first service category to get started</p>
                   <button
                     onClick={openCreateModal}
-                    className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-2 px-6 rounded-lg font-medium hover:from-primary-600 hover:to-secondary-600 transition-all inline-flex items-center gap-2"
+                    className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-2 px-6 rounded-lg font-medium hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all inline-flex items-center gap-2"
                   >
                     <FaPlus /> Create Category
                   </button>
@@ -1040,7 +1040,7 @@ const AdminDashboard = () => {
                       type="text"
                       value={categoryFormData.name}
                       onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                       placeholder="e.g., Dinner Date"
                       required
                     />
@@ -1053,7 +1053,7 @@ const AdminDashboard = () => {
                     <textarea
                       value={categoryFormData.description}
                       onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                       rows={3}
                       placeholder="Enter a description for this category..."
                     />
@@ -1067,7 +1067,7 @@ const AdminDashboard = () => {
                       type="number"
                       value={categoryFormData.base_price}
                       onChange={(e) => setCategoryFormData({ ...categoryFormData, base_price: parseFloat(e.target.value) || 0 })}
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                       min="0"
                       step="0.01"
                       placeholder="35.00"
@@ -1085,7 +1085,7 @@ const AdminDashboard = () => {
                     </button>
                     <button
                       onClick={selectedCategory ? handleUpdateCategory : handleCreateCategory}
-                      className="flex-1 bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-3 px-4 rounded-lg font-medium hover:from-primary-600 hover:to-secondary-600 transition-colors"
+                      className="flex-1 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-3 px-4 rounded-lg font-medium hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-colors"
                     >
                       {selectedCategory ? 'Update' : 'Create'}
                     </button>

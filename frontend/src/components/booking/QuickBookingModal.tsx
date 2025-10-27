@@ -59,7 +59,7 @@ const QuickBookingModal = ({ companion, isOpen, onClose, onBookingCreated }: Qui
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#312E81] to-[#FFCCCB] flex items-center justify-center">
                   {companion.imageUrl ? (
                     <img 
                       src={companion.imageUrl} 
@@ -99,7 +99,7 @@ const QuickBookingModal = ({ companion, isOpen, onClose, onBookingCreated }: Qui
                 </p>
                 <button
                   onClick={handleClose}
-                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  className="px-6 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all"
                 >
                   Close
                 </button>

@@ -245,7 +245,7 @@ const CalendarPro = ({
   return (
     <div className={`bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
+      <div className="bg-gradient-to-r from-[#312E81] to-[#312E81] text-white p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <FaCalendarAlt className="w-6 h-6" />
@@ -289,7 +289,7 @@ const CalendarPro = ({
           <button
             onClick={() => setViewMode('month')}
             className={`px-4 py-2 rounded-lg transition-colors ${
-              viewMode === 'month' ? 'bg-white text-purple-600' : 'bg-white/20 text-white hover:bg-white/30'
+              viewMode === 'month' ? 'bg-white text-[#312E81]' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
             Month View
@@ -297,7 +297,7 @@ const CalendarPro = ({
           <button
             onClick={() => setViewMode('week')}
             className={`px-4 py-2 rounded-lg transition-colors ${
-              viewMode === 'week' ? 'bg-white text-purple-600' : 'bg-white/20 text-white hover:bg-white/30'
+              viewMode === 'week' ? 'bg-white text-[#312E81]' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
             Week View
@@ -335,11 +335,11 @@ const CalendarPro = ({
                   border-2 hover:shadow-lg hover:scale-105
                   ${statusColor}
                   ${dateObj.isSelected ?
-                    'ring-4 ring-purple-400 border-purple-600 bg-purple-100 font-bold' :
+                    'ring-4 ring-[#4A47A3] border-[#312E81] bg-[#f0effe] font-bold' :
                     'border-transparent'
                   }
                   ${!dateObj.isCurrentMonth ? 'opacity-40' : ''}
-                  ${dateObj.isToday ? 'ring-2 ring-blue-400' : ''}
+                  ${dateObj.isToday ? 'ring-2 ring-[#4A47A3]' : ''}
                 `}
                 title={tooltip || undefined}
               >
@@ -354,14 +354,14 @@ const CalendarPro = ({
 
                 {/* Slots count badge */}
                 {dateObj.availability && dateObj.availability.availableSlots > 0 && !dateObj.isPast && (
-                  <div className="absolute top-1 right-1 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  <div className="absolute top-1 right-1 bg-[#312E81] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                     {dateObj.availability.availableSlots}
                   </div>
                 )}
 
                 {/* Today indicator */}
                 {dateObj.isToday && (
-                  <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                  <div className="absolute top-1 left-1 bg-[#312E81] text-white text-xs px-2 py-0.5 rounded-full">
                     Today
                   </div>
                 )}
@@ -402,13 +402,13 @@ const CalendarPro = ({
       {/* Hover Preview */}
       {hoveredDate && availabilityData[formatDateForAPI(hoveredDate)] && (
         <div className="px-6 pb-6">
-          <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+          <div className="bg-[#f9f8ff] rounded-xl p-4 border border-[#d5d3f7]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-semibold text-purple-900">
+                <div className="font-semibold text-[#1E1B4B]">
                   {hoveredDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </div>
-                <div className="text-sm text-purple-700 mt-1">
+                <div className="text-sm text-[#1E1B4B] mt-1">
                   {availabilityData[formatDateForAPI(hoveredDate)].slots.length > 0 ? (
                     <>
                       Available times:
@@ -424,7 +424,7 @@ const CalendarPro = ({
                   )}
                 </div>
               </div>
-              <FaClock className="w-6 h-6 text-purple-600" />
+              <FaClock className="w-6 h-6 text-[#312E81]" />
             </div>
           </div>
         </div>
@@ -434,7 +434,7 @@ const CalendarPro = ({
       {isLoadingAvailability && (
         <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#312E81]"></div>
             <span className="text-sm text-gray-600">Loading availability...</span>
           </div>
         </div>

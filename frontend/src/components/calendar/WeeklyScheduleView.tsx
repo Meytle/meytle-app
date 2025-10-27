@@ -127,9 +127,9 @@ const WeeklyScheduleView = ({
   if (compact) {
     // Compact view for embedding in other components
     return (
-      <div className={`bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 ${className}`}>
+      <div className={`bg-gradient-to-br from-[#f9f8ff] to-blue-50 rounded-xl p-4 ${className}`}>
         <div className="flex items-center gap-2 mb-3">
-          <FaCalendarAlt className="w-5 h-5 text-purple-600" />
+          <FaCalendarAlt className="w-5 h-5 text-[#312E81]" />
           <h3 className="font-semibold text-gray-900">Weekly Schedule</h3>
           {availability.summary.daysAvailable > 0 && (
             <span className="ml-auto text-sm text-green-600 font-medium">
@@ -167,20 +167,20 @@ const WeeklyScheduleView = ({
   return (
     <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
+      <div className="bg-gradient-to-r from-[#312E81] to-[#312E81] text-white p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <FaCalendarAlt className="w-6 h-6" />
               Weekly Availability
             </h2>
-            <p className="text-purple-100 mt-1">
+            <p className="text-[#f0effe] mt-1">
               Regular schedule across the week
             </p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold">{availability.summary.daysAvailable}</div>
-            <div className="text-purple-100 text-sm">Days Available</div>
+            <div className="text-[#f0effe] text-sm">Days Available</div>
           </div>
         </div>
       </div>
@@ -188,7 +188,7 @@ const WeeklyScheduleView = ({
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 border-b">
         <div className="text-center">
-          <div className="text-2xl font-bold text-purple-600">{availability.summary.totalSlotsPerWeek}</div>
+          <div className="text-2xl font-bold text-[#312E81]">{availability.summary.totalSlotsPerWeek}</div>
           <div className="text-xs text-gray-600">Total Slots/Week</div>
         </div>
         <div className="text-center">
@@ -196,7 +196,7 @@ const WeeklyScheduleView = ({
           <div className="text-xs text-gray-600">Days Available</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">
+          <div className="text-2xl font-bold text-[#312E81]">
             {availability.summary.totalSlotsPerWeek > 0
               ? Math.round(availability.summary.totalSlotsPerWeek / Math.max(1, availability.summary.daysAvailable))
               : 0}
@@ -242,7 +242,7 @@ const WeeklyScheduleView = ({
                     <div className="ml-13 space-y-2">
                       {daySlots.map((slot, index) => (
                         <div key={index} className="flex items-start gap-3">
-                          <FaClock className="w-4 h-4 text-purple-500 mt-1" />
+                          <FaClock className="w-4 h-4 text-[#312E81] mt-1" />
                           <div className="flex-1">
                             <div className="font-medium text-gray-800">
                               {formatTimeRange(slot.startTime, slot.endTime)}
@@ -252,7 +252,7 @@ const WeeklyScheduleView = ({
                                 {slot.services.map((service, idx) => (
                                   <span
                                     key={idx}
-                                    className="inline-block px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded"
+                                    className="inline-block px-2 py-1 text-xs bg-[#f0effe] text-[#1E1B4B] rounded"
                                   >
                                     {service}
                                   </span>

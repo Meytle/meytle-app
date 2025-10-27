@@ -121,7 +121,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
             placeholder={placeholder}
             disabled={disabled}
             onBlur={handleBlur}
-            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent ${
               error ? 'border-red-500' : 'border-gray-300'
             } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           />
@@ -152,7 +152,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
             className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg bg-gray-50"
           />
           <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <FaSpinner className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-500 w-4 h-4 animate-spin" />
+          <FaSpinner className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#312E81] w-4 h-4 animate-spin" />
         </div>
       </div>
     );
@@ -179,7 +179,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
             placeholder={placeholder}
             disabled={disabled}
             onBlur={handleBlur}
-            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+            className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent ${
               error ? 'border-red-500' : 'border-gray-300'
             } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           />
@@ -214,7 +214,7 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
             onBlur={handleBlur}
             placeholder={placeholder}
             disabled={disabled}
-            className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+            className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent ${
               error ? 'border-red-500' : isValidAddress ? 'border-green-500' : 'border-gray-300'
             } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
           />

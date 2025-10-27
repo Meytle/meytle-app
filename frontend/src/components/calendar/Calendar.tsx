@@ -122,7 +122,7 @@ const Calendar = ({
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => navigateMonth('prev')}
-          className="p-2 hover:bg-primary-50 rounded-lg transition-colors text-primary-600 hover:text-primary-700"
+          className="p-2 hover:bg-primary-50 rounded-lg transition-colors text-[#312E81] hover:text-[#1E1B4B]"
           disabled={minDate && (() => {
             // Normalize dates for comparison by setting to first day of month with time zeroed
             const currentMonthNormalized = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -139,7 +139,7 @@ const Calendar = ({
         
         <button
           onClick={() => navigateMonth('next')}
-          className="p-2 hover:bg-primary-50 rounded-lg transition-colors text-primary-600 hover:text-primary-700"
+          className="p-2 hover:bg-primary-50 rounded-lg transition-colors text-[#312E81] hover:text-[#1E1B4B]"
           disabled={maxDate && (() => {
             // Normalize dates for comparison by setting to first day of month with time zeroed
             const currentMonthNormalized = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -180,8 +180,8 @@ const Calendar = ({
                   ? 'text-neutral-300 cursor-not-allowed bg-neutral-50' 
                   : 'hover:bg-primary-50 cursor-pointer hover:scale-105'
                 }
-                ${isSelected 
-                  ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white hover:from-primary-600 hover:to-secondary-600 shadow-lg' 
+                ${isSelected
+                  ? 'bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white shadow-lg shadow-[0_0_15px_rgba(255,204,203,0.3)]'
                   : ''
                 }
                 ${!isCurrentMonthDay ? 'text-neutral-400' : 'text-neutral-900'}
@@ -191,14 +191,14 @@ const Calendar = ({
               {date.getDate()}
               {/* Booking count badge */}
               {getBookingCount(date) > 0 && !isDisabled && (
-                <div className="absolute top-1 right-1 w-4 h-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
+                <div className="absolute top-1 right-1 w-4 h-4 bg-[#312E81] text-white text-xs rounded-full flex items-center justify-center">
                   {getBookingCount(date)}
                 </div>
               )}
               {/* Visual indicators */}
               {!isDisabled && !isSelected && (
                 <div className={`absolute bottom-1 w-1 h-1 rounded-full opacity-60 ${
-                  isPartial ? 'bg-warning-400' : 'bg-primary-400'
+                  isPartial ? 'bg-warning-400' : 'bg-[#4A47A3]'
                 }`}></div>
               )}
             </button>
@@ -210,7 +210,7 @@ const Calendar = ({
       <div className="mt-6 pt-4 border-t border-neutral-200">
         <div className="flex items-center justify-center gap-4 text-xs text-neutral-600 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+            <div className="w-2 h-2 rounded-full bg-[#4A47A3]"></div>
             <span>Available</span>
           </div>
           <div className="flex items-center gap-2">
@@ -226,7 +226,7 @@ const Calendar = ({
             <span>Unavailable</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">1</div>
+            <div className="w-4 h-4 bg-[#312E81] text-white text-xs rounded-full flex items-center justify-center">1</div>
             <span>Numbers indicate booking count</span>
           </div>
         </div>
