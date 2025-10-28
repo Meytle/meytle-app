@@ -62,7 +62,7 @@ const Button: React.FC<ButtonProps> = ({
         </svg>
       )}
       {!loading && iconPosition === 'left' && iconElement}
-      {children}
+      <span className="relative z-10">{children}</span>
       {!loading && iconPosition === 'right' && iconElement}
     </button>
   );

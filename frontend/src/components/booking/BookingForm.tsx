@@ -16,6 +16,7 @@ import { serviceCategoryApi } from '../../api/serviceCategory';
 import { BOOKING_CONSTANTS, BOOKING_STEPS, ROUTES, MEETING_TYPES } from '../../constants';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
+import AutoResizeTextarea from '../common/AutoResizeTextarea';
 import type { BookingFormData, TimeSlot, BookingDateInfo, ServiceCategory, MeetingType } from '../../types';
 
 // Payment component removed - will be implemented later
@@ -60,7 +61,7 @@ const BookingForm = ({
   
   // New state for booking data
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [monthBookings, setMonthBookings] = useState<Array<{ id: number; booking_date: string; start_time: string; end_time: string; status: string }>>([]);
+  const [monthBookings, setMonthBookings] = useState<Array<{ id: number; bookingDate: string; startTime: string; endTime: string; status: string }>>([]);
   const [bookingsByDate, setBookingsByDate] = useState<Record<string, BookingDateInfo>>({});
   const [isLoadingBookings, setIsLoadingBookings] = useState(false);
   
@@ -127,14 +128,14 @@ const BookingForm = ({
   };
 
   // Process bookings into date-based structure
-  const processBookingData = async (bookings: Array<{ id: number; booking_date: string; start_time: string; end_time: string; status: string }>) => {
+  const processBookingData = async (bookings: Array<{ id: number; bookingDate: string; startTime: string; endTime: string; status: string }>) => {
     if (!isMounted.current) return;
-    
+
     const bookingsByDateMap: Record<string, BookingDateInfo> = {};
     
     // Group bookings by date
     bookings.forEach(booking => {
-      const dateStr = booking.booking_date;
+      const dateStr = booking.bookingDate;
       if (!bookingsByDateMap[dateStr]) {
         bookingsByDateMap[dateStr] = {
           date: dateStr,
@@ -144,7 +145,7 @@ const BookingForm = ({
           isPartiallyBooked: false
         };
       }
-      
+
       bookingsByDateMap[dateStr].bookings.push(booking);
       bookingsByDateMap[dateStr].bookingCount++;
     });
@@ -334,7 +335,7 @@ const BookingForm = ({
     }
     if (currentStep === 3) {
       // When moving from step 3, trigger booking creation
-      handleSubmit(new Event('submit') as any);
+      handleSubmit({preventDefault: () => {}} as React.FormEvent<HTMLFormElement>);
       return;
     }
     if (currentStep < BOOKING_STEPS.TOTAL_STEPS) {
@@ -365,7 +366,7 @@ const BookingForm = ({
 
     const duration = calculateDuration(selectedTimeSlot.startTime, selectedTimeSlot.endTime);
     // Use fixed rate of 35 for custom services, otherwise use category price
-    const hourlyRate = isCustomService ? 35 : (selectedCategory?.base_price || 35);
+    const hourlyRate = isCustomService ? 35 : (selectedCategory?.basePrice || 35);
     // Align rounding with backend: round each component to 2 decimals
     const rawSubtotal = duration * hourlyRate;
     const subtotal = Math.round(rawSubtotal * 100) / 100;
@@ -475,10 +476,10 @@ const BookingForm = ({
     .reduce((acc, [dateStr, info]) => ({ ...acc, [dateStr]: info.bookingCount }), {} as Record<string, number>);
 
   // Compute unavailableSlots for TimeSlotPicker
-  const unavailableSlots: TimeSlot[] = selectedDate 
-    ? (bookingsByDate[localDateKey(selectedDate)]?.bookings.map(b => ({ 
-        startTime: b.start_time, 
-        endTime: b.end_time 
+  const unavailableSlots: TimeSlot[] = selectedDate
+    ? (bookingsByDate[localDateKey(selectedDate)]?.bookings.map(b => ({
+        startTime: b.startTime,
+        endTime: b.endTime
       })) || [])
     : [];
 
@@ -544,7 +545,7 @@ const BookingForm = ({
                     onSlotSelect={handleTimeSlotSelect}
                     isLoading={isLoadingSlots}
                     basePrice={35}
-                    categoryPrice={selectedCategory?.base_price}
+                    categoryPrice={selectedCategory?.basePrice}
                   />
                 </div>
               )}
@@ -567,46 +568,91 @@ const BookingForm = ({
                   </div>
                 ) : (
                   <>
-                    <select
-                      value={isCustomService ? 'custom' : (selectedCategory?.id || '')}
-                      onChange={(e) => {
-                        if (e.target.value === 'custom') {
-                          setIsCustomService(true);
-                          setSelectedCategory(null);
-                          setCustomServiceName('');
-                          setCustomServiceDescription('');
-                        } else if (e.target.value === '') {
-                          setIsCustomService(false);
-                          setSelectedCategory(null);
-                        } else {
-                          setIsCustomService(false);
-                          setCustomServiceName('');
-                          setCustomServiceDescription('');
-                          const categoryId = parseInt(e.target.value);
-                          const category = serviceCategories.find(c => c.id === categoryId);
-                          setSelectedCategory(category || null);
-                        }
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
-                      required
-                    >
-                      <option value="">-- Please Select a Service --</option>
-                      <option value="custom" className="font-semibold text-[#312E81]">
-                        ✨ Custom Service Request (Specify Your Own)
-                      </option>
+                    <div className="space-y-3">
+                      {/* Custom Service Option */}
+                      <label
+                        className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          isCustomService
+                            ? 'border-[#312E81] bg-purple-50'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="serviceSelection"
+                          checked={isCustomService}
+                          onChange={() => {
+                            setIsCustomService(true);
+                            setSelectedCategory(null);
+                            setCustomServiceName('');
+                            setCustomServiceDescription('');
+                          }}
+                          className="sr-only"
+                        />
+                        <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                          isCustomService
+                            ? 'border-[#312E81]'
+                            : 'border-gray-300'
+                        }`}>
+                          {isCustomService && (
+                            <div className="w-3 h-3 rounded-full bg-[#312E81]" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <span className="font-semibold text-[#312E81]">✨ Custom Service Request</span>
+                          <p className="text-sm text-gray-600 mt-1">Specify your own service requirements</p>
+                        </div>
+                        <span className="text-[#312E81] font-semibold">$35/hr</span>
+                      </label>
+
+                      {/* Service Categories */}
                       {serviceCategories.length > 0 && (
-                        <optgroup label="Available Service Categories">
+                        <>
+                          <div className="text-sm font-semibold text-gray-700 mt-3">Available Service Categories</div>
                           {serviceCategories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.name} - ${category.base_price}/hour
-                            </option>
+                            <label
+                              key={category.id}
+                              className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                !isCustomService && selectedCategory?.id === category.id
+                                  ? 'border-[#312E81] bg-purple-50'
+                                  : 'border-gray-200'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="serviceSelection"
+                                checked={!isCustomService && selectedCategory?.id === category.id}
+                                onChange={() => {
+                                  setIsCustomService(false);
+                                  setCustomServiceName('');
+                                  setCustomServiceDescription('');
+                                  setSelectedCategory(category);
+                                }}
+                                className="sr-only"
+                              />
+                              <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                !isCustomService && selectedCategory?.id === category.id
+                                  ? 'border-[#312E81]'
+                                  : 'border-gray-300'
+                              }`}>
+                                {!isCustomService && selectedCategory?.id === category.id && (
+                                  <div className="w-3 h-3 rounded-full bg-[#312E81]" />
+                                )}
+                              </div>
+                              <span className="flex-1">{category.name}</span>
+                              <span className="text-[#312E81] font-semibold">${category.basePrice}/hr</span>
+                            </label>
                           ))}
-                        </optgroup>
+                        </>
                       )}
+
                       {serviceCategories.length === 0 && (
-                        <option value="" disabled>No predefined services available - Please use custom service</option>
+                        <div className="text-center py-4 text-gray-500">
+                          No predefined services available - Please use custom service
+                        </div>
                       )}
-                    </select>
+                    </div>
+
                     {!isCustomService && !selectedCategory && serviceCategories.length > 0 && (
                       <p className="text-sm text-amber-600 mt-2">
                         ⚠️ Please select a service category or choose "Custom Service Request" to specify your own service
@@ -640,12 +686,13 @@ const BookingForm = ({
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Service Description (Optional)
                       </label>
-                      <textarea
+                      <AutoResizeTextarea
                         value={customServiceDescription}
                         onChange={(e) => setCustomServiceDescription(e.target.value)}
                         placeholder="Provide additional details about what you need help with..."
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
-                        rows={3}
+                        minRows={3}
+                        maxRows={8}
                         maxLength={1000}
                       />
                       <p className="text-xs text-gray-500 mt-1">
@@ -679,7 +726,7 @@ const BookingForm = ({
                     )}
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <FaDollarSign className="w-4 h-4" />
-                      <span>Base Rate: ${selectedCategory.base_price}/hour</span>
+                      <span>Base Rate: ${selectedCategory.basePrice}/hour</span>
                     </div>
                   </div>
                 )}
@@ -737,7 +784,7 @@ const BookingForm = ({
                           )}
                         </div>
                         <div>Meeting Type: In-Person</div>
-                        <div>Rate: ${isCustomService ? 35 : (selectedCategory?.base_price || 35)}/hour</div>
+                        <div>Rate: ${isCustomService ? 35 : (selectedCategory?.basePrice || 35)}/hour</div>
                       </div>
                     </div>
                   </div>
@@ -746,7 +793,7 @@ const BookingForm = ({
                     <h4 className="font-semibold text-gray-900 mb-3">Price Breakdown</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span>Subtotal ({totalCalculation.duration} hours × ${isCustomService ? 35 : (selectedCategory?.base_price || 35)}):</span>
+                        <span>Subtotal ({totalCalculation.duration} hours × ${isCustomService ? 35 : (selectedCategory?.basePrice || 35)}):</span>
                         <span>${totalCalculation.subtotal.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
@@ -786,11 +833,12 @@ const BookingForm = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Special Requests (Optional)
                   </label>
-                  <textarea
+                  <AutoResizeTextarea
                     value={formData.specialRequests}
                     onChange={(e) => handleInputChange('specialRequests', e.target.value)}
                     placeholder="Any special requests or preferences..."
-                    rows={3}
+                    minRows={3}
+                    maxRows={8}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                   />
                 </div>

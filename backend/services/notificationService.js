@@ -4,6 +4,7 @@
  */
 
 const { pool } = require('../config/database');
+const logger = require('./logger');
 
 /**
  * Create a new notification for a user
@@ -16,7 +17,7 @@ const createNotification = async (userId, type, title, message, actionUrl = null
       [userId, type, title, message, actionUrl]
     );
 
-    console.log(`✅ Notification created for user ${userId}: ${title}`);
+    logger.apiInfo('notificationService', 'createNotification', 'Notification created', { userId, title });
 
     return {
       id: result.insertId,
@@ -27,7 +28,7 @@ const createNotification = async (userId, type, title, message, actionUrl = null
       actionUrl
     };
   } catch (error) {
-    console.error('❌ Error creating notification:', error);
+    logger.apiError('notificationService', 'createNotification', error, { userId, type, title });
     throw error;
   }
 };
@@ -60,7 +61,7 @@ const getNotifications = async (userId, limit = 20, offset = 0, unreadOnly = fal
 
     return notifications;
   } catch (error) {
-    console.error('❌ Error fetching notifications:', error);
+    logger.apiError('notificationService', 'getNotifications', error, { userId, limit, offset });
     throw error;
   }
 };
@@ -77,7 +78,7 @@ const getUnreadCount = async (userId) => {
 
     return result[0].count;
   } catch (error) {
-    console.error('❌ Error getting unread count:', error);
+    logger.apiError('notificationService', 'getUnreadCount', error, { userId });
     throw error;
   }
 };
@@ -96,10 +97,10 @@ const markAsRead = async (notificationId, userId) => {
       throw new Error('Notification not found or unauthorized');
     }
 
-    console.log(`✅ Notification ${notificationId} marked as read`);
+    logger.apiInfo('notificationService', 'markAsRead', 'Notification marked as read', { notificationId, userId });
     return true;
   } catch (error) {
-    console.error('❌ Error marking notification as read:', error);
+    logger.apiError('notificationService', 'markAsRead', error, { notificationId, userId });
     throw error;
   }
 };
@@ -114,10 +115,10 @@ const markAllAsRead = async (userId) => {
       [userId]
     );
 
-    console.log(`✅ Marked ${result.affectedRows} notifications as read for user ${userId}`);
+    logger.apiInfo('notificationService', 'markAllAsRead', `Marked ${result.affectedRows} notifications as read`, { userId, count: result.affectedRows });
     return result.affectedRows;
   } catch (error) {
-    console.error('❌ Error marking all notifications as read:', error);
+    logger.apiError('notificationService', 'markAllAsRead', error, { userId });
     throw error;
   }
 };
@@ -136,10 +137,10 @@ const deleteNotification = async (notificationId, userId) => {
       throw new Error('Notification not found or unauthorized');
     }
 
-    console.log(`✅ Notification ${notificationId} deleted`);
+    logger.apiInfo('notificationService', 'deleteNotification', 'Notification deleted', { notificationId, userId });
     return true;
   } catch (error) {
-    console.error('❌ Error deleting notification:', error);
+    logger.apiError('notificationService', 'deleteNotification', error, { notificationId, userId });
     throw error;
   }
 };
@@ -154,10 +155,10 @@ const deleteOldNotifications = async (daysOld = 30) => {
       [daysOld]
     );
 
-    console.log(`✅ Deleted ${result.affectedRows} old notifications`);
+    logger.apiInfo('notificationService', 'deleteOldNotifications', `Deleted ${result.affectedRows} old notifications`, { daysOld, count: result.affectedRows });
     return result.affectedRows;
   } catch (error) {
-    console.error('❌ Error deleting old notifications:', error);
+    logger.apiError('notificationService', 'deleteOldNotifications', error, { daysOld });
     throw error;
   }
 };
@@ -189,7 +190,7 @@ const getUserPreferences = async (userId) => {
 
     return preferences[0];
   } catch (error) {
-    console.error('❌ Error getting notification preferences:', error);
+    logger.apiError('notificationService', 'getUserPreferences', error, { userId });
     throw error;
   }
 };
@@ -240,10 +241,10 @@ const updateUserPreferences = async (userId, preferences) => {
       );
     }
 
-    console.log(`✅ Updated notification preferences for user ${userId}`);
+    logger.apiInfo('notificationService', 'updateUserPreferences', 'Updated notification preferences', { userId });
     return true;
   } catch (error) {
-    console.error('❌ Error updating notification preferences:', error);
+    logger.apiError('notificationService', 'updateUserPreferences', error, { userId });
     throw error;
   }
 };

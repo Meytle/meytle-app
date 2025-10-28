@@ -4,6 +4,8 @@
  */
 
 const notificationService = require('../services/notificationService');
+const { transformToFrontend, transformArrayToFrontend } = require('../utils/transformer');
+const logger = require('../services/logger');
 
 /**
  * Get notifications for the authenticated user
@@ -22,15 +24,13 @@ const getNotifications = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
-        notifications,
+      data: transformToFrontend({
+        notifications: transformArrayToFrontend(notifications),
         count: notifications.length
-      }
+      })
     });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
-    console.error('Error details:', error.message);
-    console.error('Stack trace:', error.stack);
+    logger.controllerError('notificationController', 'getNotifications', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch notifications'
@@ -53,7 +53,7 @@ const getUnreadCount = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting unread count:', error);
+    logger.controllerError('notificationController', 'getUnreadCount', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get unread count'
@@ -76,7 +76,7 @@ const markAsRead = async (req, res) => {
       message: 'Notification marked as read'
     });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
+    logger.controllerError('notificationController', 'markAsRead', error, req);
 
     if (error.message === 'Notification not found or unauthorized') {
       return res.status(404).json({
@@ -108,7 +108,7 @@ const markAllAsRead = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
+    logger.controllerError('notificationController', 'markAllAsRead', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to mark notifications as read'
@@ -131,7 +131,7 @@ const deleteNotification = async (req, res) => {
       message: 'Notification deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting notification:', error);
+    logger.controllerError('notificationController', 'deleteNotification', error, req);
 
     if (error.message === 'Notification not found or unauthorized') {
       return res.status(404).json({
@@ -157,12 +157,12 @@ const getPreferences = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
+      data: transformToFrontend({
         preferences
-      }
+      })
     });
   } catch (error) {
-    console.error('Error fetching notification preferences:', error);
+    logger.controllerError('notificationController', 'getPreferences', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch notification preferences'
@@ -201,7 +201,7 @@ const updatePreferences = async (req, res) => {
       message: 'Notification preferences updated successfully'
     });
   } catch (error) {
-    console.error('Error updating notification preferences:', error);
+    logger.controllerError('notificationController', 'updatePreferences', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update notification preferences'
@@ -248,7 +248,7 @@ const createTestNotification = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error creating test notification:', error);
+    logger.controllerError('notificationController', 'createTestNotification', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create test notification'

@@ -48,8 +48,8 @@ const TimeSlotPicker = ({
 
       return {
         id: `${available ? 'available' : 'unavailable'}-${index}`,
-        start_time: slot.startTime,
-        end_time: slot.endTime,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
         price: actualPrice * duration,
         available,
         duration
@@ -61,13 +61,13 @@ const TimeSlotPicker = ({
   const allSlots = [
     ...transformSlots(availableSlots, true),
     ...transformSlots(unavailableSlots, false)
-  ].sort((a, b) => a.start_time.localeCompare(b.start_time));
+  ].sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   // Transform selected slot to TimeSlotGroup format
   const transformedSelectedSlot = selectedTime ? {
     id: `selected-${selectedTime.startTime}`,
-    start_time: selectedTime.startTime,
-    end_time: selectedTime.endTime,
+    startTime: selectedTime.startTime,
+    endTime: selectedTime.endTime,
     price: actualPrice,
     available: true,
     duration: (new Date(`2000-01-01 ${selectedTime.endTime}`).getTime() -
@@ -76,8 +76,8 @@ const TimeSlotPicker = ({
 
   const handleSlotSelect = (slot: any) => {
     const originalSlot: TimeSlot = {
-      startTime: slot.start_time,
-      endTime: slot.end_time
+      startTime: slot.startTime,
+      endTime: slot.endTime
     };
     setSelectedTime(originalSlot);
     onSlotSelect(originalSlot);

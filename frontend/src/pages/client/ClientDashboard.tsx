@@ -14,11 +14,15 @@ import { ROUTES } from '../../constants';
 import { bookingApi } from '../../api/booking';
 import clientApi from '../../api/client';
 import { FaCalendarAlt, FaIdCard, FaSearch, FaUser, FaHeart, FaCreditCard, FaUserTie, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaExclamationCircle } from 'react-icons/fa';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import AsyncErrorBoundary, { useAsyncError } from '../../components/AsyncErrorBoundary';
+import logger, { logComponentError } from '../../utils/logger';
 
 type VerificationStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
 
 const ClientDashboard = () => {
   const { user, isAuthenticated } = useAuth();
+  const { throwError } = useAsyncError();
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('not_submitted');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
@@ -34,10 +38,18 @@ const ClientDashboard = () => {
     try {
       setIsLoadingBookings(true);
       const fetchedBookings = await bookingApi.getBookings();
+      logger.info('Client received bookings', { bookingsCount: fetchedBookings?.length || 0 });
+      if (fetchedBookings && fetchedBookings.length > 0) {
+        logger.debug('First booking details', {
+          firstBooking: fetchedBookings[0],
+          bookingDate: fetchedBookings[0].bookingDate
+        });
+      }
       setBookings(fetchedBookings || []);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      logComponentError('ClientDashboard', error, { action: 'fetchBookings' });
       toast.error('Failed to load bookings');
+      throwError(error);
     } finally {
       setIsLoadingBookings(false);
     }
@@ -46,9 +58,9 @@ const ClientDashboard = () => {
   const fetchVerificationStatus = async () => {
     try {
       const status = await clientApi.getVerificationStatus();
-      setVerificationStatus(status.verification_status || 'not_submitted');
+      setVerificationStatus(status.verificationStatus || 'not_submitted');
     } catch (error) {
-      console.error('Error fetching verification status:', error);
+      logComponentError('ClientDashboard', error, { action: 'fetchVerificationStatus' });
       // Default to not_submitted if there's an error
       setVerificationStatus('not_submitted');
     }
@@ -117,7 +129,21 @@ const ClientDashboard = () => {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    // Handle null, undefined, or empty date
+    if (!date) {
+      return 'Date not available';
+    }
+
+    // Try to parse the date
+    const parsedDate = new Date(date);
+
+    // Check if the date is valid
+    if (isNaN(parsedDate.getTime())) {
+      return 'Date not available';
+    }
+
+    // Format valid date
+    return parsedDate.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -126,11 +152,27 @@ const ClientDashboard = () => {
   };
 
   const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    // Handle null, undefined, or empty time
+    if (!time || !time.includes(':')) {
+      return 'Time not available';
+    }
+
+    try {
+      const [hours, minutes] = time.split(':');
+      const hour = parseInt(hours);
+      const minute = parseInt(minutes);
+
+      // Validate the parsed values
+      if (isNaN(hour) || isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+        return 'Time not available';
+      }
+
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      return 'Time not available';
+    }
   };
 
   if (!user) {
@@ -191,14 +233,14 @@ const ClientDashboard = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#4A47A3] to-[#FFC7C7] flex items-center justify-center text-white font-semibold">
-                              {booking.companion_name?.charAt(0) || 'C'}
+                              {booking.companionName?.charAt(0) || 'C'}
                             </div>
                             <div>
                               <h3 className="font-semibold text-gray-900">
-                                {booking.companion_name || 'Companion'}
+                                {booking.companionName || 'Companion'}
                               </h3>
                               <p className="text-sm text-gray-500">
-                                {formatDate(booking.booking_date)}
+                                {formatDate(booking.bookingDate)}
                               </p>
                             </div>
                           </div>
@@ -207,20 +249,20 @@ const ClientDashboard = () => {
                             <div className="flex items-center gap-2">
                               <FaClock className="text-gray-400" />
                               <span className="text-gray-600">
-                                {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                                {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <FaMoneyBillWave className="text-gray-400" />
                               <span className="text-gray-900 font-semibold">
-                                ${booking.total_amount}
+                                ${booking.totalAmount}
                               </span>
                             </div>
                           </div>
 
-                          {booking.meeting_location && (
+                          {booking.meetingLocation && (
                             <p className="text-sm text-gray-600 mt-2">
-                              📍 {booking.meeting_location}
+                              📍 {booking.meetingLocation}
                             </p>
                           )}
                         </div>
@@ -240,7 +282,7 @@ const ClientDashboard = () => {
                                 Cancel
                               </button>
                             )}
-                            {booking.status === 'completed' && !booking.has_review && (
+                            {booking.status === 'completed' && !booking.hasReview && (
                               <button
                                 onClick={() => toast('Review feature coming soon', { icon: '⭐' })}
                                 className="text-xs px-3 py-1 border border-[#312E81]/30 text-[#312E81] rounded hover:bg-[#312E81]/10 transition-colors"
@@ -341,9 +383,9 @@ const ClientDashboard = () => {
 
                 <button
                   onClick={() => navigate(ROUTES.CLIENT_PROFILE)}
-                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all duration-200 group"
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#312E81] hover:bg-[#312E81]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
                 >
-                  <FaUser className="text-xl text-gray-400 group-hover:text-accent-600 transition-colors" />
+                  <FaUser className="text-xl text-gray-400 group-hover:text-[#312E81] transition-colors" />
                   <div className="text-left flex-1">
                     <h3 className="font-semibold text-gray-900 text-sm">My Profile</h3>
                     <p className="text-xs text-gray-500">Edit your information</p>
@@ -352,9 +394,9 @@ const ClientDashboard = () => {
 
                 <button
                   onClick={() => toast('Payment methods feature coming soon!', { icon: '💳' })}
-                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-all duration-200 group"
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#22c55e] hover:bg-[#22c55e]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
                 >
-                  <FaCreditCard className="text-xl text-gray-400 group-hover:text-success-600 transition-colors" />
+                  <FaCreditCard className="text-xl text-gray-400 group-hover:text-[#22c55e] transition-colors" />
                   <div className="text-left flex-1">
                     <h3 className="font-semibold text-gray-900 text-sm">Payment Methods</h3>
                     <p className="text-xs text-gray-500">Manage payments</p>
@@ -465,4 +507,12 @@ const ClientDashboard = () => {
   );
 };
 
-export default ClientDashboard;
+const ClientDashboardWithErrorBoundary = () => (
+  <ErrorBoundary level="page" showDetails={false}>
+    <AsyncErrorBoundary maxRetries={3} retryDelay={1000}>
+      <ClientDashboard />
+    </AsyncErrorBoundary>
+  </ErrorBoundary>
+);
+
+export default ClientDashboardWithErrorBoundary;

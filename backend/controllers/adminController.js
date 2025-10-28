@@ -5,6 +5,8 @@
 
 const { pool } = require('../config/database');
 const { createNotification, notificationTemplates } = require('../services/notificationService');
+const { transformToFrontend, transformArrayToFrontend } = require('../utils/transformer');
+const logger = require('../services/logger');
 
 /**
  * Get admin dashboard statistics
@@ -58,7 +60,7 @@ const getDashboardStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching dashboard stats:', error);
+    logger.controllerError('adminController', 'getDashboardStats', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch dashboard statistics'
@@ -95,10 +97,10 @@ const getApplications = async (req, res) => {
 
     res.json({
       status: 'success',
-      data: applications
+      data: transformArrayToFrontend(applications)
     });
   } catch (error) {
-    console.error('❌ Error fetching applications:', error);
+    logger.controllerError('adminController', 'getApplications', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch applications'
@@ -154,17 +156,17 @@ const approveApplication = async (req, res) => {
         'INSERT INTO user_roles (user_id, role, is_active) VALUES (?, ?, TRUE)',
         [userId, 'companion']
       );
-      console.log(`✅ Added companion role to user_roles for user ${userId}`);
+      logger.controllerInfo('adminController', 'approveApplication', 'Added companion role to user_roles', { userId });
     } else {
       // Ensure the companion role is active
       await pool.execute(
         'UPDATE user_roles SET is_active = TRUE WHERE user_id = ? AND role = ?',
         [userId, 'companion']
       );
-      console.log(`✅ Activated companion role for user ${userId}`);
+      logger.controllerInfo('adminController', 'approveApplication', 'Activated companion role', { userId });
     }
 
-    console.log(`✅ Application ${applicationId} approved for user ${userId}`);
+    logger.controllerInfo('adminController', 'approveApplication', 'Application approved', { applicationId, userId });
 
     // Send notification to the companion
     try {
@@ -176,9 +178,9 @@ const approveApplication = async (req, res) => {
         notificationData.message,
         notificationData.actionUrl
       );
-      console.log(`✅ Notification sent to user ${userId} about application approval`);
+      logger.controllerInfo('adminController', 'approveApplication', 'Notification sent about application approval', { userId });
     } catch (notificationError) {
-      console.error('❌ Failed to send notification:', notificationError);
+      logger.controllerError('adminController', 'approveApplication', notificationError, req);
       // Don't fail the whole operation if notification fails
     }
 
@@ -187,7 +189,7 @@ const approveApplication = async (req, res) => {
       message: 'Application approved successfully'
     });
   } catch (error) {
-    console.error('❌ Error approving application:', error);
+    logger.controllerError('adminController', 'approveApplication', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to approve application'
@@ -226,7 +228,7 @@ const rejectApplication = async (req, res) => {
       [reason || 'Application rejected by admin', applicationId]
     );
 
-    console.log(`✅ Application ${applicationId} rejected`);
+    logger.controllerInfo('adminController', 'rejectApplication', 'Application rejected', { applicationId, reason });
 
     // Send notification to the companion
     try {
@@ -238,9 +240,9 @@ const rejectApplication = async (req, res) => {
         notificationData.message,
         notificationData.actionUrl
       );
-      console.log(`✅ Notification sent to user ${userId} about application rejection`);
+      logger.controllerInfo('adminController', 'rejectApplication', 'Notification sent about application rejection', { userId });
     } catch (notificationError) {
-      console.error('❌ Failed to send notification:', notificationError);
+      logger.controllerError('adminController', 'rejectApplication', notificationError, req);
       // Don't fail the whole operation if notification fails
     }
 
@@ -249,7 +251,7 @@ const rejectApplication = async (req, res) => {
       message: 'Application rejected successfully'
     });
   } catch (error) {
-    console.error('❌ Error rejecting application:', error);
+    logger.controllerError('adminController', 'rejectApplication', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to reject application'
@@ -278,10 +280,10 @@ const getUsers = async (req, res) => {
 
     res.json({
       status: 'success',
-      data: users
+      data: transformArrayToFrontend(users)
     });
   } catch (error) {
-    console.error('❌ Error fetching users:', error);
+    logger.controllerError('adminController', 'getUsers', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch users'
@@ -317,14 +319,14 @@ const deleteUser = async (req, res) => {
     // Delete user (cascade will handle related records)
     await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
 
-    console.log(`✅ User ${userId} deleted successfully`);
+    logger.controllerInfo('adminController', 'deleteUser', 'User deleted successfully', { userId });
 
     res.json({
       status: 'success',
       message: 'User deleted successfully'
     });
   } catch (error) {
-    console.error('❌ Error deleting user:', error);
+    logger.controllerError('adminController', 'deleteUser', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to delete user'
@@ -338,7 +340,7 @@ const deleteUser = async (req, res) => {
  */
 const checkAvailabilityIntegrity = async (req, res) => {
   try {
-    console.log('🔍 Admin checking availability data integrity');
+    logger.controllerInfo('adminController', 'checkAvailabilityIntegrity', 'Admin checking availability data integrity', { adminId: req.user?.id });
 
     // Call the stored procedure to check integrity
     const [results] = await pool.execute('CALL check_availability_integrity()');
@@ -365,7 +367,7 @@ const checkAvailabilityIntegrity = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Data integrity check error:', error);
+    logger.controllerError('adminController', 'checkAvailabilityIntegrity', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to check data integrity',
@@ -445,7 +447,7 @@ const getAvailabilityAuditLogs = async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        logs,
+        logs: transformArrayToFrontend(logs),
         pagination: {
           total,
           limit: parseInt(limit),
@@ -455,7 +457,7 @@ const getAvailabilityAuditLogs = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get audit logs error:', error);
+    logger.controllerError('adminController', 'getAvailabilityAuditLogs', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch audit logs',
@@ -472,7 +474,7 @@ const cleanupAvailabilityData = async (req, res) => {
   try {
     const { dryRun = true } = req.body;
 
-    console.log(`🧹 Starting availability data cleanup (dry run: ${dryRun})`);
+    logger.controllerInfo('adminController', 'cleanupAvailabilityData', 'Starting availability data cleanup', { dryRun, adminId: req.user?.id });
 
     const issues = [];
 
@@ -590,7 +592,7 @@ const cleanupAvailabilityData = async (req, res) => {
       data: cleanupResult
     });
   } catch (error) {
-    console.error('Cleanup error:', error);
+    logger.controllerError('adminController', 'cleanupAvailabilityData', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to cleanup availability data',
@@ -639,10 +641,10 @@ const getClientVerifications = async (req, res) => {
 
     res.json({
       status: 'success',
-      data: verifications
+      data: transformArrayToFrontend(verifications)
     });
   } catch (error) {
-    console.error('Error fetching client verifications:', error);
+    logger.controllerError('adminController', 'getClientVerifications', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch client verifications',
@@ -682,14 +684,14 @@ const approveClientVerification = async (req, res) => {
       [id]
     );
 
-    console.log(`✅ Client verification ${id} approved by admin ${req.user.id}`);
+    logger.controllerInfo('adminController', 'approveClientVerification', 'Client verification approved', { verificationId: id, adminId: req.user?.id });
 
     res.json({
       status: 'success',
       message: 'Client verification approved successfully'
     });
   } catch (error) {
-    console.error('Error approving client verification:', error);
+    logger.controllerError('adminController', 'approveClientVerification', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to approve client verification',
@@ -736,14 +738,14 @@ const rejectClientVerification = async (req, res) => {
       [reason, id]
     );
 
-    console.log(`❌ Client verification ${id} rejected by admin ${req.user.id}. Reason: ${reason}`);
+    logger.controllerInfo('adminController', 'rejectClientVerification', 'Client verification rejected', { verificationId: id, adminId: req.user?.id, reason });
 
     res.json({
       status: 'success',
       message: 'Client verification rejected'
     });
   } catch (error) {
-    console.error('Error rejecting client verification:', error);
+    logger.controllerError('adminController', 'rejectClientVerification', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to reject client verification',

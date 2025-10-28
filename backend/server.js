@@ -9,6 +9,9 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const config = require('./config/config');
 const { testConnection, initializeDatabase, closePool } = require('./config/database');
+const logger = require('./services/logger');
+const requestLogger = require('./middleware/requestLogger');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Security middlewares
 const {
@@ -73,13 +76,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   lastModified: true
 }));
 
-// Request logging middleware (development only)
-if (config.nodeEnv === 'development') {
-  app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
-    next();
-  });
-}
+// Request logging middleware
+app.use(requestLogger);
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -100,28 +98,16 @@ app.use('/api/service-categories', serviceCategoryRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: 'Route not found'
-  });
-});
+// 404 handler - use centralized handler
+app.use(notFoundHandler);
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(err.status || 500).json({
-    status: 'error',
-    message: err.message || 'Internal server error',
-    ...(config.nodeEnv === 'development' && { stack: err.stack })
-  });
-});
+// Global error handler - use centralized handler
+app.use(errorHandler);
 
 // Initialize database and start server
 const startServer = async () => {
   try {
-    console.log('🚀 Starting Meytle Backend Server...\n');
+    logger.info('Starting Meytle Backend Server...');
 
     // Test MySQL server connection
     const isConnected = await testConnection();
@@ -134,57 +120,56 @@ const startServer = async () => {
 
     // Start listening
     const server = app.listen(config.port, () => {
-      console.log(`\n✅ Server running on port ${config.port}`);
-      console.log(`📍 Environment: ${config.nodeEnv}`);
-      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`);
-      console.log(`\n🔗 API Endpoints:`);
-      console.log(`   Authentication:`);
-      console.log(`   - POST   /api/auth/signup`);
-      console.log(`   - POST   /api/auth/login`);
-      console.log(`   - GET    /api/auth/profile (protected)`);
-      console.log(`   Client (protected):`);
-      console.log(`   - GET    /api/client/profile`);
-      console.log(`   - PUT    /api/client/profile`);
-      console.log(`   - POST   /api/client/profile/photo`);
-      console.log(`   - POST   /api/client/verify-identity`);
-      console.log(`   - GET    /api/client/verification-status`);
-      console.log(`   Companion (protected):`);
-      console.log(`   - POST   /api/companion/application`);
-      console.log(`   - GET    /api/companion/application/status`);
-      console.log(`   - POST   /api/companion/profile/photo`);
-      console.log(`   Admin (protected):`);
-      console.log(`   - GET    /api/admin/dashboard/stats`);
-      console.log(`   - GET    /api/admin/applications`);
-      console.log(`   - PUT    /api/admin/applications/:id/approve`);
-      console.log(`   - PUT    /api/admin/applications/:id/reject`);
-      console.log(`   - GET    /api/admin/users`);
-      console.log(`   - DELETE /api/admin/users/:id`);
-      console.log(`   Service Categories (protected):`);
-      console.log(`   - GET    /api/service-categories (list all)`);
-      console.log(`   - GET    /api/service-categories/:id (get one)`);
-      console.log(`   - POST   /api/service-categories (admin - create)`);
-      console.log(`   - PUT    /api/service-categories/:id (admin - update)`);
-      console.log(`   - DELETE /api/service-categories/:id (admin - delete)`);
-      console.log(`   Stripe (protected):`);
-      console.log(`   - POST   /api/stripe/connect/create-account (protected)`);
-      console.log(`   - POST   /api/stripe/connect/onboarding-link (protected)`);
-      console.log(`   - GET    /api/stripe/connect/account-status (protected)`);
-      console.log(`   - POST   /api/stripe/webhook (public)`);
-      console.log(`   Health:`);
-      console.log(`   - GET    /health\n`);
+      logger.info(`Server running on port ${config.port}`);
+      logger.info(`Environment: ${config.nodeEnv}`);
+      logger.info(`Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`);
+      logger.info('API Endpoints available:');
+      logger.info('  Authentication:');
+      logger.info('  - POST   /api/auth/signup');
+      logger.info('  - POST   /api/auth/login');
+      logger.info('  - GET    /api/auth/profile (protected)');
+      logger.info('  Client (protected):');
+      logger.info('  - GET    /api/client/profile');
+      logger.info('  - PUT    /api/client/profile');
+      logger.info('  - POST   /api/client/profile/photo');
+      logger.info('  - POST   /api/client/verify-identity');
+      logger.info('  - GET    /api/client/verification-status');
+      logger.info('  Companion (protected):');
+      logger.info('  - POST   /api/companion/application');
+      logger.info('  - GET    /api/companion/application/status');
+      logger.info('  - POST   /api/companion/profile/photo');
+      logger.info('  Admin (protected):');
+      logger.info('  - GET    /api/admin/dashboard/stats');
+      logger.info('  - GET    /api/admin/applications');
+      logger.info('  - PUT    /api/admin/applications/:id/approve');
+      logger.info('  - PUT    /api/admin/applications/:id/reject');
+      logger.info('  - GET    /api/admin/users');
+      logger.info('  - DELETE /api/admin/users/:id');
+      logger.info('  Service Categories (protected):');
+      logger.info('  - GET    /api/service-categories (list all)');
+      logger.info('  - GET    /api/service-categories/:id (get one)');
+      logger.info('  - POST   /api/service-categories (admin - create)');
+      logger.info('  - PUT    /api/service-categories/:id (admin - update)');
+      logger.info('  - DELETE /api/service-categories/:id (admin - delete)');
+      logger.info('  Stripe (protected):');
+      logger.info('  - POST   /api/stripe/connect/create-account (protected)');
+      logger.info('  - POST   /api/stripe/connect/onboarding-link (protected)');
+      logger.info('  - GET    /api/stripe/connect/account-status (protected)');
+      logger.info('  - POST   /api/stripe/webhook (public)');
+      logger.info('  Health:');
+      logger.info('  - GET    /health');
     });
 
     return server; // Return server instance for graceful shutdown
   } catch (error) {
-    console.error('❌ Failed to start server:', error.message);
+    logger.error('Failed to start server', { error: error.message });
     process.exit(1);
   }
 };
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION! Shutting down...');
-  console.error(err);
+  logger.error('UNHANDLED REJECTION! Shutting down...', { error: err.message, stack: err.stack });
   process.exit(1);
 });
 
@@ -192,7 +177,7 @@ process.on('unhandledRejection', (err) => {
 let serverInstance = null;
 
 const gracefulShutdown = async (signal) => {
-  console.log(`\n📴 ${signal} received. Starting graceful shutdown...`);
+  logger.info(`${signal} received. Starting graceful shutdown...`);
 
   try {
     // Stop accepting new connections
@@ -200,17 +185,17 @@ const gracefulShutdown = async (signal) => {
       await new Promise((resolve) => {
         serverInstance.close(resolve);
       });
-      console.log('✅ Server closed to new connections');
+      logger.info('Server closed to new connections');
     }
 
     // Close database pool
     await closePool();
-    console.log('✅ Database connections closed');
+    logger.info('Database connections closed');
 
-    console.log('👋 Graceful shutdown completed');
+    logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error during graceful shutdown:', error);
+    logger.error('Error during graceful shutdown', { error: error.message });
     process.exit(1);
   }
 };
@@ -223,7 +208,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 startServer().then((server) => {
   serverInstance = server;
 }).catch((error) => {
-  console.error('❌ Failed to start server:', error);
+  logger.error('Failed to start server', { error: error.message });
   process.exit(1);
 });
 

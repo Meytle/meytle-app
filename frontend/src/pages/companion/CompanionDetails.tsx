@@ -27,6 +27,7 @@ import {
   FaShareAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useModal } from '../../context/ModalContext';
 import { bookingApi } from '../../api/booking';
 import { companionsApi } from '../../api/companions';
 import { serviceCategoryApi } from '../../api/serviceCategory';
@@ -41,15 +42,15 @@ interface CompanionProfileData {
   id: number;
   name: string;
   email: string;
-  profile_photo_url: string;
+  profilePhotoUrl: string;
   age: number;
   bio: string;
   interests: string[];
-  services_offered: string[];
+  servicesOffered: string[];
   languages: string[];
-  hourly_rate: number;
+  hourlyRate: number;
   verified: boolean;
-  joined_date: string;
+  joinedDate: string;
   location: string;
 }
 
@@ -57,6 +58,7 @@ const CompanionDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const { isAnyModalOpen } = useModal();
 
   const [companion, setCompanion] = useState<CompanionProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
@@ -87,7 +89,6 @@ const CompanionDetails = () => {
       fetchAvailability();
     }
   }, [id]);
-
 
   useEffect(() => {
     // Update selected date when day index changes
@@ -162,16 +163,16 @@ const CompanionDetails = () => {
           id: companionData.id,
           name: companionData.name,
           email: companionData.email || '', // Optional in type
-          profile_photo_url: companionData.profile_photo_url || '',
+          profilePhotoUrl: companionData.profilePhotoUrl || '',
           age: companionData.age,
           bio: '',  // Not available from API
           interests: companionData.interests || [],
-          services_offered: companionData.services || [],
+          servicesOffered: companionData.services || [],
           languages: [],
-          hourly_rate: 75, // Default rate
+          hourlyRate: 75, // Default rate
           verified: false, // Not available from API
           location: companionData.location || '',
-          joined_date: companionData.joined_date || new Date().toISOString()
+          joinedDate: companionData.joinedDate || new Date().toISOString()
         });
       } else {
         toast.error('Companion not found');
@@ -186,15 +187,15 @@ const CompanionDetails = () => {
           id: parseInt(id),
           name: 'Companion',
           email: '',
-          profile_photo_url: '',
+          profilePhotoUrl: '',
           age: 0,
           bio: '',
           interests: [],
-          services_offered: [],
+          servicesOffered: [],
           languages: [],
-          hourly_rate: 75,
+          hourlyRate: 75,
           verified: false,
-          joined_date: new Date().toISOString(),
+          joinedDate: new Date().toISOString(),
           location: ''
         });
       }
@@ -260,7 +261,7 @@ const CompanionDetails = () => {
   const getAvailableTimeSlots = () => {
     const dayOfWeek = getDayOfWeek(selectedDate);
     return availability.filter(slot =>
-      slot.day_of_week === dayOfWeek && slot.is_available
+      slot.dayOfWeek === dayOfWeek && slot.isAvailable
     );
   };
 
@@ -319,7 +320,7 @@ const CompanionDetails = () => {
 
   // Get availability status for a specific day
   const getDayAvailabilityStatus = (dayName: string) => {
-    const daySlots = availability.filter(slot => slot.day_of_week === dayName);
+    const daySlots = availability.filter(slot => slot.dayOfWeek === dayName);
 
     if (daySlots.length === 0) {
       return 'unavailable';
@@ -384,8 +385,12 @@ const CompanionDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-40">
+      {/* Header - normal scrolling with modal-aware hiding */}
+      <div
+        className={`bg-white border-b transition-opacity duration-300 ${
+          isAnyModalOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <button
@@ -413,11 +418,13 @@ const CompanionDetails = () => {
             {/* Profile Header */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="relative h-64 bg-gradient-to-br from-[#312E81] to-[#FFCCCB]">
-                {companion.profile_photo_url ? (
+                {companion.profilePhotoUrl ? (
                   <img
-                    src={`http://localhost:5000${companion.profile_photo_url}`}
+                    src={`http://localhost:5000${companion.profilePhotoUrl}`}
                     alt={companion.name}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -448,11 +455,11 @@ const CompanionDetails = () => {
                         </span>
                       )}
                       {/* Only show member since if valid date */}
-                      {companion.joined_date && (
+                      {companion.joinedDate && (
                         <span className="flex items-center gap-1">
                           <FaCalendarAlt />
-                          Member since {!isNaN(new Date(companion.joined_date).getFullYear()) ?
-                            new Date(companion.joined_date).getFullYear() :
+                          Member since {!isNaN(new Date(companion.joinedDate).getFullYear()) ?
+                            new Date(companion.joinedDate).getFullYear() :
                             new Date().getFullYear()}
                         </span>
                       )}
@@ -468,10 +475,10 @@ const CompanionDetails = () => {
                   </div>
 
                   <div className="text-right">
-                    {companion.hourly_rate && companion.hourly_rate > 0 ? (
+                    {companion.hourlyRate && companion.hourlyRate > 0 ? (
                       <>
                         <div className="text-3xl font-bold text-[#312E81]">
-                          ${companion.hourly_rate}
+                          ${companion.hourlyRate}
                         </div>
                         <div className="text-sm text-gray-500">per hour</div>
                       </>
@@ -489,10 +496,10 @@ const CompanionDetails = () => {
             <div className="bg-white rounded-xl shadow-lg">
               <div className="border-b">
                 <div className="flex">
-                  {['about', 'availability', 'reviews'].map((tab) => (
+                  {(['about', 'availability', 'reviews'] as const).map((tab) => (
                     <button
                       key={tab}
-                      onClick={() => setActiveTab(tab as any)}
+                      onClick={() => setActiveTab(tab)}
                       className={`flex-1 px-6 py-4 font-medium capitalize transition-colors ${
                         activeTab === tab
                           ? 'text-[#312E81] border-b-2 border-[#312E81]'
@@ -518,14 +525,14 @@ const CompanionDetails = () => {
                     )}
 
                     {/* Only show Services if they exist */}
-                    {companion.services_offered && companion.services_offered.length > 0 && (
+                    {companion.servicesOffered && companion.servicesOffered.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                           <FaServicestack className="text-[#312E81]" />
                           Services Offered
                         </h3>
                         <div className="flex flex-wrap gap-2">
-                          {companion.services_offered.map((service, index) => (
+                          {companion.servicesOffered.map((service, index) => (
                             <span
                               key={index}
                               className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm"
@@ -579,7 +586,7 @@ const CompanionDetails = () => {
 
                     {/* Show message if no info available */}
                     {(!companion.bio || companion.bio.trim() === '') &&
-                     (!companion.services_offered || companion.services_offered.length === 0) &&
+                     (!companion.servicesOffered || companion.servicesOffered.length === 0) &&
                      (!companion.languages || companion.languages.length === 0) &&
                      (!companion.interests || companion.interests.length === 0) && (
                       <div className="text-center py-8 text-gray-500">
@@ -677,7 +684,7 @@ const CompanionDetails = () => {
 
                         {(() => {
                           const selectedDaySlots = availability.filter(slot =>
-                            slot.day_of_week === getWeekDates()[selectedDayIndex].dayFull && slot.is_available
+                            slot.dayOfWeek === getWeekDates()[selectedDayIndex].dayFull && slot.isAvailable
                           );
 
                           if (selectedDaySlots.length === 0) {
@@ -691,8 +698,8 @@ const CompanionDetails = () => {
                           return (
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                               {selectedDaySlots.map((slot, slotIndex) => {
-                                const isSelectedSlot = selectedTimeSlot?.start === slot.start_time &&
-                                                      selectedTimeSlot?.end === slot.end_time;
+                                const isSelectedSlot = selectedTimeSlot?.start === slot.startTime &&
+                                                      selectedTimeSlot?.end === slot.endTime;
 
                                 // Parse services if it's a string
                                 const services = slot.services
@@ -706,8 +713,8 @@ const CompanionDetails = () => {
                                     key={slotIndex}
                                     onClick={() => {
                                       setSelectedTimeSlot({
-                                        start: slot.start_time,
-                                        end: slot.end_time,
+                                        start: slot.startTime,
+                                        end: slot.endTime,
                                         services: services
                                       });
                                       setShowEnhancedBookingModal(true);
@@ -720,7 +727,7 @@ const CompanionDetails = () => {
                                   >
                                     <div className="text-center">
                                       <div className="font-medium text-gray-900">
-                                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                                       </div>
                                       {services.length > 0 && (
                                         <div className="text-xs text-gray-500 mt-1">
@@ -829,11 +836,13 @@ const CompanionDetails = () => {
                         {reviews.map(review => (
                           <div key={review.id} className="border-b pb-4">
                             <div className="flex items-start gap-4">
-                              {review.reviewer_photo ? (
+                              {review.reviewerPhoto ? (
                                 <img
-                                  src={review.reviewer_photo}
-                                  alt={review.reviewer_name}
+                                  src={review.reviewerPhoto}
+                                  alt={review.reviewerName}
                                   className="w-10 h-10 rounded-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                               ) : (
                                 <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
@@ -843,13 +852,13 @@ const CompanionDetails = () => {
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <h4 className="font-medium text-gray-900">{review.reviewer_name}</h4>
+                                    <h4 className="font-medium text-gray-900">{review.reviewerName}</h4>
                                     <div className="flex items-center gap-2 mt-1">
                                       <div className="flex items-center gap-1">
                                         {renderStars(review.rating)}
                                       </div>
                                       <span className="text-sm text-gray-500">
-                                        • {new Date(review.created_at).toLocaleDateString('en-US', {
+                                        • {new Date(review.createdAt).toLocaleDateString('en-US', {
                                           month: 'short',
                                           day: 'numeric',
                                           year: 'numeric'
@@ -859,7 +868,7 @@ const CompanionDetails = () => {
                                   </div>
                                 </div>
                                 <p className="mt-3 text-gray-600">
-                                  {review.review_text}
+                                  {review.reviewText}
                                 </p>
                               </div>
                             </div>
@@ -908,9 +917,9 @@ const CompanionDetails = () => {
         onClose={() => setShowRequestModal(false)}
         companionId={companion?.id || 0}
         companionName={companion?.name || ''}
-        companionServices={companion?.services_offered || []}
+        companionServices={companion?.servicesOffered || []}
         onRequestCreated={(requestId) => {
-          toast.success('Booking request sent successfully!');
+          // Success toast is handled by the modal itself
           setShowRequestModal(false);
           // Optionally refresh or navigate
         }}
@@ -925,10 +934,10 @@ const CompanionDetails = () => {
           companionName={companion?.name || ''}
           selectedDate={selectedDate}
           selectedTimeSlot={selectedTimeSlot}
-          companionServices={companion?.services_offered || []}
-          hourlyRate={companion?.hourly_rate || 75}
+          companionServices={companion?.servicesOffered || []}
+          hourlyRate={companion?.hourlyRate || 75}
           onBookingCreated={(bookingId) => {
-            toast.success('Booking created successfully!');
+            // Success toast is handled by the modal itself
             // Navigate to booking confirmation or refresh data
             navigate(`/client-dashboard`);
           }}

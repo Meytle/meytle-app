@@ -198,4 +198,7 @@ playground.*
 *.tsbuildinfo
 .vercel
 .turbo
-.cache/
+.cache/# Ignore reserved device names on Windows
+frontend/src/nul
+nul
+

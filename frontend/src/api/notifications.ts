@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import { API_CONFIG } from '../constants';
+import { transformKeysSnakeToCamel, transformKeysCamelToSnake } from '../types/transformers';
 
 // Configure axios instance with credentials support
 const api = axios.create({
@@ -19,22 +20,22 @@ const api = axios.create({
 // Types
 export interface Notification {
   id: number;
-  user_id: number;
+  userId: number;
   type: 'booking' | 'application' | 'payment' | 'account' | 'system';
   title: string;
   message: string;
-  action_url?: string;
-  is_read: boolean;
-  read_at?: string;
-  created_at: string;
+  actionUrl?: string;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
 }
 
 export interface NotificationPreferences {
-  email_enabled: boolean;
-  push_enabled: boolean;
-  booking_notifications: boolean;
-  payment_notifications: boolean;
-  marketing_notifications: boolean;
+  emailEnabled: boolean;
+  pushEnabled: boolean;
+  bookingNotifications: boolean;
+  paymentNotifications: boolean;
+  marketingNotifications: boolean;
 }
 
 export interface NotificationsResponse {
@@ -65,18 +66,24 @@ const notificationApi = {
    * Get user notifications
    */
   getNotifications: async (limit: number = 20, offset: number = 0, unreadOnly: boolean = false) => {
-    const response = await api.get<NotificationsResponse>('/notifications', {
+    const response = await api.get('/notifications', {
       params: { limit, offset, unreadOnly }
     });
-    return response.data;
+    return {
+      status: response.data.status,
+      data: {
+        notifications: response.data.data.notifications, // Backend already transformed to camelCase
+        count: response.data.data.count
+      }
+    };
   },
 
   /**
    * Get unread notification count
    */
   getUnreadCount: async () => {
-    const response = await api.get<UnreadCountResponse>('/notifications/unread-count');
-    return response.data;
+    const response = await api.get('/notifications/unread-count');
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -84,7 +91,7 @@ const notificationApi = {
    */
   markAsRead: async (notificationId: number) => {
     const response = await api.put(`/notifications/${notificationId}/read`);
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -92,7 +99,7 @@ const notificationApi = {
    */
   markAllAsRead: async () => {
     const response = await api.put('/notifications/mark-all-read');
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -100,36 +107,38 @@ const notificationApi = {
    */
   deleteNotification: async (notificationId: number) => {
     const response = await api.delete(`/notifications/${notificationId}`);
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
    * Get notification preferences
    */
   getPreferences: async () => {
-    const response = await api.get<PreferencesResponse>('/notifications/preferences');
-    return response.data;
+    const response = await api.get('/notifications/preferences');
+    return {
+      status: response.data.status,
+      data: {
+        preferences: response.data.data.preferences // Backend already transformed to camelCase
+      }
+    };
   },
 
   /**
    * Update notification preferences
    */
   updatePreferences: async (preferences: Partial<NotificationPreferences>) => {
-    const response = await api.put('/notifications/preferences', preferences);
-    return response.data;
+    const transformedPrefs = transformKeysCamelToSnake(preferences);
+    const response = await api.put('/notifications/preferences', transformedPrefs);
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
    * Create test notification (development only)
    */
   createTestNotification: async (title: string, message: string, type: string = 'system', actionUrl?: string) => {
-    const response = await api.post('/notifications/test', {
-      title,
-      message,
-      type,
-      actionUrl
-    });
-    return response.data;
+    const transformedData = transformKeysCamelToSnake({ title, message, type, actionUrl });
+    const response = await api.post('/notifications/test', transformedData);
+    return response.data; // Backend already transformed to camelCase
   }
 };
 

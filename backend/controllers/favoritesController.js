@@ -4,6 +4,7 @@
  */
 
 const { pool } = require('../config/database');
+const { transformToFrontend, transformArrayToFrontend } = require('../utils/transformer');
 
 /**
  * Add a companion to favorites
@@ -146,7 +147,7 @@ const getFavorites = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: favorites
+      data: transformArrayToFrontend(favorites)
     });
 
   } catch (error) {

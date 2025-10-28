@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { FaCalendar, FaClock, FaUser, FaMapMarkerAlt, FaComments, FaCheck, FaTimes, FaEye, FaDollarSign } from 'react-icons/fa';
+import { FaCalendar, FaClock, FaUser, FaMapMarkerAlt, FaComments, FaCheck, FaTimes, FaEye, FaDollarSign, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { bookingApi } from '../../api/booking';
 import type { Booking } from '../../types';
@@ -19,6 +19,7 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingApprovals, setIsLoadingApprovals] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed' | 'approvals'>('all');
+  const [expandedWeekdays, setExpandedWeekdays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (filter === 'approvals') {
@@ -28,11 +29,31 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
     }
   }, [filter]);
 
+  // Initialize expanded weekdays based on bookings
+  useEffect(() => {
+    if (filter === 'all' && bookings.length > 0) {
+      const weekdaysWithBookings = new Set<string>();
+      bookings.forEach(booking => {
+        const bookingDate = booking.bookingDate;
+        if (bookingDate) {
+          const date = new Date(bookingDate);
+          if (!isNaN(date.getTime())) {
+            const weekdayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+            weekdaysWithBookings.add(weekdayName);
+          }
+        }
+      });
+      setExpandedWeekdays(weekdaysWithBookings);
+    }
+  }, [bookings, filter]);
+
   const fetchBookings = async () => {
     try {
       setIsLoading(true);
       const params = filter === 'all' ? {} : { status: filter };
+      console.log('📚 Fetching companion bookings with params:', params);
       const bookingsData = await bookingApi.getBookings(params);
+      console.log('📊 Received bookings:', bookingsData);
       setBookings(bookingsData);
     } catch (error: any) {
       console.error('Error fetching bookings:', error);
@@ -125,7 +146,21 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Handle null, undefined, or empty date
+    if (!dateString) {
+      return 'Date not available';
+    }
+
+    // Try to parse the date
+    const parsedDate = new Date(dateString);
+
+    // Check if the date is valid
+    if (isNaN(parsedDate.getTime())) {
+      return 'Date not available';
+    }
+
+    // Format valid date
+    return parsedDate.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -134,11 +169,27 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
   };
 
   const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    // Handle null, undefined, or empty time
+    if (!timeString || !timeString.includes(':')) {
+      return 'Time not available';
+    }
+
+    try {
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const minute = parseInt(minutes);
+
+      // Validate the parsed values
+      if (isNaN(hour) || isNaN(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+        return 'Time not available';
+      }
+
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      return 'Time not available';
+    }
   };
 
   const canUpdateStatus = (currentStatus: string, newStatus: string) => {
@@ -163,9 +214,23 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
       grouped[day] = [];
     });
 
+    // Add a special group for invalid dates
+    grouped['Unknown'] = [];
+
     // Group bookings by their weekday
     bookings.forEach(booking => {
-      const date = new Date(booking.booking_date);
+      const bookingDate = booking.bookingDate;
+      if (!bookingDate) {
+        grouped['Unknown'].push(booking);
+        return;
+      }
+
+      const date = new Date(bookingDate);
+      if (isNaN(date.getTime())) {
+        grouped['Unknown'].push(booking);
+        return;
+      }
+
       const weekdayName = date.toLocaleDateString('en-US', { weekday: 'long' });
       if (grouped[weekdayName]) {
         grouped[weekdayName].push(booking);
@@ -175,8 +240,19 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
     // Sort bookings within each day by date and time (newest first)
     Object.keys(grouped).forEach(day => {
       grouped[day].sort((a, b) => {
-        const dateA = new Date(a.booking_date + ' ' + a.start_time);
-        const dateB = new Date(b.booking_date + ' ' + b.start_time);
+        // Handle invalid dates
+        const aBookingDate = a.bookingDate;
+        const bBookingDate = b.bookingDate;
+        if (!aBookingDate || !bBookingDate) return 0;
+
+        const aStartTime = a.startTime || '00:00';
+        const bStartTime = b.startTime || '00:00';
+        const dateA = new Date(aBookingDate + ' ' + aStartTime);
+        const dateB = new Date(bBookingDate + ' ' + bStartTime);
+
+        // If either date is invalid, maintain current order
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+
         return dateB.getTime() - dateA.getTime();
       });
     });
@@ -195,6 +271,18 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
       'Sunday': '🌟'
     };
     return icons[weekday] || '📅';
+  };
+
+  const toggleWeekdayExpansion = (weekday: string) => {
+    setExpandedWeekdays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(weekday)) {
+        newSet.delete(weekday);
+      } else {
+        newSet.add(weekday);
+      }
+      return newSet;
+    });
   };
 
   if (isLoading) {
@@ -221,10 +309,10 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
         </div>
         
         <div className="flex gap-2">
-          {['approvals', 'all', 'pending', 'confirmed', 'completed'].map(status => (
+          {(['approvals', 'all', 'pending', 'confirmed', 'completed'] as const).map(status => (
             <button
               key={status}
-              onClick={() => setFilter(status as any)}
+              onClick={() => setFilter(status)}
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 filter === status
                   ? 'bg-[#312E81] text-white'
@@ -263,8 +351,8 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
                       <FaUser className="text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{booking.client_name || 'Unknown Client'}</h3>
-                      <p className="text-sm text-gray-600">{booking.client_email || 'No email'}</p>
+                      <h3 className="font-semibold text-gray-900">{booking.clientName || 'Unknown Client'}</h3>
+                      <p className="text-sm text-gray-600">{booking.clientEmail || 'No email'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -277,31 +365,31 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <FaCalendar className="w-4 h-4" />
-                    <span>{formatDate(booking.booking_date)}</span>
+                    <span>{formatDate(booking.bookingDate)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <FaClock className="w-4 h-4" />
-                    <span>{formatTime(booking.start_time)} - {formatTime(booking.end_time)}</span>
+                    <span>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
                   </div>
-                  {booking.meeting_location && (
+                  {(booking.meetingLocation) && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <FaMapMarkerAlt className="w-4 h-4" />
-                      <span>{booking.meeting_location}</span>
+                      <span>{booking.meetingLocation}</span>
                     </div>
                   )}
                   <div className="text-sm text-gray-600">
-                    <span className="font-medium">${booking.total_amount.toFixed(2)}</span>
-                    <span className="ml-1">({booking.duration_hours}h)</span>
+                    <span className="font-medium">${(booking.totalAmount || 0).toFixed(2)}</span>
+                    <span className="ml-1">({booking.durationHours || 0}h)</span>
                   </div>
                 </div>
 
-                {booking.special_requests && (
+                {booking.specialRequests && (
                   <div className="mb-4 p-3 bg-white rounded-lg">
                     <div className="flex items-start gap-2">
                       <FaComments className="w-4 h-4 text-gray-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-700">Special Requests:</p>
-                        <p className="text-sm text-gray-600">{booking.special_requests}</p>
+                        <p className="text-sm text-gray-600">{booking.specialRequests}</p>
                       </div>
                     </div>
                   </div>
@@ -346,25 +434,25 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
             const groupedBookings = groupBookingsByWeekday(bookings);
             const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-            return weekdays.map(weekday => (
-              <div key={weekday} className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-[#f9f8ff] to-blue-50 px-4 py-3 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{getWeekdayIcon(weekday)}</span>
-                      <h3 className="font-semibold text-gray-900">{weekday}</h3>
-                    </div>
-                    <span className="px-2 py-1 bg-white rounded-full text-xs font-medium text-gray-600">
-                      {groupedBookings[weekday].length} booking{groupedBookings[weekday].length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
+            return weekdays.map(weekday => {
+              const weekdayBookings = groupedBookings[weekday];
+              const isExpanded = expandedWeekdays.has(weekday);
+              const hasBookings = weekdayBookings.length > 0;
 
-                {groupedBookings[weekday].length === 0 ? (
-                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                    No bookings scheduled for {weekday}
+              return (
+                <div key={weekday} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-[#f9f8ff] to-blue-50 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900">{weekday}</h3>
+                      </div>
+                      <span className={`px-2 py-1 ${hasBookings ? 'bg-white' : 'bg-gray-100'} rounded-full text-xs font-medium text-gray-600`}>
+                        {weekdayBookings.length} booking{weekdayBookings.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                   </div>
-                ) : (
+
+                  {hasBookings && (
                   <div className="divide-y divide-gray-100">
                     {groupedBookings[weekday].map(booking => (
                       <div key={booking.id} className="p-4 hover:bg-gray-50 transition-colors">
@@ -374,66 +462,66 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
                               <FaUser className="text-white" />
                             </div>
                             <div>
-                              <h3 className="font-semibold text-gray-900">{booking.client_name}</h3>
-                              <p className="text-sm text-gray-600">{booking.client_email}</p>
+                              <h3 className="font-semibold text-gray-900">{booking.clientName}</h3>
+                              <p className="text-sm text-gray-600">{booking.clientEmail}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             {getStatusBadge(booking.status)}
-                            {getPaymentStatusBadge(booking.payment_status)}
+                            {getPaymentStatusBadge(booking.paymentStatus)}
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <FaCalendar className="w-4 h-4" />
-                            <span>{formatDate(booking.booking_date)}</span>
+                            <span>{formatDate(booking.bookingDate)}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <FaClock className="w-4 h-4" />
-                            <span>{formatTime(booking.start_time)} - {formatTime(booking.end_time)}</span>
+                            <span>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
                           </div>
-                          {booking.meeting_location && (
+                          {(booking.meetingLocation) && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                               <FaMapMarkerAlt className="w-4 h-4" />
-                              <span>{booking.meeting_location}</span>
+                              <span>{booking.meetingLocation}</span>
                             </div>
                           )}
                           <div className="text-sm text-gray-600">
-                            <span className="font-medium">${booking.total_amount.toFixed(2)}</span>
-                            <span className="ml-1">({booking.duration_hours}h)</span>
+                            <span className="font-medium">${(booking.totalAmount || 0).toFixed(2)}</span>
+                            <span className="ml-1">({booking.durationHours || 0}h)</span>
                           </div>
                         </div>
 
-                        {booking.special_requests && (
+                        {booking.specialRequests && (
                           <div className="mb-4 p-3 bg-white rounded-lg">
                             <div className="flex items-start gap-2">
                               <FaComments className="w-4 h-4 text-gray-500 mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium text-gray-700">Special Requests:</p>
-                                <p className="text-sm text-gray-600">{booking.special_requests}</p>
+                                <p className="text-sm text-gray-600">{booking.specialRequests}</p>
                               </div>
                             </div>
                           </div>
                         )}
 
                         {/* Transfer Information (for completed bookings) */}
-                        {booking.status === 'completed' && booking.transfer_status && (
+                        {booking.status === 'completed' && booking.transferStatus && (
                           <div className="mb-4 p-3 bg-green-50 rounded-lg">
                             <div className="flex items-start gap-2">
                               <FaDollarSign className="w-4 h-4 text-green-600 mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium text-green-800">Payout Information:</p>
                                 <p className="text-sm text-green-700">
-                                  {booking.transfer_status === 'completed'
-                                    ? `Transfer completed! Platform fee: $${booking.platform_fee_amount?.toFixed(2) || '0.00'}, Amount received: $${((booking.total_amount || 0) - (booking.platform_fee_amount || 0)).toFixed(2)}`
-                                    : booking.transfer_status === 'failed'
+                                  {booking.transferStatus === 'completed'
+                                    ? `Transfer completed! Platform fee: $${booking.platformFeeAmount?.toFixed(2) || '0.00'}, Amount received: $${((booking.totalAmount || 0) - (booking.platformFeeAmount || 0)).toFixed(2)}`
+                                    : booking.transferStatus === 'failed'
                                     ? 'Transfer failed. Please contact support.'
                                     : 'Transfer is being processed...'
                                   }
                                 </p>
-                                {booking.transfer_id && (
-                                  <p className="text-xs text-green-600 mt-1">Transfer ID: {booking.transfer_id}</p>
+                                {booking.transferId && (
+                                  <p className="text-xs text-green-600 mt-1">Transfer ID: {booking.transferId}</p>
                                 )}
                               </div>
                             </div>
@@ -479,9 +567,10 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            ));
+                  )}
+                </div>
+              );
+            });
           })()}
         </div>
       ) : (
@@ -495,66 +584,66 @@ const BookingsManager = ({ className = '' }: BookingsManagerProps) => {
                     <FaUser className="text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{booking.client_name}</h3>
-                    <p className="text-sm text-gray-600">{booking.client_email}</p>
+                    <h3 className="font-semibold text-gray-900">{booking.clientName}</h3>
+                    <p className="text-sm text-gray-600">{booking.clientEmail}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {getStatusBadge(booking.status)}
-                  {getPaymentStatusBadge(booking.payment_status)}
+                  {getPaymentStatusBadge(booking.paymentStatus)}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <FaCalendar className="w-4 h-4" />
-                  <span>{formatDate(booking.booking_date)}</span>
+                  <span>{formatDate(booking.bookingDate)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <FaClock className="w-4 h-4" />
-                  <span>{formatTime(booking.start_time)} - {formatTime(booking.end_time)}</span>
+                  <span>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
                 </div>
-                {booking.meeting_location && (
+                {booking.meetingLocation && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <FaMapMarkerAlt className="w-4 h-4" />
-                    <span>{booking.meeting_location}</span>
+                    <span>{booking.meetingLocation}</span>
                   </div>
                 )}
                 <div className="text-sm text-gray-600">
-                  <span className="font-medium">${booking.total_amount.toFixed(2)}</span>
-                  <span className="ml-1">({booking.duration_hours}h)</span>
+                  <span className="font-medium">${(booking.totalAmount || 0).toFixed(2)}</span>
+                  <span className="ml-1">({booking.durationHours || 0}h)</span>
                 </div>
               </div>
 
-              {booking.special_requests && (
+              {booking.specialRequests && (
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-start gap-2">
                     <FaComments className="w-4 h-4 text-gray-500 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-gray-700">Special Requests:</p>
-                      <p className="text-sm text-gray-600">{booking.special_requests}</p>
+                      <p className="text-sm text-gray-600">{booking.specialRequests}</p>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Transfer Information (for completed bookings) */}
-              {booking.status === 'completed' && booking.transfer_status && (
+              {booking.status === 'completed' && booking.transferStatus && (
                 <div className="mb-4 p-3 bg-green-50 rounded-lg">
                   <div className="flex items-start gap-2">
                     <FaDollarSign className="w-4 h-4 text-green-600 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-green-800">Payout Information:</p>
                       <p className="text-sm text-green-700">
-                        {booking.transfer_status === 'completed'
-                          ? `Transfer completed! Platform fee: $${booking.platform_fee_amount?.toFixed(2) || '0.00'}, Amount received: $${((booking.total_amount || 0) - (booking.platform_fee_amount || 0)).toFixed(2)}`
-                          : booking.transfer_status === 'failed'
+                        {booking.transferStatus === 'completed'
+                          ? `Transfer completed! Platform fee: $${booking.platformFeeAmount?.toFixed(2) || '0.00'}, Amount received: $${((booking.totalAmount || 0) - (booking.platformFeeAmount || 0)).toFixed(2)}`
+                          : booking.transferStatus === 'failed'
                           ? 'Transfer failed. Please contact support.'
                           : 'Transfer is being processed...'
                         }
                       </p>
-                      {booking.transfer_id && (
-                        <p className="text-xs text-green-600 mt-1">Transfer ID: {booking.transfer_id}</p>
+                      {booking.transferId && (
+                        <p className="text-xs text-green-600 mt-1">Transfer ID: {booking.transferId}</p>
                       )}
                     </div>
                   </div>

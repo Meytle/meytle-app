@@ -8,6 +8,8 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const config = require('../config/config');
 const { sendWelcomeVerificationEmail, generateVerificationToken } = require('../services/emailService');
+const { transformToFrontend } = require('../utils/transformer');
+const logger = require('../services/logger');
 
 /**
  * Sign up a new user
@@ -17,7 +19,7 @@ const signup = async (req, res) => {
     const { name, email, password, roles } = req.body;
 
     // Log incoming signup request
-    console.log('📨 Signup request received:', {
+    logger.authInfo('signup_request', null, 'Signup request received', {
       name: name ? `${name.substring(0, 3)}***` : 'missing',
       email: email ? `${email.split('@')[0].substring(0, 3)}***@${email.split('@')[1] || ''}` : 'missing',
       passwordLength: password ? password.length : 0,
@@ -27,7 +29,7 @@ const signup = async (req, res) => {
 
     // Validate required fields
     if (!name || !email || !password || !roles) {
-      console.log('❌ Missing required fields:', {
+      logger.authInfo('signup_validation_failed', null, 'Missing required fields', {
         hasName: !!name,
         hasEmail: !!email,
         hasPassword: !!password,
@@ -63,7 +65,7 @@ const signup = async (req, res) => {
 
     // Validate password strength
     if (password.length < 8) {
-      console.log('❌ Password too short:', password.length, 'characters');
+      logger.authInfo('signup_validation_failed', null, 'Password too short', { passwordLength: password.length });
       return res.status(400).json({
         status: 'error',
         message: 'Password must be at least 8 characters long'
@@ -76,7 +78,7 @@ const signup = async (req, res) => {
     const hasNumbers = /\d/.test(password);
     const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
 
-    console.log('🔐 Password validation:', {
+    logger.authInfo('password_validation', null, 'Password validation', {
       length: password.length,
       hasUpperCase,
       hasLowerCase,
@@ -86,7 +88,7 @@ const signup = async (req, res) => {
     });
 
     if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-      console.log('❌ Password complexity failed');
+      logger.authInfo('signup_validation_failed', null, 'Password complexity failed');
       return res.status(400).json({
         status: 'error',
         message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
@@ -94,20 +96,20 @@ const signup = async (req, res) => {
     }
 
     // Check if user already exists
-    console.log('🔍 Checking if email exists:', email);
+    logger.authInfo('email_check', null, 'Checking if email exists', { email });
     const [existingUsers] = await pool.execute(
       'SELECT id FROM users WHERE email = ?',
       [email]
     );
 
     if (existingUsers.length > 0) {
-      console.log('❌ Email already exists in database');
+      logger.authInfo('signup_validation_failed', null, 'Email already exists in database', { email });
       return res.status(400).json({
         status: 'error',
         message: 'User with this email already exists'
       });
     }
-    console.log('✅ Email is available');
+    logger.authInfo('email_check', null, 'Email is available', { email });
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -138,9 +140,9 @@ const signup = async (req, res) => {
     // Send verification email
     try {
       await sendWelcomeVerificationEmail(email, name, verificationToken);
-      console.log('✅ Verification email sent to:', email);
+      logger.authInfo('verification_email_sent', userId, 'Verification email sent', { email });
     } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError);
+      logger.authError('verification_email_failed', emailError, userId);
       // Don't fail signup if email fails, but warn the user
     }
 
@@ -160,14 +162,14 @@ const signup = async (req, res) => {
     });
 
     // Also set user data in a separate cookie (not httpOnly so frontend can read it)
-    const userData = {
+    const userData = transformToFrontend({
       id: userId,
       name,
       email,
       roles: roleArray,
       activeRole: primaryRole,
-      emailVerified: false // Not verified until user clicks email link
-    };
+      email_verified: false // Not verified until user clicks email link
+    });
     res.cookie('userData', JSON.stringify(userData), {
       httpOnly: false,       // Frontend needs to read this
       secure: process.env.NODE_ENV === 'production',
@@ -185,8 +187,7 @@ const signup = async (req, res) => {
       message: 'Account created successfully!'
     };
 
-    console.log('✅ Signup successful, setting cookies and sending response:', {
-      userId,
+    logger.authInfo('signup_success', userId, 'Signup successful, setting cookies and sending response', {
       email,
       roles: roleArray,
       activeRole: primaryRole,
@@ -195,12 +196,7 @@ const signup = async (req, res) => {
 
     res.status(201).json(responseData);
   } catch (error) {
-    console.error('❌ Signup error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code
-    });
+    logger.controllerError('authController', 'signup', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create account. Please try again.',
@@ -256,7 +252,19 @@ const login = async (req, res) => {
     );
 
     const roles = userRoles.map(role => role.role);
-    const activeRole = user.role; // Use primary role as default active role
+
+    // Intelligently determine the active role
+    // If user has companion role, prefer it over client role
+    let activeRole = user.role; // Default to primary role
+
+    // Check if user has companion role and prioritize it
+    if (roles.includes('companion')) {
+      logger.authInfo('role_selection', user.id, 'User has companion role, setting as activeRole', { email: user.email });
+      activeRole = 'companion';
+    } else if (roles.includes('admin')) {
+      logger.authInfo('role_selection', user.id, 'User has admin role, setting as activeRole', { email: user.email });
+      activeRole = 'admin';
+    }
 
     // Generate JWT token with roles array
     const token = jwt.sign(
@@ -274,14 +282,14 @@ const login = async (req, res) => {
     });
 
     // Also set user data in a separate cookie (not httpOnly so frontend can read it)
-    const userData = {
+    const userData = transformToFrontend({
       id: user.id,
       name: user.name,
       email: user.email,
       roles,
       activeRole,
-      emailVerified: user.email_verified
-    };
+      email_verified: user.email_verified
+    });
     res.cookie('userData', JSON.stringify(userData), {
       httpOnly: false,       // Frontend needs to read this
       secure: process.env.NODE_ENV === 'production',
@@ -298,7 +306,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.controllerError('authController', 'login', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to sign in. Please try again.',
@@ -346,7 +354,7 @@ const getProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    logger.controllerError('authController', 'getProfile', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch profile',
@@ -411,7 +419,7 @@ const verifyEmail = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Email verification error:', error);
+    logger.controllerError('authController', 'verifyEmail', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to verify email',
@@ -462,9 +470,9 @@ const resendVerification = async (req, res) => {
     // Send combined welcome + verification email
     try {
       await sendWelcomeVerificationEmail(user.email, user.name, user.role, verificationToken);
-      console.log('✅ Welcome + Verification email resent to:', user.email);
+      logger.authInfo('verification_email_resent', userId, 'Welcome + Verification email resent', { email: user.email });
     } catch (emailError) {
-      console.error('❌ Failed to resend welcome + verification email:', emailError);
+      logger.authError('verification_email_failed', emailError, userId);
       return res.status(500).json({
         status: 'error',
         message: 'Failed to send verification email'
@@ -476,7 +484,7 @@ const resendVerification = async (req, res) => {
       message: 'Verification email sent successfully!'
     });
   } catch (error) {
-    console.error('Resend verification error:', error);
+    logger.controllerError('authController', 'resendVerification', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to resend verification email',
@@ -550,14 +558,14 @@ const switchRole = async (req, res) => {
     });
 
     // Update user data cookie with new active role
-    const userData = {
+    const userData = transformToFrontend({
       id: userId,
       name: user.name,
       email: user.email,
       roles,
       activeRole: role,
-      emailVerified: user.email_verified
-    };
+      email_verified: user.email_verified
+    });
     res.cookie('userData', JSON.stringify(userData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
@@ -574,7 +582,7 @@ const switchRole = async (req, res) => {
       message: `Successfully switched to ${role} role`
     });
   } catch (error) {
-    console.error('Switch role error:', error);
+    logger.controllerError('authController', 'switchRole', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to switch role',
@@ -609,7 +617,7 @@ const signout = async (req, res) => {
       message: 'Successfully signed out'
     });
   } catch (error) {
-    console.error('Signout error:', error);
+    logger.controllerError('authController', 'signout', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to sign out',
@@ -641,7 +649,7 @@ const deleteAccount = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      console.log(`🗑️ Starting account deletion for user ${userId} (${userEmail})`);
+      logger.authInfo('account_deletion_start', userId, 'Starting account deletion', { email: userEmail });
 
       // Delete from companion-related tables
       await connection.query('DELETE FROM companion_interests WHERE companion_id = ?', [userId]);
@@ -662,7 +670,7 @@ const deleteAccount = async (req, res) => {
 
       // Commit transaction
       await connection.commit();
-      console.log(`✅ Account deleted successfully for user ${userId}`);
+      logger.authInfo('account_deletion_success', userId, 'Account deleted successfully');
 
       res.status(200).json({
         status: 'success',
@@ -671,13 +679,13 @@ const deleteAccount = async (req, res) => {
     } catch (error) {
       // Rollback transaction on error
       await connection.rollback();
-      console.error('❌ Error during account deletion transaction:', error);
+      logger.authError('account_deletion_transaction_error', error, userId);
       throw error;
     } finally {
       connection.release();
     }
   } catch (error) {
-    console.error('Delete account error:', error);
+    logger.controllerError('authController', 'deleteAccount', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to delete account. Please try again.',

@@ -3,6 +3,7 @@
  */
 
 const mysql = require('mysql2');
+const logger = require('../services/logger');
 
 // Database configuration - no hardcoded passwords allowed
 const dbConfig = {
@@ -28,7 +29,7 @@ const promisePool = pool.promise();
 
 // Pool event handlers for monitoring
 pool.on('connection', (connection) => {
-  console.log('✅ New database connection established (ID: ' + connection.threadId + ')');
+  logger.dbInfo('pool', 'New database connection established', { threadId: connection.threadId });
 
   // Set session variables for better performance
   connection.query("SET time_zone = '+00:00'");
@@ -36,28 +37,28 @@ pool.on('connection', (connection) => {
 });
 
 pool.on('acquire', (connection) => {
-  console.log('📊 Connection %d acquired from pool', connection.threadId);
+  logger.dbInfo('pool', 'Connection acquired from pool', { threadId: connection.threadId });
 });
 
 pool.on('release', (connection) => {
-  console.log('📊 Connection %d released back to pool', connection.threadId);
+  logger.dbInfo('pool', 'Connection released back to pool', { threadId: connection.threadId });
 });
 
 pool.on('enqueue', () => {
-  console.log('⏳ Waiting for available connection slot');
+  logger.dbInfo('pool', 'Waiting for available connection slot', {});
 });
 
 // Handle pool errors
 pool.on('error', (err) => {
-  console.error('❌ Unexpected database pool error:', err);
+  logger.dbError('pool', err, null);
   if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.error('Database connection was closed.');
+    logger.dbError('pool', new Error('Database connection was closed'), null);
   }
   if (err.code === 'ER_CON_COUNT_ERROR') {
-    console.error('Database has too many connections.');
+    logger.dbError('pool', new Error('Database has too many connections'), null);
   }
   if (err.code === 'ECONNREFUSED') {
-    console.error('Database connection was refused.');
+    logger.dbError('pool', new Error('Database connection was refused'), null);
   }
 });
 
@@ -74,20 +75,20 @@ const testConnection = async (retries = 3, delay = 5000) => {
       });
 
       await connection.promise().query('SELECT 1');
-      console.log('✅ MySQL Server connected successfully');
+      logger.dbInfo('testConnection', 'MySQL Server connected successfully', {});
       await connection.end();
       return true;
     } catch (error) {
-      console.error(`❌ MySQL connection attempt ${i + 1} failed:`, error.message);
+      logger.dbError('testConnection', error, null, { attempt: i + 1, retries });
 
       if (i < retries - 1) {
-        console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
+        logger.dbInfo('testConnection', `Retrying in ${delay / 1000} seconds`, { attempt: i + 1 });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
 
-  console.error('❌ Could not establish database connection after ' + retries + ' attempts');
+  logger.dbError('testConnection', new Error(`Could not establish database connection after ${retries} attempts`), null);
   return false;
 };
 
@@ -114,9 +115,9 @@ const checkPoolHealth = async () => {
 const closePool = async () => {
   try {
     await promisePool.end();
-    console.log('✅ Database pool closed gracefully');
+    logger.dbInfo('closePool', 'Database pool closed gracefully', {});
   } catch (error) {
-    console.error('❌ Error closing database pool:', error);
+    logger.dbError('closePool', error, null);
   }
 };
 
@@ -132,7 +133,7 @@ const initializeDatabase = async () => {
     });
 
     await connection.promise().query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
-    console.log(`✅ Database '${dbConfig.database}' ready`);
+    logger.dbInfo('initializeDatabase', `Database '${dbConfig.database}' ready`, {});
     await connection.end();
 
     // Create users table
@@ -154,7 +155,7 @@ const initializeDatabase = async () => {
         INDEX idx_verification_token (email_verification_token)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Users table ready');
+    logger.dbInfo('initializeDatabase', 'Users table ready', {});
 
     // Ensure users table has email verification columns and indexes (for existing databases)
     try {
@@ -217,7 +218,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Users table migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'users_table' });
     }
 
     // Create companion_applications table
@@ -245,7 +246,7 @@ const initializeDatabase = async () => {
         INDEX idx_status (status)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Companion applications table ready');
+    logger.dbInfo('initializeDatabase', 'Companion applications table ready', {});
 
     // Create client_verifications table
     await promisePool.query(`
@@ -275,7 +276,7 @@ const initializeDatabase = async () => {
         INDEX idx_verification_status (verification_status)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Client verifications table ready');
+    logger.dbInfo('initializeDatabase', 'Client verifications table ready', {});
 
     // Add new columns to existing client_verifications table (migration)
     try {
@@ -291,7 +292,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN address_line VARCHAR(255) NULL AFTER location`
         );
-        console.log('✅ Added address_line column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added address_line column to client_verifications', {});
       }
 
       // Add city column
@@ -304,7 +305,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN city VARCHAR(100) NULL AFTER address_line`
         );
-        console.log('✅ Added city column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added city column to client_verifications', {});
       }
 
       // Add state column
@@ -317,7 +318,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN state VARCHAR(100) NULL AFTER city`
         );
-        console.log('✅ Added state column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added state column to client_verifications', {});
       }
 
       // Add country column
@@ -330,7 +331,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN country VARCHAR(100) NULL AFTER state`
         );
-        console.log('✅ Added country column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added country column to client_verifications', {});
       }
 
       // Add postal_code column
@@ -343,7 +344,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN postal_code VARCHAR(20) NULL AFTER country`
         );
-        console.log('✅ Added postal_code column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added postal_code column to client_verifications', {});
       }
 
       // Add rejection_reason column
@@ -356,7 +357,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN rejection_reason TEXT NULL AFTER verification_status`
         );
-        console.log('✅ Added rejection_reason column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added rejection_reason column to client_verifications', {});
       }
 
       // Add reviewed_at column
@@ -369,10 +370,10 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE client_verifications ADD COLUMN reviewed_at TIMESTAMP NULL AFTER verified_at`
         );
-        console.log('✅ Added reviewed_at column to client_verifications');
+        logger.dbInfo('initializeDatabase', 'Added reviewed_at column to client_verifications', {});
       }
     } catch (migrationError) {
-      console.error('❌ Client verifications table migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'client_verifications_table' });
     }
 
     // Create companion_availability table
@@ -393,7 +394,7 @@ const initializeDatabase = async () => {
         UNIQUE KEY unique_companion_day_time (companion_id, day_of_week, start_time)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Companion availability table ready');
+    logger.dbInfo('initializeDatabase', 'Companion availability table ready', {});
 
     // Add services column to existing companion_availability table (migration)
     try {
@@ -407,10 +408,10 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE companion_availability ADD COLUMN services JSON NULL`
         );
-        console.log('✅ Added services column to companion_availability table');
+        logger.dbInfo('initializeDatabase', 'Added services column to companion_availability table', {});
       }
     } catch (migrationError) {
-      console.error('❌ Services column migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'companion_availability_services' });
     }
 
     // Create service_categories table
@@ -426,13 +427,13 @@ const initializeDatabase = async () => {
         INDEX idx_is_active (is_active)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Service categories table ready');
+    logger.dbInfo('initializeDatabase', 'Service categories table ready', {});
 
     // Drop redundant idx_name index if it exists (migration for existing databases)
     try {
       const dbName = dbConfig.database;
       const [[{ idx_name_exists }]] = await promisePool.query(
-        `SELECT COUNT(*) AS idx_name_exists FROM information_schema.STATISTICS 
+        `SELECT COUNT(*) AS idx_name_exists FROM information_schema.STATISTICS
          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'service_categories' AND INDEX_NAME = 'idx_name'`,
         [dbName]
       );
@@ -440,10 +441,10 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE service_categories DROP INDEX idx_name`
         );
-        console.log('✅ Dropped redundant idx_name index from service_categories');
+        logger.dbInfo('initializeDatabase', 'Dropped redundant idx_name index from service_categories', {});
       }
     } catch (migrationError) {
-      console.error('❌ Drop idx_name migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'drop_idx_name' });
     }
 
     // Create bookings table
@@ -481,7 +482,7 @@ const initializeDatabase = async () => {
         INDEX idx_payment_status (payment_status)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Bookings table ready');
+    logger.dbInfo('initializeDatabase', 'Bookings table ready', {});
 
     // Create booking_requests table for when no time slots are available
     await promisePool.query(`
@@ -519,7 +520,7 @@ const initializeDatabase = async () => {
         INDEX idx_created_at (created_at)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Booking requests table ready');
+    logger.dbInfo('initializeDatabase', 'Booking requests table ready', {});
 
     // Add service_category_id column to existing bookings table (migration)
     try {
@@ -562,7 +563,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Bookings service_category_id migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'bookings_service_category_id' });
     }
 
     // Add meeting_type column to existing bookings table (migration)
@@ -592,7 +593,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Bookings meeting_type migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'bookings_meeting_type' });
     }
 
     // Add payment-related columns to existing bookings table (migration)
@@ -659,7 +660,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Bookings payment fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'bookings_payment_fields' });
     }
 
     // Add address-related columns to companion_applications table (migration)
@@ -738,7 +739,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Companion applications address fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'companion_applications_address_fields' });
     }
 
     // Add profile-related columns to companion_applications table (migration)
@@ -810,7 +811,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Companion profile fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'companion_profile_fields' });
     }
 
     // Add additional companion profile columns (migration)
@@ -853,7 +854,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Additional companion profile fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'additional_companion_profile_fields' });
     }
 
     // Add Stripe-related columns to companion_applications table (migration)
@@ -919,7 +920,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Companion applications Stripe fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'companion_applications_stripe_fields' });
     }
 
     // Add Stripe transfer-related columns to bookings table (migration)
@@ -974,7 +975,7 @@ const initializeDatabase = async () => {
         );
       }
     } catch (migrationError) {
-      console.error('❌ Bookings Stripe transfer fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'bookings_stripe_transfer_fields' });
     }
 
     // Add custom service fields to bookings table for client-specified services
@@ -991,7 +992,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE bookings ADD COLUMN custom_service_name VARCHAR(255) NULL`
         );
-        console.log('✅ Added custom_service_name column to bookings table');
+        logger.dbInfo('initializeDatabase', 'Added custom_service_name column to bookings table', {});
       }
 
       // Add custom_service_description column
@@ -1006,7 +1007,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE bookings ADD COLUMN custom_service_description TEXT NULL`
         );
-        console.log('✅ Added custom_service_description column to bookings table');
+        logger.dbInfo('initializeDatabase', 'Added custom_service_description column to bookings table', {});
       }
 
       // Add is_custom_service column for easier querying
@@ -1021,7 +1022,7 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE bookings ADD COLUMN is_custom_service BOOLEAN NOT NULL DEFAULT FALSE`
         );
-        console.log('✅ Added is_custom_service column to bookings table');
+        logger.dbInfo('initializeDatabase', 'Added is_custom_service column to bookings table', {});
       }
 
       // Add index on is_custom_service for efficient filtering
@@ -1036,10 +1037,10 @@ const initializeDatabase = async () => {
         await promisePool.query(
           `ALTER TABLE bookings ADD INDEX idx_is_custom_service (is_custom_service)`
         );
-        console.log('✅ Added index on is_custom_service');
+        logger.dbInfo('initializeDatabase', 'Added index on is_custom_service', {});
       }
     } catch (migrationError) {
-      console.error('❌ Bookings custom service fields migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'bookings_custom_service_fields' });
     }
 
     // Create booking_reviews table
@@ -1062,7 +1063,7 @@ const initializeDatabase = async () => {
         INDEX idx_rating (rating)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Booking reviews table ready');
+    logger.dbInfo('initializeDatabase', 'Booking reviews table ready', {});
 
     // Create user_roles table for dual role support
     await promisePool.query(`
@@ -1080,7 +1081,7 @@ const initializeDatabase = async () => {
         UNIQUE KEY unique_user_role (user_id, role)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ User roles table ready');
+    logger.dbInfo('initializeDatabase', 'User roles table ready', {});
 
     // Create companion_interests table
     await promisePool.query(`
@@ -1096,7 +1097,7 @@ const initializeDatabase = async () => {
         UNIQUE KEY unique_companion_interest (companion_id, interest_name)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Companion interests table ready');
+    logger.dbInfo('initializeDatabase', 'Companion interests table ready', {});
 
     // Create favorite_companions table for clients to save their favorite companions
     await promisePool.query(`
@@ -1112,7 +1113,7 @@ const initializeDatabase = async () => {
         UNIQUE KEY unique_favorite (client_id, companion_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    console.log('✅ Favorite companions table ready');
+    logger.dbInfo('initializeDatabase', 'Favorite companions table ready', {});
 
     // Create notifications table
     await promisePool.query(`
@@ -1131,7 +1132,7 @@ const initializeDatabase = async () => {
         INDEX idx_created (created_at DESC)
       )
     `);
-    console.log('✅ Notifications table ready');
+    logger.dbInfo('initializeDatabase', 'Notifications table ready', {});
 
     // Create notification preferences table
     await promisePool.query(`
@@ -1148,7 +1149,7 @@ const initializeDatabase = async () => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
-    console.log('✅ Notification preferences table ready');
+    logger.dbInfo('initializeDatabase', 'Notification preferences table ready', {});
 
     // Drop and recreate audit log table to fix constraint issues
     try {
@@ -1175,7 +1176,7 @@ const initializeDatabase = async () => {
         FOREIGN KEY (changed_by_id) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
-    console.log('✅ Created availability_audit_log table');
+    logger.dbInfo('initializeDatabase', 'Created availability_audit_log table', {});
 
     // Drop existing triggers if they exist (for clean updates)
     try {
@@ -1207,7 +1208,7 @@ const initializeDatabase = async () => {
         END IF;
       END
     `);
-    console.log('✅ Created trigger: validate_availability_insert');
+    logger.dbInfo('initializeDatabase', 'Created trigger: validate_availability_insert', {});
 
     // Create trigger to prevent updating to different companion_id
     await promisePool.query(`
@@ -1221,7 +1222,7 @@ const initializeDatabase = async () => {
         END IF;
       END
     `);
-    console.log('✅ Created trigger: prevent_cross_companion_update');
+    logger.dbInfo('initializeDatabase', 'Created trigger: prevent_cross_companion_update', {});
 
     // Create data integrity check stored procedure for admin use
     await promisePool.query(`
@@ -1270,7 +1271,7 @@ const initializeDatabase = async () => {
         WHERE a1.start_time < a2.end_time AND a1.end_time > a2.start_time;
       END
     `);
-    console.log('✅ Created stored procedure: check_availability_integrity');
+    logger.dbInfo('initializeDatabase', 'Created stored procedure: check_availability_integrity', {});
 
     // Migrate existing users to user_roles table
     try {
@@ -1291,14 +1292,14 @@ const initializeDatabase = async () => {
           `, [user.id, user.role]);
         }
       }
-      console.log('✅ Migrated existing users to user_roles table');
+      logger.dbInfo('initializeDatabase', 'Migrated existing users to user_roles table', {});
     } catch (migrationError) {
-      console.error('❌ User roles migration failed:', migrationError.message);
+      logger.dbError('initializeDatabase', migrationError, null, { migration: 'user_roles' });
     }
 
     return true;
   } catch (error) {
-    console.error('❌ Database initialization failed:', error.message);
+    logger.dbError('initializeDatabase', error, null);
     throw error;
   }
 };

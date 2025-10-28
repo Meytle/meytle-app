@@ -14,7 +14,7 @@ import QuickBookingModal from '../components/booking/QuickBookingModal';
 import Badge from '../components/common/Badge';
 import VerificationModal from '../components/VerificationModal';
 import { useAuth } from '../hooks/useAuth';
-import { companionsApi, type Companion as CompanionData } from '../api/companions';
+import { companionsApi } from '../api/companions';
 import clientApi from '../api/client';
 import type { Companion } from '../types';
 import { toast } from 'react-hot-toast';
@@ -26,7 +26,7 @@ type VerificationStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
 const BrowseCompanions = () => {
   const { user, isAuthenticated, switchRole, hasRole, signOut } = useAuth();
   const navigate = useNavigate();
-  const [companions, setCompanions] = useState<CompanionData[]>([]);
+  const [companions, setCompanions] = useState<Companion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCompanion, setSelectedCompanion] = useState<Companion | null>(null);
@@ -96,28 +96,28 @@ const BrowseCompanions = () => {
 
       // Check verification status
       const status = await clientApi.getVerificationStatus();
-      setVerificationStatus(status.verification_status || 'not_submitted');
+      setVerificationStatus(status.verificationStatus || 'not_submitted');
 
       // Check if location is set (checking for proper address fields)
       const profile = await clientApi.getProfile();
       const hasAddress = !!(
-        profile.verification?.address_line &&
+        profile.verification?.addressLine &&
         profile.verification?.city &&
         profile.verification?.country
       );
       setHasLocation(hasAddress);
 
       // Don't automatically show modal - let the UI handle it
-      if (status.verification_status === 'not_submitted' || status.verification_status === 'rejected') {
+      if (status.verificationStatus === 'not_submitted' || status.verificationStatus === 'rejected') {
         // Just set the status, don't open modal automatically
         // setShowVerificationModal(true); // Removed to keep header visible
-      } else if (!hasAddress && status.verification_status !== 'approved') {
+      } else if (!hasAddress && status.verificationStatus !== 'approved') {
         toast.error('Please add your complete address in your profile before browsing companions');
         navigate('/client-profile');
       }
 
       // Only fetch companions if approved
-      if (status.verification_status === 'approved') {
+      if (status.verificationStatus === 'approved') {
         await fetchCompanions();
       }
     } catch (error) {
@@ -174,7 +174,7 @@ const BrowseCompanions = () => {
     .filter(companion => {
       // Filter by interests if any selected
       if (selectedInterests.length > 0) {
-        const hasMatchingInterest = companion.interests?.some(interest =>
+        const hasMatchingInterest = companion.interests?.some((interest: string) =>
           selectedInterests.includes(interest)
         );
         if (!hasMatchingInterest) return false;
@@ -182,7 +182,7 @@ const BrowseCompanions = () => {
 
       // Filter by services if any selected
       if (selectedServices.length > 0) {
-        const hasMatchingService = companion.services?.some(service =>
+        const hasMatchingService = companion.services?.some((service: string) =>
           selectedServices.includes(service)
         );
         if (!hasMatchingService) return false;
@@ -206,7 +206,7 @@ const BrowseCompanions = () => {
     }
   };
 
-  const handleBookCompanion = (companion: CompanionData) => {
+  const handleBookCompanion = (companion: Companion) => {
     // Redirect to signin if not authenticated
     if (!isAuthenticated) {
       navigate('/signin');
@@ -223,12 +223,12 @@ const BrowseCompanions = () => {
       rating: 5,
       reviewCount: 0,
       responseTime: '30 minutes',
-      imageUrl: companion.profile_photo_url ? `${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profile_photo_url}` : '',
-      profile_photo_url: companion.profile_photo_url,
+      imageUrl: companion.profilePhotoUrl ? `${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profilePhotoUrl}` : '',
+      profilePhotoUrl: companion.profilePhotoUrl,
       isVerified: true,
       isAvailable: true,
       interests: companion.interests || [],
-      joined_date: companion.joined_date
+      joinedDate: companion.joinedDate
     };
 
     setSelectedCompanion(companionForBooking);
@@ -744,11 +744,13 @@ const BrowseCompanions = () => {
                 >
                   {/* Profile Photo - Cleaner, smaller */}
                   <div className="relative h-56 bg-gradient-to-br from-[#f0effe] to-[#f0effe]">
-                    {companion.profile_photo_url ? (
+                    {companion.profilePhotoUrl ? (
                       <img
-                        src={`${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profile_photo_url}`}
+                        src={`${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profilePhotoUrl}`}
                         alt={displayName}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
@@ -756,7 +758,7 @@ const BrowseCompanions = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`${companion.profile_photo_url ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#4A47A3] to-[#4A47A3]`}>
+                    <div className={`${companion.profilePhotoUrl ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#4A47A3] to-[#4A47A3]`}>
                       <FaUser className="text-white text-5xl opacity-80" />
                     </div>
 
@@ -810,7 +812,7 @@ const BrowseCompanions = () => {
                     {companion.interests && companion.interests.length > 0 && (
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-1.5">
-                          {companion.interests.slice(0, 3).map((interest, index) => (
+                          {companion.interests.slice(0, 3).map((interest: string, index: number) => (
                             <span
                               key={index}
                               className="px-2.5 py-1 bg-[#f0effe] text-[#1E1B4B] text-xs font-medium rounded-full"

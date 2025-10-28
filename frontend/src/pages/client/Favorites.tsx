@@ -71,11 +71,11 @@ const Favorites: React.FC = () => {
       age: 0, // Age not available in favorites, using default
       location: companion.location || 'Location not specified',
       description: companion.bio || 'Professional companion',
-      rating: companion.average_rating || 0,
-      reviewCount: companion.review_count || 0,
+      rating: companion.averageRating || 0,
+      reviewCount: companion.reviewCount || 0,
       responseTime: '30 minutes',
-      imageUrl: companion.profile_photo_url ? `${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profile_photo_url}` : '',
-      isVerified: companion.is_verified || false,
+      imageUrl: companion.profilePhotoUrl ? `${API_CONFIG.BASE_URL.replace('/api', '')}${companion.profilePhotoUrl}` : '',
+      isVerified: companion.isVerified || false,
       isAvailable: true,
       interests: [] // Required property, not available in favorites data
     };
@@ -86,7 +86,7 @@ const Favorites: React.FC = () => {
 
   const handleBookingCreated = (bookingId: number) => {
     console.log('Booking created with ID:', bookingId);
-    toast.success('Booking request sent successfully!');
+    // Success toast is handled by the modal itself
   };
 
   const filteredAndSortedFavorites = React.useMemo(() => {
@@ -107,7 +107,7 @@ const Favorites: React.FC = () => {
         sorted.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case 'rating':
-        sorted.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+        sorted.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
         break;
       case 'recent':
       default:
@@ -202,11 +202,13 @@ const Favorites: React.FC = () => {
               >
                 {/* Image */}
                 <div className="relative h-48 bg-gradient-to-br from-[#4A47A3] to-[#FFCCCB]">
-                  {companion.profile_photo_url ? (
+                  {companion.profilePhotoUrl ? (
                     <img
-                      src={`http://localhost:5000${companion.profile_photo_url}`}
+                      src={`http://localhost:5000${companion.profilePhotoUrl}`}
                       alt={companion.name}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
@@ -235,7 +237,7 @@ const Favorites: React.FC = () => {
                   </div>
 
                   {/* Verified Badge */}
-                  {companion.is_verified && (
+                  {companion.isVerified && (
                     <div className="absolute top-3 left-3 bg-white/90 px-2 py-1 rounded-full">
                       <span className="text-xs font-semibold text-green-600">
                         ✓ Verified
@@ -270,23 +272,23 @@ const Favorites: React.FC = () => {
                   {/* Rating and Price */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      {companion.average_rating ? (
+                      {companion.averageRating ? (
                         <>
                           <div className="flex items-center gap-0.5">
-                            {renderStars(companion.average_rating)}
+                            {renderStars(companion.averageRating)}
                           </div>
                           <span className="text-sm text-gray-600 ml-1">
-                            ({companion.review_count || 0})
+                            ({companion.reviewCount || 0})
                           </span>
                         </>
                       ) : (
                         <span className="text-sm text-gray-500">No reviews yet</span>
                       )}
                     </div>
-                    {companion.hourly_rate && (
+                    {companion.hourlyRate && (
                       <div className="text-right">
                         <span className="text-lg font-bold text-[#312E81]">
-                          ${companion.hourly_rate}
+                          ${companion.hourlyRate}
                         </span>
                         <span className="text-xs text-gray-500">/hr</span>
                       </div>
@@ -304,7 +306,7 @@ const Favorites: React.FC = () => {
                       Book Now
                     </button>
                     <p className="text-xs text-gray-500 text-center mt-2">
-                      Added {new Date(companion.favorited_at).toLocaleDateString('en-US', {
+                      Added {new Date(companion.favoritedAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'

@@ -47,7 +47,7 @@ const BookingCreate = () => {
   }, [location.state, isAuthenticated, navigate]);
 
   const handleBookingCreated = (bookingId: number) => {
-    toast.success('Booking created successfully! The companion will review and confirm your booking.');
+    // Success toast is handled by BookingForm component
     navigate('/client-dashboard');
   };
 

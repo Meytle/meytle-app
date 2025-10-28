@@ -161,10 +161,10 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
     if (!template) return;
 
     const newSlots = template.schedule.map(slot => ({
-      day_of_week: slot.day,
-      start_time: slot.start,
-      end_time: slot.end,
-      is_available: true,
+      dayOfWeek: slot.day,
+      startTime: slot.start,
+      endTime: slot.end,
+      isAvailable: true,
       services: companionServices,
       isNew: true,
       tempId: `${slot.day}-${slot.start}-${Date.now()}`
@@ -177,10 +177,10 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
 
   const addTimeSlot = (day: string) => {
     const newSlot: AvailabilitySlotExtended = {
-      day_of_week: day,
-      start_time: '09:00',
-      end_time: '17:00',
-      is_available: true,
+      dayOfWeek: day,
+      startTime: '09:00',
+      endTime: '17:00',
+      isAvailable: true,
       services: companionServices,
       isNew: true,
       tempId: `${day}-${Date.now()}`
@@ -232,11 +232,11 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
 
     DAYS_OF_WEEK.forEach(day => {
       const daySlots = availability
-        .filter(slot => slot.day_of_week === day)
-        .sort((a, b) => a.start_time.localeCompare(b.start_time));
+        .filter(slot => slot.dayOfWeek === day)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
       for (let i = 0; i < daySlots.length - 1; i++) {
-        if (daySlots[i].end_time > daySlots[i + 1].start_time) {
+        if (daySlots[i].endTime > daySlots[i + 1].startTime) {
           overlaps.push(day);
         }
       }
@@ -255,8 +255,8 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
 
   const getDaySlots = (day: string) => {
     return availability
-      .filter(slot => slot.day_of_week === day)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+      .filter(slot => slot.dayOfWeek === day)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
   };
 
   const clearAll = () => {
@@ -279,9 +279,9 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
         sourceSlots.forEach(slot => {
           newSlots.push({
             ...slot,
-            day_of_week: day,
+            dayOfWeek: day,
             isNew: true,
-            tempId: `${day}-${slot.start_time}-${Date.now()}`,
+            tempId: `${day}-${slot.startTime}-${Date.now()}`,
             id: undefined
           });
         });
@@ -289,7 +289,7 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
     });
 
     setAvailability([
-      ...availability.filter(s => s.day_of_week === fromDay),
+      ...availability.filter(s => s.dayOfWeek === fromDay),
       ...newSlots
     ]);
 
@@ -449,15 +449,15 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
                               <div className="flex gap-1">
                                 <input
                                   type="time"
-                                  value={slot.start_time}
-                                  onChange={e => updateTimeSlot(identifier, { start_time: e.target.value })}
+                                  value={slot.startTime}
+                                  onChange={e => updateTimeSlot(identifier, { startTime: e.target.value })}
                                   className="flex-1 px-2 py-1 text-xs border rounded"
                                 />
                                 <span className="text-xs self-center">-</span>
                                 <input
                                   type="time"
-                                  value={slot.end_time}
-                                  onChange={e => updateTimeSlot(identifier, { end_time: e.target.value })}
+                                  value={slot.endTime}
+                                  onChange={e => updateTimeSlot(identifier, { endTime: e.target.value })}
                                   className="flex-1 px-2 py-1 text-xs border rounded"
                                 />
                               </div>
@@ -482,10 +482,10 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
                               className="cursor-pointer hover:bg-primary-100 rounded p-1 transition-colors"
                             >
                               <div className="text-xs font-medium text-gray-700">
-                                {formatTime(slot.start_time)}
+                                {formatTime(slot.startTime)}
                               </div>
                               <div className="text-xs text-gray-500">
-                                to {formatTime(slot.end_time)}
+                                to {formatTime(slot.endTime)}
                               </div>
                             </div>
                           )}
@@ -510,8 +510,8 @@ const AvailabilityEditor = ({ className = '' }: AvailabilityEditorProps) => {
               {DAYS_OF_WEEK.map(day => {
                 const daySlots = getDaySlots(day);
                 const totalHours = daySlots.reduce((acc, slot) => {
-                  const start = new Date(`2000-01-01T${slot.start_time}`);
-                  const end = new Date(`2000-01-01T${slot.end_time}`);
+                  const start = new Date(`2000-01-01T${slot.startTime}`);
+                  const end = new Date(`2000-01-01T${slot.endTime}`);
                   return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                 }, 0);
 

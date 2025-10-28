@@ -7,6 +7,7 @@
 import axios from 'axios';
 import type { ServiceCategory, ServiceCategoryFormData } from '../types';
 import { API_CONFIG } from '../constants';
+import { transformKeysSnakeToCamel, transformKeysCamelToSnake } from '../types/transformers';
 
 // Configure axios instance with credentials support
 const api = axios.create({
@@ -27,7 +28,7 @@ export const serviceCategoryApi = {
   async getAllCategories(activeOnly?: boolean): Promise<ServiceCategory[]> {
     const params = activeOnly ? { activeOnly: 'true' } : {};
     const response = await api.get('/service-categories', { params });
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -35,32 +36,30 @@ export const serviceCategoryApi = {
    */
   async getCategoryById(categoryId: number): Promise<ServiceCategory> {
     const response = await api.get(`/service-categories/${categoryId}`);
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
    * Create new category (admin only)
    */
   async createCategory(categoryData: ServiceCategoryFormData): Promise<{ categoryId: number }> {
-    const response = await api.post('/service-categories', {
-      name: categoryData.name,
-      description: categoryData.description,
-      base_price: categoryData.base_price,
-      is_active: true, // Default to active for new categories
+    const transformedData = transformKeysCamelToSnake({
+      ...categoryData,
+      isActive: true, // Default to active for new categories
     });
-    return { categoryId: response.data.data.categoryId };
+    const response = await api.post('/service-categories', transformedData);
+    return { categoryId: response.data.data.categoryId }; // Backend already transformed to camelCase
   },
 
   /**
    * Update existing category (admin only)
    */
   async updateCategory(categoryId: number, categoryData: Partial<ServiceCategoryFormData>): Promise<void> {
-    await api.put(`/service-categories/${categoryId}`, {
-      name: categoryData.name,
-      description: categoryData.description,
-      base_price: categoryData.base_price,
-      is_active: true, // Keep active unless explicitly changed
+    const transformedData = transformKeysCamelToSnake({
+      ...categoryData,
+      isActive: true, // Keep active unless explicitly changed
     });
+    await api.put(`/service-categories/${categoryId}`, transformedData);
   },
 
   /**

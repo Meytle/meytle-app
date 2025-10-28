@@ -6,6 +6,8 @@
 
 import axios from 'axios';
 import { API_CONFIG } from '../constants';
+import type { Companion } from '../types';
+import { transformKeysSnakeToCamel } from '../types/transformers';
 
 // Configure axios instance with credentials support
 const api = axios.create({
@@ -19,18 +21,6 @@ const api = axios.create({
 
 // No request interceptor needed - cookies are sent automatically
 
-export interface Companion {
-  id: number;
-  name: string;
-  email?: string;
-  profile_photo_url?: string;
-  age: number;
-  joined_date: string;
-  interests: string[];
-  services?: string[];
-  location?: string;
-}
-
 export interface CompanionsResponse {
   status: string;
   data: Companion[];
@@ -43,7 +33,10 @@ export const companionsApi = {
   async getCompanions(interests?: string[]): Promise<CompanionsResponse> {
     const params = interests ? { interests: interests.join(',') } : {};
     const response = await api.get('/companion/browse', { params });
-    return response.data;
+    return {
+      status: response.data.status,
+      data: response.data.data // Backend already transformed to camelCase
+    };
   },
 
   /**
@@ -51,7 +44,10 @@ export const companionsApi = {
    */
   async getCompanionById(id: number): Promise<{ status: string; data: Companion }> {
     const response = await api.get(`/companion/${id}`);
-    return response.data;
+    return {
+      status: response.data.status,
+      data: response.data.data // Backend already transformed to camelCase
+    };
   },
 
   /**
@@ -59,7 +55,7 @@ export const companionsApi = {
    */
   async getCompanionInterests(companionId: number): Promise<{ status: string; data: { interests: string[] } }> {
     const response = await api.get(`/companion/interests/${companionId}`);
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -67,7 +63,7 @@ export const companionsApi = {
    */
   async updateCompanionInterests(interests: string[]): Promise<{ status: string; message: string; data: { interests: string[] } }> {
     const response = await api.post('/companion/interests', { interests });
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -75,7 +71,7 @@ export const companionsApi = {
    */
   async getCompanionServices(): Promise<{ status: string; data: { services: string[] } }> {
     const response = await api.get('/companion/services');
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 };
 

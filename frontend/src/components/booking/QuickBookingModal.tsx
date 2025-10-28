@@ -3,10 +3,11 @@
  * Modal for quickly booking a companion
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaTimes, FaUser, FaExclamationTriangle } from 'react-icons/fa';
 import BookingForm from './BookingForm';
 import { useAuth } from '../../hooks/useAuth';
+import { useModalRegistration } from '../../context/ModalContext';
 import type { Companion } from '../../types';
 
 interface QuickBookingModalProps {
@@ -19,6 +20,9 @@ interface QuickBookingModalProps {
 const QuickBookingModal = ({ companion, isOpen, onClose, onBookingCreated }: QuickBookingModalProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const { user } = useAuth();
+
+  // Register modal with global modal context
+  useModalRegistration('quick-booking-modal', isOpen);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -39,24 +43,24 @@ const QuickBookingModal = ({ companion, isOpen, onClose, onBookingCreated }: Qui
   const isSelfBooking = user?.id === companion.id;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
-      <div 
-        className={`fixed inset-0 bg-black transition-opacity duration-200 ${
-          isClosing ? 'opacity-0' : 'opacity-50'
+    <div className="fixed inset-0 z-[60]">
+      {/* Backdrop with blur effect */}
+      <div
+        className={`fixed inset-0 bg-black/30 backdrop-blur-md transition-all duration-200 ${
+          isClosing ? 'opacity-0' : 'opacity-100'
         }`}
         onClick={handleClose}
       />
-      
+
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div 
-          className={`relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-all duration-200 ${
+      <div className="flex h-full items-center justify-center p-4">
+        <div
+          className={`relative bg-white rounded-lg shadow-xl max-w-4xl w-full h-full overflow-hidden flex flex-col transition-all duration-200 ${
             isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
           }`}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg">
+          <div className="bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#312E81] to-[#FFCCCB] flex items-center justify-center">
@@ -85,7 +89,7 @@ const QuickBookingModal = ({ companion, isOpen, onClose, onBookingCreated }: Qui
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             {isSelfBooking ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 bg-warning-100 rounded-full flex items-center justify-center">

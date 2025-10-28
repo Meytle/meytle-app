@@ -5,6 +5,7 @@
 
 const { pool } = require('../config/database');
 const config = require('../config/config');
+const { transformToFrontend, transformArrayToFrontend } = require('../utils/transformer');
 
 // Supported currencies and their validation rules
 const SUPPORTED_CURRENCIES = {
@@ -41,7 +42,7 @@ const getAllCategories = async (req, res) => {
 
     res.json({
       status: 'success',
-      data: categoriesWithNumericPrice
+      data: transformArrayToFrontend(categoriesWithNumericPrice)
     });
   } catch (error) {
     console.error('Get all categories error:', error);

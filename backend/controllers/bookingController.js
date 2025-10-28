@@ -6,12 +6,21 @@
 
 const { pool } = require('../config/database');
 const { sendBookingNotificationEmail } = require('../services/emailService');
+const { validateBookingAddress } = require('../utils/addressValidation');
+const { transformToFrontend, transformArrayToFrontend } = require('../utils/transformer');
+const logger = require('../services/logger');
 
 /**
  * Create a new booking (without payment processing)
  */
 const createBooking = async (req, res) => {
+  let connection;
+
   try {
+    // Get a connection from the pool for transaction support
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
     const clientId = req.user.id;
     const {
       companionId,
@@ -45,7 +54,7 @@ const createBooking = async (req, res) => {
     // If no service is specified at all, use a default standard service
     const isUsingDefaultService = !serviceCategoryId && !customService;
     if (isUsingDefaultService) {
-      console.log('No service specified, using standard service');
+      logger.controllerInfo('bookingController', 'createBooking', 'No service specified, using standard service', {});
     }
 
     // Validate custom service if provided
@@ -83,6 +92,7 @@ const createBooking = async (req, res) => {
     // Validate date is not in the past
     const bookingDateTime = new Date(`${bookingDate} ${startTime}`);
     if (bookingDateTime <= new Date()) {
+      if (connection) await connection.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Booking date and time must be in the future'
@@ -90,7 +100,7 @@ const createBooking = async (req, res) => {
     }
 
     // Check if companion exists and is approved, and get email for notification
-    const [companions] = await pool.execute(
+    const [companions] = await connection.execute(
       `SELECT u.id, u.name, u.email, ca.status
        FROM users u
        JOIN companion_applications ca ON u.id = ca.user_id
@@ -100,6 +110,7 @@ const createBooking = async (req, res) => {
     );
 
     if (companions.length === 0) {
+      if (connection) await connection.rollback();
       return res.status(404).json({
         status: 'error',
         message: 'Companion not found or not approved'
@@ -111,12 +122,13 @@ const createBooking = async (req, res) => {
     // Validate and fetch service category if provided
     let categoryBasePrice = null;
     if (serviceCategoryId) {
-      const [categories] = await pool.execute(
+      const [categories] = await connection.execute(
         'SELECT id, base_price FROM service_categories WHERE id = ? AND is_active = TRUE',
         [serviceCategoryId]
       );
 
       if (categories.length === 0) {
+        if (connection) await connection.rollback();
         return res.status(404).json({
           status: 'error',
           message: 'Service category not found or inactive'
@@ -128,14 +140,38 @@ const createBooking = async (req, res) => {
 
     // Validate meetingType if provided
     if (meetingType && !['in_person', 'virtual'].includes(meetingType)) {
+      if (connection) await connection.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Invalid meeting type. Must be in_person or virtual'
       });
     }
 
+    // Validate meeting location using the validation helper
+    const addressValidation = validateBookingAddress({
+      meetingLocation,
+      meetingType,
+      meeting_location_lat: req.body.meetingLocationLat || req.body.meeting_location_lat,
+      meeting_location_lon: req.body.meetingLocationLon || req.body.meeting_location_lon,
+      meeting_location_place_id: req.body.meetingLocationPlaceId || req.body.meeting_location_place_id
+    });
+
+    if (!addressValidation.isValid) {
+      if (connection) await connection.rollback();
+      return res.status(400).json({
+        status: 'error',
+        message: 'Address validation failed',
+        errors: addressValidation.errors
+      });
+    }
+
+    // Log warnings if any (but don't block the booking)
+    if (addressValidation.warnings.length > 0) {
+      logger.warn('Address validation warnings', { warnings: addressValidation.warnings });
+    }
+
     // Check for conflicting bookings
-    const [conflictingBookings] = await pool.execute(
+    const [conflictingBookings] = await connection.execute(
       `SELECT id FROM bookings
        WHERE companion_id = ? AND booking_date = ?
        AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))
@@ -144,6 +180,7 @@ const createBooking = async (req, res) => {
     );
 
     if (conflictingBookings.length > 0) {
+      if (connection) await connection.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Time slot is already booked'
@@ -155,6 +192,7 @@ const createBooking = async (req, res) => {
     const end = new Date(`${bookingDate} ${endTime}`);
 
     if (end <= start) {
+      if (connection) await connection.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'End time must be after start time'
@@ -166,6 +204,7 @@ const createBooking = async (req, res) => {
 
     // Validate duration is reasonable (at least 1 hour, max 12 hours)
     if (durationHours < 1) {
+      if (connection) await connection.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Booking duration must be at least 1 hour'
@@ -173,6 +212,7 @@ const createBooking = async (req, res) => {
     }
 
     if (durationHours > 12) {
+      if (connection) await connection.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Booking duration cannot exceed 12 hours'
@@ -199,7 +239,7 @@ const createBooking = async (req, res) => {
       meetingType || 'in_person'
     ];
 
-    const [result] = await pool.execute(
+    const [result] = await connection.execute(
       `INSERT INTO bookings
        (client_id, companion_id, booking_date, start_time, end_time, duration_hours, total_amount,
         special_requests, meeting_location, service_category_id, meeting_type, status)
@@ -210,7 +250,7 @@ const createBooking = async (req, res) => {
     const bookingId = result.insertId;
 
     // Get client information for the email
-    const [clientInfo] = await pool.execute(
+    const [clientInfo] = await connection.execute(
       'SELECT name FROM users WHERE id = ?',
       [clientId]
     );
@@ -219,12 +259,15 @@ const createBooking = async (req, res) => {
     // Get service category name if applicable
     let serviceName = 'Standard Service';
     if (serviceCategoryId) {
-      const [categories] = await pool.execute(
+      const [categories] = await connection.execute(
         'SELECT name FROM service_categories WHERE id = ?',
         [serviceCategoryId]
       );
       serviceName = categories[0]?.name || 'Standard Service';
     }
+
+    // Commit transaction before sending email (email is not critical)
+    await connection.commit();
 
     // Send email notification to companion
     try {
@@ -241,10 +284,10 @@ const createBooking = async (req, res) => {
         meetingType: meetingType || 'in_person',
         specialRequests: specialRequests
       });
-      console.log(`✅ Booking notification sent to ${companion.email}`);
+      logger.controllerInfo('bookingController', 'createBooking', 'Booking notification sent', { email: companion.email });
     } catch (emailError) {
       // Log error but don't fail the booking
-      console.error('Failed to send booking notification email:', emailError);
+      logger.controllerError('bookingController', 'createBooking', emailError, req);
     }
 
     res.status(201).json({
@@ -258,12 +301,27 @@ const createBooking = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Create booking error:', error);
+    logger.controllerError('bookingController', 'createBooking', error, req);
+
+    // Rollback transaction on error
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        logger.controllerError('bookingController', 'createBooking', rollbackError, req);
+      }
+    }
+
     res.status(500).json({
       status: 'error',
       message: 'Failed to create booking',
       error: error.message
     });
+  } finally {
+    // Always release connection back to pool
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
@@ -275,10 +333,29 @@ const getBookings = async (req, res) => {
     const userId = req.user.id;
     // Support both legacy role and new activeRole from multi-role architecture
     // When called from companion dashboard, user should have activeRole = 'companion'
-    const userRole = req.user.role || req.user.activeRole || 'client';
+    let userRole = req.user.role || req.user.activeRole || 'client';
+
+    // Safety check: If userRole is 'client', double-check if user has companion role
+    // This ensures companions always see their bookings even if role switching failed
+    if (userRole === 'client') {
+      const [companionRole] = await pool.execute(
+        'SELECT role FROM user_roles WHERE user_id = ? AND role = "companion" AND is_active = TRUE',
+        [userId]
+      );
+
+      if (companionRole.length > 0) {
+        logger.controllerInfo('bookingController', 'getBookings', 'User has companion role but was using client role. Switching to companion view', { userId });
+        userRole = 'companion';
+      }
+    }
 
     // Log for debugging
-    console.log(`📚 Getting bookings for user ${userId} with role: ${userRole}`);
+    logger.controllerInfo('bookingController', 'getBookings', 'Getting bookings for user', {
+      userId,
+      role: userRole,
+      roles: req.user.roles,
+      activeRole: req.user.activeRole
+    });
 
     const { status } = req.query;
 
@@ -354,20 +431,60 @@ const getBookings = async (req, res) => {
     // Use string interpolation for LIMIT and OFFSET since they're already validated integers
     query += ` ORDER BY b.booking_date DESC, b.start_time DESC LIMIT ${validLimit} OFFSET ${validOffset}`;
 
+    // Debug logging for companion queries
+    if (userRole === 'companion') {
+      logger.controllerInfo('bookingController', 'getBookings', 'Executing companion query', { userId, params });
+    }
+
     const [bookings] = await pool.execute(query, params);
 
-    // Cast service_category_price to number for each booking
-    const bookingsWithNumericPrice = bookings.map(booking => ({
-      ...booking,
-      service_category_price: booking.service_category_price !== null ? Number(booking.service_category_price) : null
-    }));
+    // Log the raw results for debugging
+    logger.controllerInfo('bookingController', 'getBookings', 'Found bookings', {
+      count: bookings.length,
+      userRole,
+      userId,
+      firstBooking: userRole === 'companion' && bookings.length > 0 ? bookings[0] : undefined
+    });
+
+    // Transform bookings to camelCase for frontend consistency
+    const transformedBookings = bookings.map(booking => {
+      const transformed = transformToFrontend(booking);
+
+      // Cast service_category_price to number
+      if (transformed.serviceCategoryPrice !== null && transformed.serviceCategoryPrice !== undefined) {
+        transformed.serviceCategoryPrice = Number(transformed.serviceCategoryPrice);
+      }
+
+      // Validate and clean date fields to prevent "Invalid Date" display
+      if (transformed.bookingDate) {
+        const dateObj = new Date(transformed.bookingDate);
+        // If date is invalid, set to null rather than sending invalid data
+        if (isNaN(dateObj.getTime())) {
+          logger.warn('Invalid booking date found', { bookingId: transformed.id, bookingDate: transformed.bookingDate });
+          transformed.bookingDate = null;
+        }
+      }
+
+      // Validate time fields
+      if (transformed.startTime && !transformed.startTime.includes(':')) {
+        logger.warn('Invalid start time found', { bookingId: transformed.id, startTime: transformed.startTime });
+        transformed.startTime = null;
+      }
+
+      if (transformed.endTime && !transformed.endTime.includes(':')) {
+        logger.warn('Invalid end time found', { bookingId: transformed.id, endTime: transformed.endTime });
+        transformed.endTime = null;
+      }
+
+      return transformed;
+    });
 
     res.json({
       status: 'success',
-      data: bookingsWithNumericPrice
+      data: transformedBookings
     });
   } catch (error) {
-    console.error('Get bookings error:', error);
+    logger.controllerError('bookingController', 'getBookings', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch bookings',
@@ -423,17 +540,20 @@ const getBookingById = async (req, res) => {
 
     const booking = bookings[0];
 
+    // Transform to camelCase for frontend
+    const transformedBooking = transformToFrontend(booking);
+
     // Cast service_category_price to number
-    if (booking.service_category_price !== null) {
-      booking.service_category_price = Number(booking.service_category_price);
+    if (transformedBooking.serviceCategoryPrice !== null) {
+      transformedBooking.serviceCategoryPrice = Number(transformedBooking.serviceCategoryPrice);
     }
 
     res.json({
       status: 'success',
-      data: booking
+      data: transformedBooking
     });
   } catch (error) {
-    console.error('Get booking by ID error:', error);
+    logger.controllerError('bookingController', 'getBookingById', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch booking',
@@ -478,7 +598,12 @@ const updateBookingStatus = async (req, res) => {
     const booking = bookings[0];
 
     // Add logging to confirm execution order and that booking is defined
-    console.log(`✅ Booking ${bookingId} fetched successfully. Current status: ${booking.status}, User role: ${userRole}, Requested status: ${status}`);
+    logger.controllerInfo('bookingController', 'updateBookingStatus', 'Booking fetched successfully', {
+      bookingId,
+      currentStatus: booking.status,
+      userRole,
+      requestedStatus: status
+    });
 
     // Now set currentStatus after fetching booking
     const currentStatus = booking.status;
@@ -528,7 +653,7 @@ const updateBookingStatus = async (req, res) => {
       message: 'Booking status updated successfully'
     });
   } catch (error) {
-    console.error('Update booking status error:', error);
+    logger.controllerError('bookingController', 'updateBookingStatus', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update booking status',
@@ -548,7 +673,7 @@ const getCompanionAvailability = async (req, res) => {
     // Handle special case where companionId is '0' or 'me' to mean current user
     if (companionId === '0' || companionId === 'me') {
       companionId = req.user.id;
-      console.log(`📋 Fetching availability for current user (ID: ${companionId})`);
+      logger.controllerInfo('bookingController', 'getCompanionAvailability', 'Fetching availability for current user', { companionId });
     }
 
     let query = `
@@ -575,12 +700,15 @@ const getCompanionAvailability = async (req, res) => {
 
     const [availability] = await pool.execute(query, params);
 
+    // Transform to camelCase for frontend
+    const transformedAvailability = transformArrayToFrontend(availability);
+
     res.json({
       status: 'success',
-      data: availability
+      data: transformedAvailability
     });
   } catch (error) {
-    console.error('Get companion availability error:', error);
+    logger.controllerError('bookingController', 'getCompanionAvailability', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch companion availability',
@@ -600,7 +728,10 @@ const setCompanionAvailability = async (req, res) => {
     const userAgent = req.headers['user-agent'] || 'Unknown';
 
     // Log availability change attempt
-    console.log(`📅 Availability change attempted by companion ${companionId} from IP ${userIp}`);
+    logger.controllerInfo('bookingController', 'setCompanionAvailability', 'Availability change attempted', {
+      companionId,
+      ip: userIp
+    });
 
     // Ensure user has companion role
     const [userRoles] = await pool.execute(
@@ -609,7 +740,7 @@ const setCompanionAvailability = async (req, res) => {
     );
 
     if (userRoles.length === 0) {
-      console.error(`🚫 Unauthorized availability change attempt by user ${companionId} - not a companion`);
+      logger.controllerError('bookingController', 'setCompanionAvailability', new Error('Unauthorized availability change attempt - not a companion'), req);
       return res.status(403).json({
         status: 'error',
         message: 'Only companions can set availability'
@@ -728,9 +859,9 @@ const setCompanionAvailability = async (req, res) => {
           userAgent
         ]
       );
-      console.log(`✅ Audit log created for companion ${companionId} availability update`);
+      logger.controllerInfo('bookingController', 'setCompanionAvailability', 'Audit log created', { companionId });
     } catch (auditError) {
-      console.error('⚠️ Failed to create audit log:', auditError);
+      logger.controllerError('bookingController', 'setCompanionAvailability', auditError, req);
       // Don't fail the request if audit logging fails
     }
 
@@ -740,7 +871,7 @@ const setCompanionAvailability = async (req, res) => {
       slots: validatedSlots.length
     });
   } catch (error) {
-    console.error('Set companion availability error:', error);
+    logger.controllerError('bookingController', 'setCompanionAvailability', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update availability',
@@ -819,7 +950,7 @@ const getAvailableTimeSlots = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get available time slots error:', error);
+    logger.controllerError('bookingController', 'getAvailableTimeSlots', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch available time slots',
@@ -863,12 +994,15 @@ const getCompanionBookingsByDateRange = async (req, res) => {
       [companionId, startDate, endDate]
     );
 
+    // Transform to camelCase for frontend
+    const transformedBookings = transformArrayToFrontend(bookings);
+
     res.json({
       status: 'success',
-      data: bookings
+      data: transformedBookings
     });
   } catch (error) {
-    console.error('Get companion bookings by date range error:', error);
+    logger.controllerError('bookingController', 'getCompanionBookingsByDateRange', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch companion bookings',
@@ -1002,7 +1136,7 @@ const createReview = async (req, res) => {
 
   } catch (error) {
     await connection.rollback();
-    console.error('Error creating review:', error);
+    logger.controllerError('bookingController', 'createReview', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to submit review',
@@ -1076,10 +1210,13 @@ const getCompanionReviews = async (req, res) => {
       stats.distribution[row.rating] = row.count;
     });
 
+    // Transform reviews to camelCase
+    const transformedReviews = transformArrayToFrontend(reviews);
+
     res.status(200).json({
       status: 'success',
       data: {
-        reviews,
+        reviews: transformedReviews,
         stats,
         pagination: {
           currentPage: parseInt(page),
@@ -1091,7 +1228,7 @@ const getCompanionReviews = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error getting companion reviews:', error);
+    logger.controllerError('bookingController', 'getCompanionReviews', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch reviews',
@@ -1128,16 +1265,19 @@ const getBookingReview = async (req, res) => {
       });
     }
 
+    // Transform review to camelCase
+    const transformedReview = transformToFrontend(review[0]);
+
     res.status(200).json({
       status: 'success',
       data: {
         hasReviewed: true,
-        review: review[0]
+        review: transformedReview
       }
     });
 
   } catch (error) {
-    console.error('Error checking booking review:', error);
+    logger.controllerError('bookingController', 'getBookingReview', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to check review status',
@@ -1214,7 +1354,7 @@ const getCompanionWeeklyAvailability = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get weekly availability error:', error);
+    logger.controllerError('bookingController', 'getCompanionWeeklyAvailability', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch weekly availability',
@@ -1326,7 +1466,7 @@ const getCompanionAvailabilityForDateRange = async (req, res) => {
       availabilityCalendar
     });
   } catch (error) {
-    console.error('Get availability for date range error:', error);
+    logger.controllerError('bookingController', 'getCompanionAvailabilityForDateRange', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch availability for date range',
@@ -1424,7 +1564,7 @@ const createBookingRequest = async (req, res) => {
       requestId: result.insertId
     });
   } catch (error) {
-    console.error('Create booking request error:', error);
+    logger.controllerError('bookingController', 'createBookingRequest', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create booking request',
@@ -1487,7 +1627,7 @@ const getBookingRequests = async (req, res) => {
       requests
     });
   } catch (error) {
-    console.error('Get booking requests error:', error);
+    logger.controllerError('bookingController', 'getBookingRequests', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch booking requests',
@@ -1578,7 +1718,7 @@ const updateBookingRequestStatus = async (req, res) => {
       message: `Booking request ${status} successfully`
     });
   } catch (error) {
-    console.error('Update booking request status error:', error);
+    logger.controllerError('bookingController', 'updateBookingRequestStatus', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update booking request',
@@ -1626,7 +1766,7 @@ const getBookingRequestById = async (req, res) => {
       request: requests[0]
     });
   } catch (error) {
-    console.error('Get booking request by ID error:', error);
+    logger.controllerError('bookingController', 'getBookingRequestById', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch booking request',
@@ -1709,7 +1849,7 @@ const approveBooking = async (req, res) => {
       message: 'Booking approved successfully'
     });
   } catch (error) {
-    console.error('Approve booking error:', error);
+    logger.controllerError('bookingController', 'approveBooking', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to approve booking',
@@ -1769,7 +1909,7 @@ const rejectBooking = async (req, res) => {
       message: 'Booking rejected successfully'
     });
   } catch (error) {
-    console.error('Reject booking error:', error);
+    logger.controllerError('bookingController', 'rejectBooking', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to reject booking',
@@ -1798,12 +1938,15 @@ const getPendingBookingsForCompanion = async (req, res) => {
       [companionId]
     );
 
+    // Transform bookings to camelCase for frontend consistency
+    const transformedBookings = transformArrayToFrontend(bookings);
+
     res.json({
       status: 'success',
-      data: bookings
+      data: transformedBookings
     });
   } catch (error) {
-    console.error('Get pending bookings error:', error);
+    logger.controllerError('bookingController', 'getPendingBookingsForCompanion', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch pending bookings',

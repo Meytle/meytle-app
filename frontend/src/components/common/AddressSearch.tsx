@@ -6,7 +6,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { Icon, LatLng } from 'leaflet';
-import { FaMapMarkerAlt, FaSpinner, FaCheckCircle, FaSearch } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaSpinner, FaCheckCircle, FaSearch, FaExclamationTriangle, FaShieldAlt } from 'react-icons/fa';
+import AddressValidationService from '../../services/addressValidation';
+import type { ValidatedAddress } from '../../services/addressValidation';
 
 // Fix for default marker icon in Leaflet
 import 'leaflet/dist/leaflet.css';
@@ -54,7 +56,7 @@ interface OSMPlace {
 
 interface AddressSearchProps {
   value?: string;
-  onChange: (address: string, placeDetails?: OSMPlace) => void;
+  onChange: (address: string, placeDetails?: OSMPlace, validatedAddress?: ValidatedAddress) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
@@ -63,6 +65,7 @@ interface AddressSearchProps {
   disabled?: boolean;
   onBlur?: () => void;
   showMap?: boolean;
+  requireVerification?: boolean;
 }
 
 // Map click handler component
@@ -87,7 +90,8 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
   error,
   disabled = false,
   onBlur,
-  showMap = true
+  showMap = true,
+  requireVerification = true
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState<OSMPlace[]>([]);
@@ -96,6 +100,10 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
   const [selectedPlace, setSelectedPlace] = useState<OSMPlace | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([40.7128, -74.0060]); // Default to NYC
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(null);
+  const [validatedAddress, setValidatedAddress] = useState<ValidatedAddress | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [showSafetyTips, setShowSafetyTips] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -155,20 +163,45 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
     setInputValue(newValue);
 
     if (newValue === '') {
-      onChange('');
+      onChange('', undefined, undefined);
       setSelectedPlace(null);
+      setValidatedAddress(null);
       setMarkerPosition(null);
       setSuggestions([]);
+      setValidationErrors([]);
+      setValidationWarnings([]);
     } else {
+      // If user manually edits after selecting, clear validation
+      if (validatedAddress && newValue !== validatedAddress.displayName) {
+        setValidatedAddress(null);
+        setValidationErrors(['Please select an address from the suggestions']);
+        onChange(newValue, undefined, undefined);
+      }
       debouncedSearch(newValue);
     }
   };
 
   // Handle suggestion selection
   const handleSelectSuggestion = (place: OSMPlace) => {
+    // Create validated address from OSM place
+    const validated = AddressValidationService.createValidatedAddress(place);
+
+    // Validate the address
+    const validation = AddressValidationService.validateAddress(validated);
+
     setInputValue(place.display_name);
     setSelectedPlace(place);
-    onChange(place.display_name, place);
+    setValidatedAddress(validated);
+    setValidationErrors(validation.errors);
+    setValidationWarnings(validation.warnings);
+
+    // Only pass validated address if it's valid
+    if (validation.isValid) {
+      onChange(place.display_name, place, validated);
+    } else {
+      onChange(place.display_name, place, undefined);
+    }
+
     setShowSuggestions(false);
 
     const lat = parseFloat(place.lat);
@@ -188,9 +221,24 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
 
       if (response.ok) {
         const data: OSMPlace = await response.json();
+
+        // Create and validate the address
+        const validated = AddressValidationService.createValidatedAddress(data);
+        const validation = AddressValidationService.validateAddress(validated);
+
         setInputValue(data.display_name);
         setSelectedPlace(data);
-        onChange(data.display_name, data);
+        setValidatedAddress(validated);
+        setValidationErrors(validation.errors);
+        setValidationWarnings(validation.warnings);
+
+        // Only pass validated address if it's valid
+        if (validation.isValid) {
+          onChange(data.display_name, data, validated);
+        } else {
+          onChange(data.display_name, data, undefined);
+        }
+
         setMarkerPosition([lat, lon]);
       }
     } catch (error) {
@@ -245,14 +293,25 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
 
           <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
             {isLoading && <FaSpinner className="animate-spin text-gray-400" />}
-            {selectedPlace && !isLoading && <FaCheckCircle className="text-green-500" />}
+            {validatedAddress && validationErrors.length === 0 && !isLoading && (
+              <div className="flex items-center gap-1">
+                <FaShieldAlt className="text-green-500" title="Verified Safe Location" />
+                <FaCheckCircle className="text-green-500" />
+              </div>
+            )}
+            {validatedAddress && validationErrors.length > 0 && !isLoading && (
+              <FaExclamationTriangle className="text-red-500" />
+            )}
+            {!validatedAddress && selectedPlace && !isLoading && (
+              <FaExclamationTriangle className="text-yellow-500" />
+            )}
             {!selectedPlace && !isLoading && <FaMapMarkerAlt className="text-gray-400" />}
           </div>
         </div>
 
         {/* Suggestions Dropdown */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
             {suggestions.map((place) => (
               <button
                 key={place.place_id}
@@ -277,11 +336,94 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
         )}
       </div>
 
+      {/* Validation Messages */}
+      {requireVerification && validationErrors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+          <div className="flex items-start gap-2">
+            <FaExclamationTriangle className="text-red-500 mt-1 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Address Verification Required</p>
+              {validationErrors.map((error, index) => (
+                <p key={index} className="text-xs text-red-600 mt-1">{error}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Only show warnings if address is not verified or has errors */}
+      {validationWarnings.length > 0 && (!validatedAddress || validationErrors.length > 0) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+          <div className="flex items-start gap-2">
+            <FaExclamationTriangle className="text-yellow-500 mt-1 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-800">Safety Warning</p>
+              {validationWarnings.map((warning, index) => (
+                <p key={index} className="text-xs text-yellow-600 mt-1">{warning}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show verified message if address is verified with no errors */}
+      {validatedAddress && validationErrors.length === 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+          <div className="flex items-start gap-2">
+            <FaShieldAlt className="text-green-500 mt-1 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-800">Verified Safe Location</p>
+              <p className="text-xs text-green-600 mt-1">
+                {validationWarnings.length > 0
+                  ? 'This address has been verified through OpenStreetMap. Please ensure it\'s a public meeting place.'
+                  : 'This address has been verified as a valid meeting location.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Safety Tips Button */}
+      <button
+        type="button"
+        onClick={() => setShowSafetyTips(!showSafetyTips)}
+        className="text-sm text-[#312E81] hover:text-[#1E1B4B] flex items-center gap-1 mt-2"
+      >
+        <FaShieldAlt />
+        {showSafetyTips ? 'Hide' : 'Show'} Safety Tips
+      </button>
+
+      {/* Safety Tips */}
+      {showSafetyTips && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+          <h4 className="font-medium text-sm text-blue-900 mb-2">Meeting Safety Tips</h4>
+          <ul className="space-y-1">
+            {AddressValidationService.getSafetyTips().map((tip, index) => (
+              <li key={index} className="text-xs text-blue-700 flex items-start gap-2">
+                <span className="text-blue-500 mt-0.5">•</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <h4 className="font-medium text-sm text-blue-900 mb-2">Suggested Safe Venues</h4>
+            <ul className="space-y-1">
+              {AddressValidationService.getSuggestedVenues().map((venue, index) => (
+                <li key={index} className="text-xs text-blue-700 flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span>{venue}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* Get Current Location Button */}
       <button
         type="button"
         onClick={getCurrentLocation}
-        className="text-sm text-[#312E81] hover:text-[#1E1B4B] flex items-center gap-1"
+        className="text-sm text-[#312E81] hover:text-[#1E1B4B] flex items-center gap-1 mt-2"
         disabled={disabled || isLoading}
       >
         <FaMapMarkerAlt />

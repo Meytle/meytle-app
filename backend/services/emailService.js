@@ -5,6 +5,7 @@
 
 const { Resend } = require('resend');
 const crypto = require('crypto');
+const logger = require('./logger');
 
 // Initialize Resend with API key
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -464,7 +465,7 @@ const sendWelcomeVerificationEmail = async (email, userName, userRole, verificat
       // In testing mode, send ALL emails to the test recipient
       recipientEmail = testEmailRecipient;
       emailNote = `[TEST MODE - Originally for: ${email}]`;
-      console.log(`📧 TEST MODE: Redirecting email from ${email} to ${testEmailRecipient}`);
+      logger.apiInfo('emailService', 'sendWelcomeVerificationEmail', 'TEST MODE: Redirecting email', { from: email, to: testEmailRecipient });
     }
 
     // Use 'onboarding@resend.dev' for testing or your verified domain
@@ -483,26 +484,32 @@ const sendWelcomeVerificationEmail = async (email, userName, userRole, verificat
     });
 
     if (error) {
-      console.error('❌ Error sending welcome+verification email:', error);
+      logger.apiError('emailService', 'sendWelcomeVerificationEmail', error, { email, emailMode });
 
       // Log helpful information about the error
       if (error.message && error.message.includes('You can only send testing emails')) {
-        console.log('ℹ️  Email mode is set to:', emailMode);
-        console.log('ℹ️  To enable production emails:');
-        console.log('    1. Get a domain and verify it in Resend');
-        console.log('    2. Set EMAIL_MODE=production in .env');
-        console.log('    3. Set RESEND_FROM_EMAIL=noreply@yourdomain.com');
+        logger.apiInfo('emailService', 'sendWelcomeVerificationEmail', `Email mode is set to: ${emailMode}`, {});
+        logger.apiInfo('emailService', 'sendWelcomeVerificationEmail', 'To enable production emails:', {
+          steps: [
+            'Get a domain and verify it in Resend',
+            'Set EMAIL_MODE=production in .env',
+            'Set RESEND_FROM_EMAIL=noreply@yourdomain.com'
+          ]
+        });
       }
 
       return { success: false, error };
     }
 
-    console.log('✅ Welcome+Verification email sent successfully:', data);
-    console.log(`📬 Sent to: ${recipientEmail}${emailNote ? ' ' + emailNote : ''}`);
+    logger.apiInfo('emailService', 'sendWelcomeVerificationEmail', 'Welcome+Verification email sent successfully', {
+      recipientEmail,
+      originalRecipient: email,
+      emailNote
+    });
 
     return { success: true, data, verificationLink, sentTo: recipientEmail, originalRecipient: email };
   } catch (error) {
-    console.error('❌ Error in sendWelcomeVerificationEmail:', error);
+    logger.apiError('emailService', 'sendWelcomeVerificationEmail', error, { email });
     return { success: false, error: error.message };
   }
 };
@@ -529,14 +536,14 @@ const sendWelcomeEmail = async (email, userName, userRole) => {
     });
 
     if (error) {
-      console.error('❌ Error sending welcome email:', error);
+      logger.apiError('emailService', 'sendWelcomeEmail', error, { email });
       return { success: false, error };
     }
 
-    console.log('✅ Welcome email sent successfully:', data);
+    logger.apiInfo('emailService', 'sendWelcomeEmail', 'Welcome email sent successfully', { email });
     return { success: true, data };
   } catch (error) {
-    console.error('❌ Error in sendWelcomeEmail:', error);
+    logger.apiError('emailService', 'sendWelcomeEmail', error, { email });
     return { success: false, error: error.message };
   }
 };
@@ -565,14 +572,14 @@ const sendVerificationEmail = async (email, userName, verificationToken) => {
     });
 
     if (error) {
-      console.error('❌ Error sending verification email:', error);
+      logger.apiError('emailService', 'sendVerificationEmail', error, { email });
       return { success: false, error };
     }
 
-    console.log('✅ Verification email sent successfully:', data);
+    logger.apiInfo('emailService', 'sendVerificationEmail', 'Verification email sent successfully', { email });
     return { success: true, data, verificationLink };
   } catch (error) {
-    console.error('❌ Error in sendVerificationEmail:', error);
+    logger.apiError('emailService', 'sendVerificationEmail', error, { email });
     return { success: false, error: error.message };
   }
 };
@@ -818,7 +825,7 @@ const sendBookingNotificationEmail = async (companionEmail, bookingDetails) => {
       // In testing mode, send ALL emails to the test recipient
       recipientEmail = testEmailRecipient;
       emailNote = `[TEST MODE - Originally for: ${companionEmail}]`;
-      console.log(`📧 TEST MODE: Redirecting booking notification from ${companionEmail} to ${testEmailRecipient}`);
+      logger.apiInfo('emailService', 'sendBookingNotificationEmail', 'TEST MODE: Redirecting booking notification', { from: companionEmail, to: testEmailRecipient });
     }
 
     // Use 'onboarding@resend.dev' for testing or your verified domain
@@ -837,16 +844,19 @@ const sendBookingNotificationEmail = async (companionEmail, bookingDetails) => {
     });
 
     if (error) {
-      console.error('❌ Error sending booking notification email:', error);
+      logger.apiError('emailService', 'sendBookingNotificationEmail', error, { companionEmail });
       return { success: false, error };
     }
 
-    console.log('✅ Booking notification email sent successfully:', data);
-    console.log(`📬 Sent to: ${recipientEmail}${emailNote ? ' ' + emailNote : ''}`);
+    logger.apiInfo('emailService', 'sendBookingNotificationEmail', 'Booking notification email sent successfully', {
+      recipientEmail,
+      originalRecipient: companionEmail,
+      emailNote
+    });
 
     return { success: true, data, sentTo: recipientEmail, originalRecipient: companionEmail };
   } catch (error) {
-    console.error('❌ Error in sendBookingNotificationEmail:', error);
+    logger.apiError('emailService', 'sendBookingNotificationEmail', error, { companionEmail });
     return { success: false, error: error.message };
   }
 };

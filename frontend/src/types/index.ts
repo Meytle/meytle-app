@@ -12,6 +12,7 @@ export interface User {
   roles: UserRole[];
   activeRole: UserRole;
   emailVerified?: boolean;
+  createdAt?: string;
 }
 
 export interface SignUpData {
@@ -69,50 +70,53 @@ export interface Companion {
   reviewCount: number;
   responseTime: string;
   imageUrl?: string;
-  profile_photo_url?: string;
+  profilePhotoUrl?: string;
   isVerified: boolean;
   isAvailable: boolean;
   interests: string[];
   services?: string[];
-  joined_date?: string;
+  joinedDate?: string;
+  servicesOffered?: string[];
+  languages?: string[];
+  hourlyRate?: number;
 }
 
 export interface Booking {
   id: number;
-  booking_date: string;
-  start_time: string;
-  end_time: string;
-  duration_hours: number;
-  total_amount: number;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  durationHours: number;
+  totalAmount: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
-  special_requests?: string;
-  meeting_location?: string;
-  meeting_type?: string;
-  created_at: string;
-  payment_status?: string;
-  payment_method?: string;
-  payment_intent_id?: string;
-  paid_at?: string;
-  service_category_id?: number;
-  service_category_name?: string;
-  service_category_price?: number;
-  platform_fee_amount?: number;
-  transfer_id?: string;
-  transfer_status?: string;
-  has_review?: boolean;
-  companion_name?: string;
-  companion_email?: string;
-  companion_photo?: string;
-  client_name?: string;
-  client_email?: string;
+  specialRequests?: string;
+  meetingLocation?: string;
+  meetingType?: string;
+  createdAt: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  paymentIntentId?: string;
+  paidAt?: string;
+  serviceCategoryId?: number;
+  serviceCategoryName?: string;
+  serviceCategoryPrice?: number;
+  platformFeeAmount?: number;
+  transferId?: string;
+  transferStatus?: string;
+  hasReview?: boolean;
+  companionName?: string;
+  companionEmail?: string;
+  companionPhoto?: string;
+  clientName?: string;
+  clientEmail?: string;
 }
 
 export interface AvailabilitySlot {
   id?: number | string;
-  day_of_week: string;
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
   services?: string[] | string;
 }
 
@@ -149,14 +153,14 @@ export interface ServiceCategory {
   id: number;
   name: string;
   description?: string;
-  base_price: number;
-  is_active: boolean;
+  basePrice: number;
+  isActive: boolean;
 }
 
 export interface ServiceCategoryFormData {
   name: string;
   description?: string;
-  base_price: number;
+  basePrice: number;
 }
 
 // Meeting types
@@ -167,9 +171,9 @@ export interface BookingDateInfo {
   date: string;
   bookings: Array<{
     id: number;
-    booking_date: string;
-    start_time: string;
-    end_time: string;
+    bookingDate: string;
+    startTime: string;
+    endTime: string;
     status: string;
   }>;
   bookingCount: number;
@@ -187,14 +191,14 @@ export interface PaymentUpdateData {
 // Stripe Account
 export interface StripeAccount {
   accountId: string;
-  charges_enabled: boolean;
-  payouts_enabled: boolean;
-  details_submitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
   status?: string;
   requirements?: {
-    currently_due: string[];
-    eventually_due: string[];
-    past_due: string[];
+    currentlyDue: string[];
+    eventuallyDue: string[];
+    pastDue: string[];
   };
 }
 

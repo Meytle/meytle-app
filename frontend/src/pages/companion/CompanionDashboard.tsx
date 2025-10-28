@@ -30,6 +30,10 @@ import AvailabilityManager from '../../components/companion/AvailabilityManager'
 import BookingsManager from '../../components/companion/BookingsManager';
 import { bookingApi } from '../../api/booking';
 // Stripe integration removed - will be implemented later
+import ErrorBoundary from '../../components/ErrorBoundary';
+import AsyncErrorBoundary, { useAsyncError } from '../../components/AsyncErrorBoundary';
+import logger, { logComponentError } from '../../utils/logger';
+import { transformKeysSnakeToCamel } from '../../types/transformers';
 
 interface ApplicationStatus {
   status: 'pending' | 'approved' | 'rejected';
@@ -40,28 +44,50 @@ interface ApplicationStatus {
 
 interface BookingRequest {
   id: number;
-  client_name: string;
-  requested_date: string;
-  start_time?: string;
-  end_time?: string;
-  duration_hours: number;
-  service_type?: string;
-  extra_amount?: number;
-  meeting_location?: string;
-  special_requests?: string;
+  clientName: string;
+  requestedDate: string;
+  startTime?: string;
+  endTime?: string;
+  durationHours: number;
+  serviceType?: string;
+  extraAmount?: number;
+  meetingLocation?: string;
+  specialRequests?: string;
   status: 'pending' | 'accepted' | 'rejected';
-  created_at: string;
+  createdAt: string;
 }
 
 const CompanionDashboard = () => {
-  const { user } = useAuth();
+  const { user, switchRole } = useAuth();
   const navigate = useNavigate();
+  const { throwError } = useAsyncError();
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'availability' | 'bookings'>('overview');
   // Stripe state removed - will be implemented later
   const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [roleReady, setRoleReady] = useState(false);
+
+  // Auto-switch to companion role when dashboard loads
+  useEffect(() => {
+    const ensureCompanionRole = async () => {
+      if (user && user.activeRole !== 'companion' && user.roles?.includes('companion')) {
+        try {
+          logger.info('Switching to companion role', { component: 'CompanionDashboard', userId: user?.id });
+          await switchRole('companion');
+          logger.info('Successfully switched to companion role', { component: 'CompanionDashboard', userId: user?.id });
+          setRoleReady(true);
+        } catch (error) {
+          logComponentError('CompanionDashboard', error, { action: 'switchRole' });
+          setRoleReady(true); // Still set to true so UI can load
+        }
+      } else if (user && user.activeRole === 'companion') {
+        setRoleReady(true);
+      }
+    };
+    ensureCompanionRole();
+  }, [user, switchRole]);
 
   // Fetch actual application status from API
   useEffect(() => {
@@ -75,31 +101,36 @@ const CompanionDashboard = () => {
           }
         );
 
-        const app = response.data.data.application;
+        const app = transformKeysSnakeToCamel(response.data.data.application);
         setApplicationStatus({
           status: app.status,
-          appliedDate: new Date(app.created_at).toLocaleDateString('en-US', {
+          appliedDate: new Date(app.createdAt).toLocaleDateString('en-US', {
             month: '2-digit',
             day: '2-digit',
             year: 'numeric'
           }),
-          reviewedDate: app.reviewed_at ? new Date(app.reviewed_at).toLocaleDateString('en-US', {
+          reviewedDate: app.reviewedAt ? new Date(app.reviewedAt).toLocaleDateString('en-US', {
             month: '2-digit',
             day: '2-digit',
             year: 'numeric'
           }) : undefined,
-          rejectionReason: app.rejection_reason,
+          rejectionReason: app.rejectionReason,
         });
 
         // Stripe account status check removed - will be implemented later
       } catch (error: any) {
-        console.error('❌ Error fetching application status:', error);
+        logComponentError('CompanionDashboard', error, { action: 'fetchApplicationStatus' });
         // If no application found (404), redirect to application form
         if (error.response?.status === 404) {
-          console.log('📝 No application found - redirecting to application form');
+          logger.info('No application found - redirecting to application form', {
+            component: 'CompanionDashboard',
+            userId: user?.id
+          });
           navigate(ROUTES.COMPANION_APPLICATION, { replace: true });
           return;
         }
+        // For other errors, throw to AsyncErrorBoundary
+        throwError(error);
       } finally {
         setIsLoading(false);
       }
@@ -119,9 +150,9 @@ const CompanionDashboard = () => {
           role: 'companion',
           status: 'pending'
         });
-        setBookingRequests(requests as any);
+        setBookingRequests(requests as BookingRequest[]);
       } catch (error) {
-        console.error('Failed to fetch booking requests:', error);
+        logComponentError('CompanionDashboard', error, { action: 'fetchBookingRequests' });
       } finally {
         setIsLoadingRequests(false);
       }
@@ -141,9 +172,9 @@ const CompanionDashboard = () => {
         role: 'companion',
         status: 'pending'
       });
-      setBookingRequests(requests as any);
+      setBookingRequests(requests as BookingRequest[]);
     } catch (error) {
-      console.error(`Failed to ${action} booking request:`, error);
+      logComponentError('CompanionDashboard', error, { action: `${action}BookingRequest` });
       toast.error(`Failed to ${action} booking request`);
     }
   };
@@ -296,9 +327,9 @@ const CompanionDashboard = () => {
                     <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{request.client_name}</h4>
+                          <h4 className="font-semibold text-gray-900">{request.clientName}</h4>
                           <p className="text-sm text-gray-600">
-                            {new Date(request.requested_date).toLocaleDateString('en-US', {
+                            {new Date(request.requestedDate).toLocaleDateString('en-US', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -306,34 +337,34 @@ const CompanionDashboard = () => {
                             })}
                           </p>
                         </div>
-                        {request.extra_amount && request.extra_amount > 0 && (
+                        {request.extraAmount && request.extraAmount > 0 && (
                           <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
-                            +${request.extra_amount} tip
+                            +${request.extraAmount} tip
                           </span>
                         )}
                       </div>
 
                       <div className="space-y-2 text-sm text-gray-600 mb-3">
-                        {request.start_time && request.end_time && (
+                        {request.startTime && request.endTime && (
                           <p>
                             <FaClock className="inline mr-1" />
-                            {request.start_time} - {request.end_time}
+                            {request.startTime} - {request.endTime}
                           </p>
                         )}
-                        {request.service_type && (
+                        {request.serviceType && (
                           <p>
                             <FaFileAlt className="inline mr-1" />
-                            {request.service_type}
+                            {request.serviceType}
                           </p>
                         )}
-                        {request.meeting_location && (
+                        {request.meetingLocation && (
                           <p>
                             <FaMapMarkerAlt className="inline mr-1" />
-                            {request.meeting_location}
+                            {request.meetingLocation}
                           </p>
                         )}
-                        {request.special_requests && (
-                          <p className="italic">"{request.special_requests}"</p>
+                        {request.specialRequests && (
+                          <p className="italic">"{request.specialRequests}"</p>
                         )}
                       </div>
 
@@ -392,51 +423,69 @@ const CompanionDashboard = () => {
 
           {/* Right Column - Application Status & Quick Actions */}
           <div className="space-y-6">
-            {/* Application Status */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center gap-3 mb-6">
-                <FaUser className="text-[#312E81] text-xl" />
-                <h2 className="text-xl font-bold text-gray-900">Companion Application Status</h2>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-center">
-                  {getStatusBadge()}
-                </div>
-                
-                <p className="text-sm text-gray-600 text-center leading-relaxed">
-                  {getStatusMessage()}
-                </p>
-                
-                <div className="space-y-1">
-                  <p className="text-xs text-gray-400 text-center">
-                    Applied: {applicationStatus?.appliedDate}
-                  </p>
-                  {applicationStatus?.reviewedDate && (
-                    <p className="text-xs text-gray-400 text-center">
-                      Reviewed: {applicationStatus.reviewedDate}
-                    </p>
-                  )}
-                </div>
-
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Quick Actions</h2>
                 {applicationStatus?.status === 'approved' && (
-                  <button 
-                    onClick={() => navigate(ROUTES.COMPANION_PROFILE)}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-3 px-4 rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 font-medium shadow-sm"
-                  >
-                    <FaFileAlt className="w-4 h-4" />
-                    Manage Your Profile
-                  </button>
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                    <FaCheckCircle className="text-xs" />
+                    <span className="text-xs">Verified</span>
+                  </div>
                 )}
               </div>
-            </div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate(ROUTES.COMPANION_PROFILE)}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#312E81] hover:bg-[#312E81]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
+                >
+                  <FaUser className="text-xl text-gray-400 group-hover:text-[#312E81] transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">Edit Profile</h3>
+                    <p className="text-xs text-gray-500">Manage your information</p>
+                  </div>
+                </button>
 
-            {/* Payment Setup removed - will be implemented later */}
+                <button
+                  onClick={() => setActiveTab('bookings')}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#312E81] hover:bg-[#312E81]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
+                >
+                  <FaCalendar className="text-xl text-gray-400 group-hover:text-[#312E81] transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">View Bookings</h3>
+                    <p className="text-xs text-gray-500">Manage your bookings</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('availability')}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#22c55e] hover:bg-[#22c55e]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
+                >
+                  <FaClock className="text-xl text-gray-400 group-hover:text-[#22c55e] transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">Set Availability</h3>
+                    <p className="text-xs text-gray-500">Update your hours</p>
+                  </div>
+                </button>
+
+                {/* Payment Setup button removed - will be implemented later */}
+                <button
+                  onClick={() => toast('Earnings feature coming soon!', { icon: 'ℹ️' })}
+                  className="w-full flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg hover:border-[#FFCCCB] hover:bg-[#FFCCCB]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
+                >
+                  <FaMoneyBillWave className="text-xl text-gray-400 group-hover:text-[#FF9F9F] transition-colors" />
+                  <div className="text-left flex-1">
+                    <h3 className="font-semibold text-gray-900 text-sm">View Earnings</h3>
+                    <p className="text-xs text-gray-500">Track your income</p>
+                  </div>
+                </button>
+              </div>
+            </div>
 
             {/* Quick Stats */}
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Stats</h2>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm text-gray-600">Total Bookings</span>
@@ -449,56 +498,46 @@ const CompanionDashboard = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => navigate(ROUTES.COMPANION_PROFILE)}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-[#312E81] hover:bg-[#312E81]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
-                >
-                  <FaUser className="text-2xl text-gray-400 group-hover:text-[#312E81] transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">Edit Profile</h3>
-                    <p className="text-sm text-gray-500">Manage your information</p>
-                  </div>
-                </button>
+            {/* Application Status */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center gap-3 mb-6">
+                <FaUser className="text-[#312E81] text-xl" />
+                <h2 className="text-xl font-bold text-gray-900">Companion Application Status</h2>
+              </div>
 
-                <button
-                  onClick={() => setActiveTab('bookings')}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-accent-500 hover:bg-accent-50 transition-all duration-200 group"
-                >
-                  <FaCalendar className="text-2xl text-gray-400 group-hover:text-accent-600 transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">View Bookings</h3>
-                    <p className="text-sm text-gray-500">Manage your bookings</p>
-                  </div>
-                </button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center">
+                  {getStatusBadge()}
+                </div>
 
-                <button
-                  onClick={() => setActiveTab('availability')}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-all duration-200 group"
-                >
-                  <FaClock className="text-2xl text-gray-400 group-hover:text-success-600 transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">Set Availability</h3>
-                    <p className="text-sm text-gray-500">Update your hours</p>
-                  </div>
-                </button>
+                <p className="text-sm text-gray-600 text-center leading-relaxed">
+                  {getStatusMessage()}
+                </p>
 
-                {/* Payment Setup button removed - will be implemented later */}
-                <button
-                  onClick={() => toast('Earnings feature coming soon!', { icon: 'ℹ️' })}
-                  className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg hover:border-[#FFCCCB] hover:bg-[#FFCCCB]/10 hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 group"
-                >
-                  <FaMoneyBillWave className="text-2xl text-gray-400 group-hover:text-[#FF9F9F] transition-colors" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900">View Earnings</h3>
-                    <p className="text-sm text-gray-500">Track your income</p>
-                  </div>
-                </button>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-400 text-center">
+                    Applied: {applicationStatus?.appliedDate}
+                  </p>
+                  {applicationStatus?.reviewedDate && (
+                    <p className="text-xs text-gray-400 text-center">
+                      Reviewed: {applicationStatus.reviewedDate}
+                    </p>
+                  )}
+                </div>
+
+                {applicationStatus?.status === 'approved' && (
+                  <button
+                    onClick={() => navigate(ROUTES.COMPANION_PROFILE)}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white py-3 px-4 rounded-lg hover:from-[#1E1B4B] hover:to-[#FFCCCB] hover:shadow-[0_0_25px_rgba(255,204,203,0.5)] transition-all duration-200 font-medium shadow-sm"
+                  >
+                    <FaFileAlt className="w-4 h-4" />
+                    Manage Your Profile
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Payment Setup removed - will be implemented later */}
           </div>
         </div>
         )}
@@ -507,7 +546,7 @@ const CompanionDashboard = () => {
           <AvailabilityManager />
         )}
 
-        {activeTab === 'bookings' && (
+        {activeTab === 'bookings' && roleReady && (
           <BookingsManager />
         )}
       </main>
@@ -515,4 +554,13 @@ const CompanionDashboard = () => {
   );
 };
 
-export default CompanionDashboard;
+// Wrap with Error Boundaries
+const CompanionDashboardWithErrorBoundary = () => (
+  <ErrorBoundary level="page" showDetails={false}>
+    <AsyncErrorBoundary maxRetries={3} retryDelay={1000}>
+      <CompanionDashboard />
+    </AsyncErrorBoundary>
+  </ErrorBoundary>
+);
+
+export default CompanionDashboardWithErrorBoundary;

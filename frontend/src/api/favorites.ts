@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import { API_CONFIG } from '../constants';
+import { transformKeysSnakeToCamel } from '../types/transformers';
 
 // Configure axios instance with credentials support
 const api = axios.create({
@@ -22,12 +23,12 @@ export interface FavoriteCompanion {
   email: string;
   bio?: string;
   location?: string;
-  profile_photo_url?: string;
-  hourly_rate?: number;
-  average_rating?: number;
-  review_count?: number;
-  is_verified?: boolean;
-  favorited_at: string;
+  profilePhotoUrl?: string;
+  hourlyRate?: number;
+  averageRating?: number;
+  reviewCount?: number;
+  isVerified?: boolean;
+  favoritedAt: string;
 }
 
 export const favoritesApi = {
@@ -50,7 +51,7 @@ export const favoritesApi = {
    */
   async getFavorites(): Promise<FavoriteCompanion[]> {
     const response = await api.get('/favorites');
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -58,7 +59,7 @@ export const favoritesApi = {
    */
   async checkFavorite(companionId: number): Promise<boolean> {
     const response = await api.get(`/favorites/check/${companionId}`);
-    return response.data.data.isFavorited;
+    return response.data.data.isFavorited; // Backend already transformed to camelCase
   },
 
   /**
@@ -66,7 +67,7 @@ export const favoritesApi = {
    */
   async getFavoriteIds(): Promise<number[]> {
     const response = await api.get('/favorites/ids');
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**

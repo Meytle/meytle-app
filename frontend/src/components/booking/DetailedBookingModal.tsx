@@ -3,7 +3,7 @@
  * Multi-step booking wizard in a modal popup with Google Places integration
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaTimes,
@@ -22,7 +22,11 @@ import { toast } from 'react-hot-toast';
 import { bookingApi } from '../../api/booking';
 import { serviceCategoryApi } from '../../api/serviceCategory';
 import AddressSearch from '../common/AddressSearch';
+import AutoResizeTextarea from '../common/AutoResizeTextarea';
+import { useModalRegistration } from '../../context/ModalContext';
 import type { ServiceCategory, AvailabilitySlot } from '../../types';
+import type { ValidatedAddress } from '../../services/addressValidation';
+import logger from '../../utils/logger';
 
 interface DetailedBookingModalProps {
   isOpen: boolean;
@@ -51,6 +55,7 @@ interface BookingData {
   selectedService: string;
   meetingLocation: string;
   placeDetails?: any; // Using any to avoid Google Maps type dependency
+  validatedAddress?: ValidatedAddress;
   specialRequests: string;
   // Removed custom service fields as they're not used in regular booking
   isCustomService?: boolean;
@@ -74,6 +79,12 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
   const [serviceCategories, setServiceCategories] = useState<ServiceCategory[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Ref to prevent duplicate submissions
+  const submissionInProgress = useRef(false);
+
+  // Register modal with global modal context
+  useModalRegistration('detailed-booking-modal', isOpen);
 
   const [bookingData, setBookingData] = useState<BookingData>({
     selectedTime: selectedTimeSlot,
@@ -168,9 +179,21 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
         return;
       }
     }
-    if (currentStep === 2 && !bookingData.meetingLocation) {
-      toast.error('Please provide a meeting location');
-      return;
+    if (currentStep === 2) {
+      if (!bookingData.meetingLocation) {
+        toast.error('Please provide a meeting location');
+        return;
+      }
+      // Check if address is validated
+      if (!bookingData.validatedAddress) {
+        toast.error('Please select a verified address from the suggestions for safety');
+        return;
+      }
+      // Check if validated address has required fields
+      if (!bookingData.validatedAddress.lat || !bookingData.validatedAddress.lon) {
+        toast.error('Selected address is missing location coordinates. Please select another address.');
+        return;
+      }
     }
 
     setCurrentStep(prev => Math.min(prev + 1, totalSteps));
@@ -181,42 +204,80 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Prevent duplicate submissions with multiple checks
+    if (submissionInProgress.current || isSubmitting) {
+      logger.info('Submission already in progress, skipping duplicate call');
+      return;
+    }
+
+    // Validate required data before submission
+    if (!bookingData.selectedTime) {
+      toast.error('Please select a time slot');
+      return;
+    }
+
+    if (!bookingData.meetingLocation) {
+      toast.error('Please enter a meeting location');
+      return;
+    }
+
+    // Set submission flag immediately
+    submissionInProgress.current = true;
     setIsSubmitting(true);
+
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
 
-      // Use snake_case field names to match backend expectations
+      // Use camelCase field names (backend will transform them)
       const bookingPayload = {
-        companionId: companionId, // Keep for TypeScript interface
-        companion_id: companionId, // Add snake_case for backend
-        bookingDate: dateStr, // Keep for TypeScript interface
-        booking_date: dateStr, // Add snake_case for backend
-        startTime: bookingData.selectedTime!.start, // Keep for TypeScript interface
-        start_time: bookingData.selectedTime!.start, // Add snake_case for backend
-        endTime: bookingData.selectedTime!.end, // Keep for TypeScript interface
-        end_time: bookingData.selectedTime!.end, // Add snake_case for backend
+        companionId: companionId,
+        bookingDate: dateStr,
+        startTime: bookingData.selectedTime.start,
+        endTime: bookingData.selectedTime.end,
         meetingLocation: bookingData.meetingLocation,
-        meeting_location: bookingData.meetingLocation, // Add snake_case
+        meetingLocationLat: bookingData.validatedAddress?.lat,
+        meetingLocationLon: bookingData.validatedAddress?.lon,
+        meetingLocationPlaceId: bookingData.validatedAddress?.placeId,
         specialRequests: bookingData.specialRequests || undefined,
-        special_requests: bookingData.specialRequests || undefined, // Add snake_case
         meetingType: 'in_person' as const,
-        meeting_type: 'in_person' as const, // Add snake_case
-        serviceCategoryId: bookingData.selectedService ? undefined : 1, // Default service category
-        service_category_id: bookingData.selectedService ? undefined : 1 // Snake case for backend
+        serviceCategoryId: bookingData.selectedService ? undefined : 1 // Default service category
       };
 
-      const result = await bookingApi.createBooking(bookingPayload as any);
+      const result = await bookingApi.createBooking(bookingPayload);
 
-      toast.success('Booking created successfully!');
-      if (onBookingCreated) {
-        onBookingCreated(result.bookingId);
+      // Only show success if we actually got a result
+      if (result && result.bookingId) {
+        // Use a unique toast ID to prevent duplicates
+        toast.success('Booking created successfully!', {
+          id: `booking-success-${result.bookingId}`
+        });
+        if (onBookingCreated) {
+          onBookingCreated(result.bookingId);
+        }
+        // Only close modal on success
+        onClose();
+      } else {
+        throw new Error('Invalid booking response');
       }
-      onClose();
     } catch (error: any) {
       console.error('Error creating booking:', error);
-      toast.error(error.response?.data?.message || 'Failed to create booking');
+
+      // Extract error details
+      const errorMessage = error.response?.data?.errors?.join(', ') ||
+                          error.response?.data?.message ||
+                          error.message ||
+                          'Failed to create booking';
+
+      // Use a unique toast ID to prevent duplicate error toasts
+      toast.error(errorMessage, {
+        id: `booking-error-${Date.now()}`
+      });
+
+      // Don't close modal on error - let user fix issues
     } finally {
+      // Always reset submission state
       setIsSubmitting(false);
+      submissionInProgress.current = false;
     }
   };
 
@@ -277,7 +338,7 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            className="fixed inset-0 bg-black/30 backdrop-blur-md z-[60]"
             onClick={onClose}
           />
 
@@ -286,11 +347,11 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full h-full overflow-hidden flex flex-col">
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] px-6 py-4">
+              <div className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] px-6 py-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-white">
                     Book {companionName}
@@ -313,10 +374,11 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
               </div>
 
               {/* Content */}
-              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+              <div className="flex-1 p-6 overflow-y-auto flex flex-col">
                 {renderStepIndicator()}
 
-                <AnimatePresence mode="wait">
+                <div className="flex-1 overflow-y-auto">
+                  <AnimatePresence mode="wait">
                   {/* Step 1: Service Selection */}
                   {currentStep === 1 && (
                     <motion.div
@@ -342,27 +404,53 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
 
                             return (
                               <>
-                                <select
-                                  value={bookingData.selectedService}
-                                  onChange={(e) => {
-                                    setBookingData(prev => ({
-                                      ...prev,
-                                      selectedService: e.target.value
-                                    }));
-                                  }}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
-                                >
-                                  <option value="">-- Please Select a Service --</option>
-                                  {availableServices.length > 0 ? (
-                                    availableServices.map((service, index) => (
-                                      <option key={index} value={String(service)}>
-                                        {String(service)}
-                                      </option>
-                                    ))
-                                  ) : (
-                                    <option value="" disabled>No services available for this time slot</option>
-                                  )}
-                                </select>
+                                {availableServices.length > 0 ? (
+                                  <div className="space-y-3">
+                                    {availableServices.map((service, index) => (
+                                      <label
+                                        key={index}
+                                        className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                          bookingData.selectedService === String(service)
+                                            ? 'border-[#312E81] bg-purple-50'
+                                            : 'border-gray-200'
+                                        }`}
+                                      >
+                                        <input
+                                          type="radio"
+                                          name="service"
+                                          value={String(service)}
+                                          checked={bookingData.selectedService === String(service)}
+                                          onChange={(e) => {
+                                            setBookingData(prev => ({
+                                              ...prev,
+                                              selectedService: e.target.value
+                                            }));
+                                          }}
+                                          className="sr-only"
+                                        />
+                                        <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                          bookingData.selectedService === String(service)
+                                            ? 'border-[#312E81]'
+                                            : 'border-gray-300'
+                                        }`}>
+                                          {bookingData.selectedService === String(service) && (
+                                            <div className="w-3 h-3 rounded-full bg-[#312E81]" />
+                                          )}
+                                        </div>
+                                        <span className="flex-1 text-gray-700 font-medium">
+                                          {String(service)}
+                                        </span>
+                                        {bookingData.selectedService === String(service) && (
+                                          <FaCheckCircle className="text-[#312E81] ml-2" />
+                                        )}
+                                      </label>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8 text-gray-500">
+                                    No services available for this time slot
+                                  </div>
+                                )}
 
                                 {availableServices.length === 0 && (
                                   <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -396,11 +484,12 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
 
                       <AddressSearch
                         value={bookingData.meetingLocation}
-                        onChange={(address, placeDetails) => {
+                        onChange={(address, placeDetails, validatedAddress) => {
                           setBookingData(prev => ({
                             ...prev,
                             meetingLocation: address,
-                            placeDetails: placeDetails as any
+                            placeDetails: placeDetails,
+                            validatedAddress: validatedAddress
                           }));
                         }}
                         label="Where would you like to meet?"
@@ -414,12 +503,13 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Special Requests (Optional)
                         </label>
-                        <textarea
+                        <AutoResizeTextarea
                           value={bookingData.specialRequests}
                           onChange={(e) => setBookingData(prev => ({ ...prev, specialRequests: e.target.value }))}
                           placeholder="Any special requests or preferences..."
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
-                          rows={3}
+                          minRows={3}
+                          maxRows={8}
                         />
                       </div>
                     </motion.div>
@@ -522,11 +612,12 @@ const DetailedBookingModal: React.FC<DetailedBookingModalProps> = ({
                       </div>
                     </motion.div>
                   )}
-                </AnimatePresence>
+                  </AnimatePresence>
+                </div>
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t flex justify-between">
+              <div className="px-6 py-4 bg-gray-50 border-t flex justify-between flex-shrink-0">
                 <button
                   onClick={currentStep === 1 ? onClose : handleBack}
                   className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"

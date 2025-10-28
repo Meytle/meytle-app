@@ -6,6 +6,7 @@
 const { pool: db } = require('../config/database');
 const path = require('path');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
+const { transformToFrontend } = require('../utils/transformer');
 
 /**
  * Get client profile
@@ -56,10 +57,10 @@ const getProfile = async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+      data: transformToFrontend({
         user: users[0],
         verification
-      }
+      })
     });
 
   } catch (error) {
@@ -223,7 +224,7 @@ const updateProfilePhoto = async (req, res) => {
     res.json({
       success: true,
       message: 'Profile photo updated successfully',
-      data: { photoUrl: photoUrl }
+      data: transformToFrontend({ photo_url: photoUrl })
     });
 
   } catch (error) {
@@ -363,7 +364,7 @@ const getVerificationStatus = async (req, res) => {
 
     res.json({
       status: 'success',
-      data: verification
+      data: transformToFrontend(verification)
     });
 
   } catch (error) {

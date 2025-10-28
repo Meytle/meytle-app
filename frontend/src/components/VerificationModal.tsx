@@ -9,6 +9,7 @@ import { FaIdCard, FaShieldAlt, FaTimes, FaUpload, FaMapMarkerAlt, FaExclamation
 import axios from 'axios';
 import { API_CONFIG } from '../constants';
 import clientApi from '../api/client';
+import { useModalRegistration } from '../context/ModalContext';
 
 interface VerificationModalProps {
   isOpen: boolean;
@@ -27,6 +28,9 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Register modal with ModalContext to hide header/footer and prevent scrolling
+  useModalRegistration('verification-modal', isOpen);
+
   // Check if user has complete address when modal opens
   useEffect(() => {
     const checkAddress = async () => {
@@ -37,7 +41,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
           const verification = profile.verification;
 
           const missing = [];
-          if (!verification?.address_line) missing.push('Street Address');
+          if (!verification?.addressLine) missing.push('Street Address');
           if (!verification?.city) missing.push('City');
           if (!verification?.country) missing.push('Country');
 
@@ -118,7 +122,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
         withCredentials: true,
       });
 
-      toast.success('Verification submitted! We\'ll review it within 24 hours.');
+      // Success notification is handled by the parent component
       onSuccess();
       onClose();
       
@@ -139,8 +143,16 @@ const VerificationModal = ({ isOpen, onClose, onSuccess }: VerificationModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-gray-900/20 backdrop-blur-md flex items-center justify-center z-[100] p-4 transition-all duration-300"
+      onClick={(e) => {
+        // Close modal when clicking on the backdrop
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative z-[101]">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">

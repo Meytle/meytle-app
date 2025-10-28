@@ -7,6 +7,7 @@
 import axios from 'axios';
 import type { Booking, AvailabilitySlot, TimeSlot, BookingFormData } from '../types';
 import { API_CONFIG } from '../constants';
+import { transformKeysSnakeToCamel, transformKeysCamelToSnake } from '../types/transformers';
 
 // Configure axios instance with credentials support
 const api = axios.create({
@@ -29,8 +30,9 @@ export const bookingApi = {
     totalAmount: number;
     durationHours: number;
   }> {
-    const response = await api.post('/booking/create', bookingData);
-    return response.data.data;
+    const transformedData = transformKeysCamelToSnake(bookingData);
+    const response = await api.post('/booking/create', transformedData);
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -38,7 +40,7 @@ export const bookingApi = {
    */
   async getBookings(params?: { status?: string; limit?: number; offset?: number }): Promise<Booking[]> {
     const response = await api.get('/booking/my-bookings', { params });
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -46,7 +48,7 @@ export const bookingApi = {
    */
   async getBookingById(bookingId: number): Promise<Booking> {
     const response = await api.get(`/booking/${bookingId}`);
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -64,34 +66,35 @@ export const bookingApi = {
   async getCompanionAvailability(companionId: number, date?: string): Promise<AvailabilitySlot[]> {
     const params = date ? { date } : {};
     const response = await api.get(`/booking/availability/${companionId}`, { params });
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
    * Set companion availability
    */
   async setCompanionAvailability(availability: AvailabilitySlot[]): Promise<void> {
-    await api.post('/booking/availability', { availability });
+    const transformedAvailability = transformKeysCamelToSnake(availability);
+    await api.post('/booking/availability', { availability: transformedAvailability });
   },
 
   /**
    * Get available time slots for a companion on a specific date
    */
   async getAvailableTimeSlots(companionId: number, date: string): Promise<{ date: string; availableSlots: TimeSlot[] }> {
-    const response = await api.get(`/booking/availability/${companionId}/slots`, { 
-      params: { date } 
+    const response = await api.get(`/booking/availability/${companionId}/slots`, {
+      params: { date }
     });
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
    * Get companion bookings by date range
    */
-  async getCompanionBookingsByDateRange(companionId: number, startDate: string, endDate: string): Promise<Array<{ id: number; booking_date: string; start_time: string; end_time: string; status: string }>> {
+  async getCompanionBookingsByDateRange(companionId: number, startDate: string, endDate: string): Promise<Array<{ id: number; bookingDate: string; startTime: string; endTime: string; status: string }>> {
     const response = await api.get(`/booking/bookings/${companionId}/date-range`, {
       params: { startDate, endDate }
     });
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -108,12 +111,12 @@ export const bookingApi = {
     reviews: Array<{
       id: number;
       rating: number;
-      review_text: string;
-      created_at: string;
-      reviewer_name: string;
-      reviewer_photo?: string;
-      booking_date: string;
-      service_id?: number;
+      reviewText: string;
+      createdAt: string;
+      reviewerName: string;
+      reviewerPhoto?: string;
+      bookingDate: string;
+      serviceId?: number;
     }>;
     stats: {
       total: number;
@@ -135,7 +138,7 @@ export const bookingApi = {
     const response = await api.get(`/booking/companion/${companionId}/reviews`, {
       params: { page, limit }
     });
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -146,13 +149,13 @@ export const bookingApi = {
     review?: {
       id: number;
       rating: number;
-      review_text: string;
-      created_at: string;
+      reviewText: string;
+      createdAt: string;
     };
   }> {
     try {
       const response = await api.get(`/booking/${bookingId}/review`);
-      return response.data.data;
+      return response.data.data; // Backend already transformed to camelCase
     } catch (error: any) {
       if (error.response?.status === 404) {
         return { hasReviewed: false };
@@ -182,7 +185,7 @@ export const bookingApi = {
     };
   }> {
     const response = await api.get(`/booking/availability/${companionId}/weekly`);
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -204,7 +207,7 @@ export const bookingApi = {
     const response = await api.get(`/booking/availability/${companionId}/calendar`, {
       params: { startDate, endDate }
     });
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -225,9 +228,10 @@ export const bookingApi = {
     meetingLocation?: string;
   }): Promise<{ requestId: number }> {
     console.log('API createBookingRequest called with:', requestData);
-    const response = await api.post('/booking/requests/create', requestData);
+    const transformedData = transformKeysCamelToSnake(requestData);
+    const response = await api.post('/booking/requests/create', transformedData);
     console.log('API response:', response.data);
-    return response.data.data || response.data;
+    return response.data.data || response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -238,35 +242,35 @@ export const bookingApi = {
     status?: 'pending' | 'accepted' | 'rejected' | 'expired'
   }): Promise<Array<{
     id: number;
-    client_id: number;
-    companion_id: number;
-    requested_date: string;
-    preferred_time?: string;
-    duration_hours: number;
-    service_category_id?: number;
-    meeting_type: 'in_person' | 'virtual';
-    special_requests?: string;
-    meeting_location?: string;
+    clientId: number;
+    companionId: number;
+    requestedDate: string;
+    preferredTime?: string;
+    durationHours: number;
+    serviceCategoryId?: number;
+    meetingType: 'in_person' | 'virtual';
+    specialRequests?: string;
+    meetingLocation?: string;
     status: 'pending' | 'accepted' | 'rejected' | 'expired';
-    companion_response?: string;
-    suggested_date?: string;
-    suggested_start_time?: string;
-    suggested_end_time?: string;
-    expires_at?: string;
-    created_at: string;
-    updated_at: string;
-    responded_at?: string;
-    client_name?: string;
-    client_email?: string;
-    client_photo?: string;
-    companion_name?: string;
-    companion_email?: string;
-    companion_photo?: string;
-    service_category_name?: string;
-    service_price?: number;
+    companionResponse?: string;
+    suggestedDate?: string;
+    suggestedStartTime?: string;
+    suggestedEndTime?: string;
+    expiresAt?: string;
+    createdAt: string;
+    updatedAt: string;
+    respondedAt?: string;
+    clientName?: string;
+    clientEmail?: string;
+    clientPhoto?: string;
+    companionName?: string;
+    companionEmail?: string;
+    companionPhoto?: string;
+    serviceCategoryName?: string;
+    servicePrice?: number;
   }>> {
     const response = await api.get('/booking/requests', { params });
-    return response.data.requests;
+    return response.data.requests; // Backend already transformed to camelCase
   },
 
   /**
@@ -274,21 +278,21 @@ export const bookingApi = {
    */
   async getBookingRequestById(requestId: number): Promise<{
     id: number;
-    client_id: number;
-    companion_id: number;
-    requested_date: string;
-    preferred_time?: string;
-    duration_hours: number;
+    clientId: number;
+    companionId: number;
+    requestedDate: string;
+    preferredTime?: string;
+    durationHours: number;
     status: string;
-    companion_response?: string;
-    suggested_date?: string;
-    suggested_start_time?: string;
-    suggested_end_time?: string;
-    client_name: string;
-    companion_name: string;
+    companionResponse?: string;
+    suggestedDate?: string;
+    suggestedStartTime?: string;
+    suggestedEndTime?: string;
+    clientName: string;
+    companionName: string;
   }> {
     const response = await api.get(`/booking/requests/${requestId}`);
-    return response.data.request;
+    return response.data.request; // Backend already transformed to camelCase
   },
 
   /**
@@ -301,7 +305,8 @@ export const bookingApi = {
     suggestedStartTime?: string;
     suggestedEndTime?: string;
   }): Promise<void> {
-    await api.put(`/booking/requests/${requestId}/status`, data);
+    const transformedData = transformKeysCamelToSnake(data);
+    await api.put(`/booking/requests/${requestId}/status`, transformedData);
   },
 
   /**
@@ -309,7 +314,7 @@ export const bookingApi = {
    */
   async getPendingBookingsForCompanion(): Promise<Booking[]> {
     const response = await api.get('/booking/companion/pending');
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**

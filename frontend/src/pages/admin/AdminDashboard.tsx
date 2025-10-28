@@ -18,8 +18,14 @@ import {
 } from 'react-icons/fa';
 import { API_CONFIG, ROUTES } from '../../constants';
 import { useAuth } from '../../hooks/useAuth';
-import type { ServiceCategory, ServiceCategoryFormData } from '../../types';
+import type { ServiceCategory, ServiceCategoryFormData, User } from '../../types';
+import type { ApiCompanionApplication, ApiClientVerification, ApiUser, ApiDashboardStats } from '../../types/api';
+// Transformers not needed - backend already transforms data
 import { serviceCategoryApi } from '../../api/serviceCategory';
+import { clearBookingData, getBookingDataBeforeClearing } from '../../utils/clearBookingData';
+import ErrorBoundary from '../../components/ErrorBoundary';
+import AsyncErrorBoundary, { useAsyncError } from '../../components/AsyncErrorBoundary';
+import logger, { logComponentError } from '../../utils/logger';
 
 // Extend window interface for client verification functions
 declare global {
@@ -29,6 +35,7 @@ declare global {
   }
 }
 
+// Frontend types (camelCase)
 interface DashboardStats {
   users: {
     total: number;
@@ -49,54 +56,46 @@ interface DashboardStats {
 
 interface ClientVerification {
   id: number;
-  user_id: number;
-  profile_photo_url?: string;
-  id_document_url?: string;
-  date_of_birth?: string;
-  government_id_number?: string;
-  phone_number?: string;
+  userId: number;
+  profilePhotoUrl?: string;
+  idDocumentUrl?: string;
+  dateOfBirth?: string;
+  governmentIdNumber?: string;
+  phoneNumber?: string;
   location?: string;
-  address_line?: string;
+  addressLine?: string;
   city?: string;
   state?: string;
   country?: string;
-  postal_code?: string;
+  postalCode?: string;
   bio?: string;
-  verification_status: 'pending' | 'approved' | 'rejected';
-  rejection_reason?: string;
-  created_at: string;
-  verified_at?: string;
-  reviewed_at?: string;
+  verificationStatus: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  createdAt: string;
+  verifiedAt?: string;
+  reviewedAt?: string;
   name: string;
   email: string;
 }
 
 interface Application {
   id: number;
-  user_id: number;
+  userId: number;
   name: string;
   email: string;
-  profile_photo_url: string;
-  government_id_url: string;
-  date_of_birth: string;
-  government_id_number: string;
+  profilePhotoUrl: string;
+  governmentIdUrl: string;
+  dateOfBirth: string;
+  governmentIdNumber: string;
   status: 'pending' | 'approved' | 'rejected';
-  rejection_reason?: string;
-  created_at: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  activeRole?: string;
-  created_at: string;
+  rejectionReason?: string;
+  createdAt: string;
 }
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { throwError } = useAsyncError();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [clientVerifications, setClientVerifications] = useState<ClientVerification[]>([]);
@@ -111,7 +110,7 @@ const AdminDashboard = () => {
   const [categoryFormData, setCategoryFormData] = useState<ServiceCategoryFormData>({
     name: '',
     description: '',
-    base_price: 0
+    basePrice: 0
   });
 
   useEffect(() => {
@@ -133,6 +132,30 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, [user, navigate]);
 
+  const handleClearBookingData = () => {
+    const confirmation = confirm(
+      '⚠️ WARNING: This will clear ALL booking data from your browser (localStorage).\n\n' +
+      'This action cannot be undone. Are you sure you want to continue?'
+    );
+
+    if (confirmation) {
+      // Get data before clearing for logging
+      const dataBeforeClearing = getBookingDataBeforeClearing();
+      logger.info('Clearing booking data', { dataBeforeClearing });
+
+      // Clear the data
+      const success = clearBookingData();
+
+      if (success) {
+        toast.success('All booking data has been cleared from browser storage!');
+        logger.info('Booking data cleared successfully');
+      } else {
+        toast.error('Failed to clear booking data. Check console for details.');
+        logger.error('Failed to clear booking data');
+      }
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -141,18 +164,21 @@ const AdminDashboard = () => {
       const statsResponse = await axios.get(`${API_CONFIG.BASE_URL}/admin/dashboard/stats`, {
         withCredentials: true
       });
+      // Backend already sends stats in camelCase format
       setStats(statsResponse.data.data);
 
       // Fetch pending applications
       const appsResponse = await axios.get(`${API_CONFIG.BASE_URL}/admin/applications?status=pending`, {
         withCredentials: true
       });
+      // Backend already transforms with transformArrayToFrontend
       setApplications(appsResponse.data.data);
 
       // Fetch users
       const usersResponse = await axios.get(`${API_CONFIG.BASE_URL}/admin/users`, {
         withCredentials: true
       });
+      // Backend already transforms with transformArrayToFrontend
       setUsers(usersResponse.data.data);
 
       // Fetch categories
@@ -163,15 +189,17 @@ const AdminDashboard = () => {
       const clientVerifsResponse = await axios.get(`${API_CONFIG.BASE_URL}/admin/client-verifications?status=pending`, {
         withCredentials: true
       });
+      // Backend already transforms with transformArrayToFrontend
       setClientVerifications(clientVerifsResponse.data.data);
 
     } catch (error: any) {
-      console.error('Error fetching dashboard data:', error);
-      
+      logComponentError('AdminDashboard', error, { action: 'fetchDashboardData' });
+
       // Don't show error toast if it's a 401 (user will be redirected by axios interceptor)
       if (error.response?.status !== 401) {
         toast.error(error.response?.data?.message || 'Failed to load dashboard data');
       }
+      throwError(error);
     } finally {
       setIsLoading(false);
     }
@@ -189,7 +217,7 @@ const AdminDashboard = () => {
       fetchDashboardData();
       setSelectedApplication(null);
     } catch (error: any) {
-      console.error('Error approving application:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleApproveApplication', applicationId });
       toast.error(error.response?.data?.message || 'Failed to approve application');
     }
   };
@@ -212,7 +240,7 @@ const AdminDashboard = () => {
       setSelectedApplication(null);
       setRejectionReason('');
     } catch (error: any) {
-      console.error('Error rejecting application:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleRejectApplication', applicationId });
       toast.error(error.response?.data?.message || 'Failed to reject application');
     }
   };
@@ -230,7 +258,7 @@ const AdminDashboard = () => {
       toast.success('User deleted successfully');
       fetchDashboardData();
     } catch (error: any) {
-      console.error('Error deleting user:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleDeleteUser', userId, userName });
       toast.error(error.response?.data?.message || 'Failed to delete user');
     }
   };
@@ -246,7 +274,7 @@ const AdminDashboard = () => {
       toast.success('Client verification approved successfully!');
       fetchDashboardData();
     } catch (error: any) {
-      console.error('Error approving client verification:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleApproveClientVerification', verificationId });
       toast.error(error.response?.data?.message || 'Failed to approve client verification');
     }
   };
@@ -268,13 +296,13 @@ const AdminDashboard = () => {
       fetchDashboardData();
       setRejectionReason('');
     } catch (error: any) {
-      console.error('Error rejecting client verification:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleRejectClientVerification', verificationId });
       toast.error(error.response?.data?.message || 'Failed to reject client verification');
     }
   };
 
   const handleCreateCategory = async () => {
-    if (!categoryFormData.name || categoryFormData.base_price <= 0) {
+    if (!categoryFormData.name || categoryFormData.basePrice <= 0) {
       toast.error('Please provide a valid name and base price');
       return;
     }
@@ -285,7 +313,7 @@ const AdminDashboard = () => {
       fetchDashboardData();
       closeModal();
     } catch (error: any) {
-      console.error('Error creating category:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleCreateCategory', categoryFormData });
       toast.error(error.response?.data?.message || 'Failed to create category');
     }
   };
@@ -293,7 +321,7 @@ const AdminDashboard = () => {
   const handleUpdateCategory = async () => {
     if (!selectedCategory) return;
 
-    if (!categoryFormData.name || categoryFormData.base_price <= 0) {
+    if (!categoryFormData.name || categoryFormData.basePrice <= 0) {
       toast.error('Please provide a valid name and base price');
       return;
     }
@@ -304,7 +332,7 @@ const AdminDashboard = () => {
       fetchDashboardData();
       closeModal();
     } catch (error: any) {
-      console.error('Error updating category:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleUpdateCategory', categoryId: selectedCategory.id, categoryFormData });
       toast.error(error.response?.data?.message || 'Failed to update category');
     }
   };
@@ -319,13 +347,13 @@ const AdminDashboard = () => {
       toast.success('Service category deleted successfully');
       fetchDashboardData();
     } catch (error: any) {
-      console.error('Error deleting category:', error);
+      logComponentError('AdminDashboard', error, { action: 'handleDeleteCategory', categoryId, categoryName });
       toast.error(error.response?.data?.message || 'Failed to delete category');
     }
   };
 
   const openCreateModal = () => {
-    setCategoryFormData({ name: '', description: '', base_price: 0 });
+    setCategoryFormData({ name: '', description: '', basePrice: 0 });
     setShowCategoryModal(true);
     setSelectedCategory(null);
   };
@@ -334,14 +362,14 @@ const AdminDashboard = () => {
     setCategoryFormData({
       name: category.name,
       description: category.description || '',
-      base_price: category.base_price
+      basePrice: category.basePrice
     });
     setShowCategoryModal(true);
     setSelectedCategory(category);
   };
 
   const closeModal = () => {
-    setCategoryFormData({ name: '', description: '', base_price: 0 });
+    setCategoryFormData({ name: '', description: '', basePrice: 0 });
     setShowCategoryModal(false);
     setSelectedCategory(null);
   };
@@ -509,7 +537,7 @@ const AdminDashboard = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Recent Applications</h3>
                   <p className="text-gray-600 mb-4">{applications.length} applications waiting for review</p>
@@ -542,6 +570,21 @@ const AdminDashboard = () => {
                     View Earnings
                   </button>
                 </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <FaTrash className="text-red-500" />
+                    Clear Booking Data
+                  </h3>
+                  <p className="text-gray-600 mb-4">Remove all booking data from browser</p>
+                  <button
+                    onClick={handleClearBookingData}
+                    className="w-full bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-all"
+                  >
+                    Clear Browser Data
+                  </button>
+                  <p className="text-xs text-red-500 mt-2">⚠️ This action cannot be undone</p>
+                </div>
               </div>
             </div>
           )}
@@ -564,7 +607,7 @@ const AdminDashboard = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex gap-4">
                           <img
-                            src={app.profile_photo_url ? `${API_CONFIG.BASE_URL.replace('/api', '')}${app.profile_photo_url}` : 'https://via.placeholder.com/100'}
+                            src={app.profilePhotoUrl ? `${API_CONFIG.BASE_URL.replace('/api', '')}${app.profilePhotoUrl}` : 'https://via.placeholder.com/100'}
                             alt={app.name}
                             className="w-20 h-20 rounded-lg object-cover"
                           />
@@ -572,10 +615,10 @@ const AdminDashboard = () => {
                             <h3 className="text-lg font-semibold text-gray-900">{app.name}</h3>
                             <p className="text-gray-600">{app.email}</p>
                             <p className="text-sm text-gray-500 mt-1">
-                              Applied: {new Date(app.created_at).toLocaleDateString()}
+                              Applied: {new Date(app.createdAt).toLocaleDateString()}
                             </p>
                             <p className="text-sm text-gray-500">
-                              DOB: {new Date(app.date_of_birth).toLocaleDateString()}
+                              DOB: {new Date(app.dateOfBirth).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -583,13 +626,13 @@ const AdminDashboard = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => setSelectedApplication(app)}
-                            className="px-4 py-2 bg-accent-500 text-white rounded-lg hover:bg-accent-600 transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 flex items-center gap-2"
                           >
                             <FaEye /> View
                           </button>
                           <button
                             onClick={() => handleApproveApplication(app.id)}
-                            className="px-4 py-2 bg-success-500 text-white rounded-lg hover:bg-success-600 transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-all duration-200 flex items-center gap-2"
                           >
                             <FaCheck /> Approve
                           </button>
@@ -631,14 +674,14 @@ const AdminDashboard = () => {
                         <h3 className="font-semibold text-gray-700">Personal Information</h3>
                         <p className="text-gray-900">Name: {selectedApplication.name}</p>
                         <p className="text-gray-900">Email: {selectedApplication.email}</p>
-                        <p className="text-gray-900">Date of Birth: {new Date(selectedApplication.date_of_birth).toLocaleDateString()}</p>
-                        <p className="text-gray-900">Government ID: {selectedApplication.government_id_number}</p>
+                        <p className="text-gray-900">Date of Birth: {new Date(selectedApplication.dateOfBirth).toLocaleDateString()}</p>
+                        <p className="text-gray-900">Government ID: {selectedApplication.governmentIdNumber}</p>
                       </div>
 
                       <div>
                         <h3 className="font-semibold text-gray-700 mb-2">Profile Photo</h3>
                         <img
-                          src={`${API_CONFIG.BASE_URL.replace('/api', '')}${selectedApplication.profile_photo_url}`}
+                          src={`${API_CONFIG.BASE_URL.replace('/api', '')}${selectedApplication.profilePhotoUrl}`}
                           alt="Profile"
                           className="w-48 h-48 rounded-lg object-cover"
                         />
@@ -647,7 +690,7 @@ const AdminDashboard = () => {
                       <div>
                         <h3 className="font-semibold text-gray-700 mb-2">Government ID</h3>
                         <img
-                          src={`${API_CONFIG.BASE_URL.replace('/api', '')}${selectedApplication.government_id_url}`}
+                          src={`${API_CONFIG.BASE_URL.replace('/api', '')}${selectedApplication.governmentIdUrl}`}
                           alt="Government ID"
                           className="w-full max-w-md rounded-lg"
                         />
@@ -714,10 +757,10 @@ const AdminDashboard = () => {
                         <tr key={verification.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              {verification.profile_photo_url ? (
+                              {verification.profilePhotoUrl ? (
                                 <img
                                   className="h-10 w-10 rounded-full object-cover"
-                                  src={`${API_CONFIG.BASE_URL.replace('/api', '')}${verification.profile_photo_url}`}
+                                  src={`${API_CONFIG.BASE_URL.replace('/api', '')}${verification.profilePhotoUrl}`}
                                   alt={verification.name}
                                 />
                               ) : (
@@ -727,7 +770,7 @@ const AdminDashboard = () => {
                               )}
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">{verification.name}</div>
-                                <div className="text-sm text-gray-500">ID: {verification.user_id}</div>
+                                <div className="text-sm text-gray-500">ID: {verification.userId}</div>
                               </div>
                             </div>
                           </td>
@@ -736,20 +779,20 @@ const AdminDashboard = () => {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">
                             <div>
-                              {verification.address_line && <div>{verification.address_line}</div>}
+                              {verification.addressLine && <div>{verification.addressLine}</div>}
                               <div>
                                 {verification.city}{verification.city && verification.state && ', '}
                                 {verification.state}{verification.state && verification.country && ', '}
                                 {verification.country}
                               </div>
-                              {verification.postal_code && <div>{verification.postal_code}</div>}
+                              {verification.postalCode && <div>{verification.postalCode}</div>}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {verification.government_id_number}
+                            {verification.governmentIdNumber}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(verification.created_at).toLocaleDateString()}
+                            {new Date(verification.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex items-center gap-2">
@@ -773,20 +816,20 @@ const AdminDashboard = () => {
                                           <h3 class="font-semibold text-gray-700">Client Information</h3>
                                           <p>Name: ${verification.name}</p>
                                           <p>Email: ${verification.email}</p>
-                                          <p>Date of Birth: ${verification.date_of_birth ? new Date(verification.date_of_birth).toLocaleDateString() : 'Not provided'}</p>
-                                          <p>Government ID: ${verification.government_id_number}</p>
-                                          <p>Phone: ${verification.phone_number || 'Not provided'}</p>
+                                          <p>Date of Birth: ${verification.dateOfBirth ? new Date(verification.dateOfBirth).toLocaleDateString() : 'Not provided'}</p>
+                                          <p>Government ID: ${verification.governmentIdNumber}</p>
+                                          <p>Phone: ${verification.phoneNumber || 'Not provided'}</p>
                                         </div>
                                         <div>
                                           <h3 class="font-semibold text-gray-700">Address</h3>
-                                          <p>${verification.address_line || ''}</p>
+                                          <p>${verification.addressLine || ''}</p>
                                           <p>${verification.city || ''} ${verification.state || ''}</p>
-                                          <p>${verification.country || ''} ${verification.postal_code || ''}</p>
+                                          <p>${verification.country || ''} ${verification.postalCode || ''}</p>
                                         </div>
-                                        ${verification.id_document_url ? `
+                                        ${verification.idDocumentUrl ? `
                                           <div>
                                             <h3 class="font-semibold text-gray-700 mb-2">ID Document</h3>
-                                            <img src="${API_CONFIG.BASE_URL.replace('/api', '')}${verification.id_document_url}" alt="ID Document" class="max-w-full rounded-lg" />
+                                            <img src="${API_CONFIG.BASE_URL.replace('/api', '')}${verification.idDocumentUrl}" alt="ID Document" class="max-w-full rounded-lg" />
                                           </div>
                                         ` : ''}
                                         <div class="pt-4 border-t">
@@ -897,7 +940,7 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(user.created_at).toLocaleDateString()}
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {user.activeRole !== 'admin' && (
@@ -979,15 +1022,15 @@ const AdminDashboard = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">${category.base_price.toFixed(2)}</div>
+                            <div className="text-sm text-gray-900">${category.basePrice.toFixed(2)}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              category.is_active 
-                                ? 'bg-green-100 text-green-800' 
+                              category.isActive
+                                ? 'bg-green-100 text-green-800'
                                 : 'bg-red-100 text-red-800'
                             }`}>
-                              {category.is_active ? 'Active' : 'Inactive'}
+                              {category.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1065,8 +1108,8 @@ const AdminDashboard = () => {
                     </label>
                     <input
                       type="number"
-                      value={categoryFormData.base_price}
-                      onChange={(e) => setCategoryFormData({ ...categoryFormData, base_price: parseFloat(e.target.value) || 0 })}
+                      value={categoryFormData.basePrice}
+                      onChange={(e) => setCategoryFormData({ ...categoryFormData, basePrice: parseFloat(e.target.value) || 0 })}
                       className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
                       min="0"
                       step="0.01"
@@ -1100,5 +1143,13 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+const AdminDashboardWithErrorBoundary = () => (
+  <ErrorBoundary level="page" showDetails={false}>
+    <AsyncErrorBoundary maxRetries={3} retryDelay={1000}>
+      <AdminDashboard />
+    </AsyncErrorBoundary>
+  </ErrorBoundary>
+);
+
+export default AdminDashboardWithErrorBoundary;
 

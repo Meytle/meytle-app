@@ -40,7 +40,7 @@ const Notifications: React.FC = () => {
     try {
       await notificationApi.markAsRead(notificationId);
       setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
       );
       toast.success('Marked as read');
     } catch (error) {
@@ -53,7 +53,7 @@ const Notifications: React.FC = () => {
   const markAllAsRead = async () => {
     try {
       await notificationApi.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       toast.success('All notifications marked as read');
     } catch (error) {
       console.error('Failed to mark all as read:', error);
@@ -97,11 +97,11 @@ const Notifications: React.FC = () => {
 
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.is_read) {
+    if (!notification.isRead) {
       markAsRead(notification.id);
     }
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
     }
   };
 
@@ -133,7 +133,7 @@ const Notifications: React.FC = () => {
   // Filter notifications
   const filteredNotifications = notifications.filter(n => {
     if (filter === 'all') return true;
-    if (filter === 'unread') return !n.is_read;
+    if (filter === 'unread') return !n.isRead;
     return n.type === filter;
   });
 
@@ -175,7 +175,7 @@ const Notifications: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Action Buttons */}
-        {(selectedNotifications.length > 0 || notifications.some(n => !n.is_read)) && (
+        {(selectedNotifications.length > 0 || notifications.some(n => !n.isRead)) && (
           <div className="flex justify-end gap-2 mb-4">
             {selectedNotifications.length > 0 && (
               <button
@@ -186,7 +186,7 @@ const Notifications: React.FC = () => {
                 Delete Selected ({selectedNotifications.length})
               </button>
             )}
-            {notifications.some(n => !n.is_read) && (
+            {notifications.some(n => !n.isRead) && (
               <button
                 onClick={markAllAsRead}
                 className="px-4 py-2 bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-colors"
@@ -220,7 +220,7 @@ const Notifications: React.FC = () => {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              Unread ({notifications.filter(n => !n.is_read).length})
+              Unread ({notifications.filter(n => !n.isRead).length})
             </button>
             <span className="text-gray-400 mx-2">|</span>
             <button
@@ -297,7 +297,7 @@ const Notifications: React.FC = () => {
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-gray-50 transition-colors ${
-                    !notification.is_read ? 'bg-[#f0effe] border-l-4 border-[#312E81]' : ''
+                    !notification.isRead ? 'bg-[#f0effe] border-l-4 border-[#312E81]' : ''
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -321,21 +321,21 @@ const Notifications: React.FC = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className={`font-semibold ${notification.is_read ? 'text-gray-700' : 'text-gray-900'}`}>
+                          <h3 className={`font-semibold ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
                             {notification.title}
                           </h3>
                           <p className="text-gray-600 text-sm mt-1">{notification.message}</p>
                           <div className="flex items-center gap-4 mt-2">
                             <span className="text-xs text-gray-500 flex items-center gap-1">
                               <FaClock className="w-3 h-3" />
-                              {formatTime(notification.created_at)}
+                              {formatTime(notification.createdAt)}
                             </span>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              notification.is_read
+                              notification.isRead
                                 ? 'bg-gray-100 text-gray-600'
                                 : 'bg-[#f0effe] text-[#312E81]'
                             }`}>
-                              {notification.is_read ? 'Read' : 'Unread'}
+                              {notification.isRead ? 'Read' : 'Unread'}
                             </span>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
                               {notification.type}
@@ -345,7 +345,7 @@ const Notifications: React.FC = () => {
 
                         {/* Actions */}
                         <div className="flex gap-2">
-                          {!notification.is_read && (
+                          {!notification.isRead && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

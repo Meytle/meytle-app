@@ -110,16 +110,16 @@ const ClientProfile = () => {
         if (response.verification) {
           setProfileData({
             fullName: response.user.name || '',
-            phoneNumber: response.verification.phone_number || '',
+            phoneNumber: response.verification.phoneNumber || '',
             location: response.verification.location || '',
-            addressLine: response.verification.address_line || '',
+            addressLine: response.verification.addressLine || '',
             city: response.verification.city || '',
             state: response.verification.state || '',
             country: response.verification.country || '',
-            postalCode: response.verification.postal_code || '',
+            postalCode: response.verification.postalCode || '',
             bio: response.verification.bio || '',
-            profilePhoto: response.verification.profile_photo_url || '',
-            dateOfBirth: response.verification.date_of_birth || '',
+            profilePhoto: response.verification.profilePhotoUrl || '',
+            dateOfBirth: response.verification.dateOfBirth || '',
             interests: [],  // TODO: Fetch interests separately
             languages: []   // TODO: Fetch languages separately
           });
@@ -127,7 +127,7 @@ const ClientProfile = () => {
           // Set verification status
           setVerificationStatus({
             emailVerified: true, // Assuming email is verified if logged in
-            idVerified: response.verification.verification_status === 'approved'
+            idVerified: response.verification.verificationStatus === 'approved'
           });
         } else {
           // No verification record yet, use defaults
@@ -403,7 +403,7 @@ const ClientProfile = () => {
                 <div className="mb-4">
                   <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-[#4A47A3] to-[#4A47A3] flex items-center justify-center text-white text-4xl font-bold">
                       {profileData.profilePhoto || profilePhotoPreview ? (
-                      <img src={profilePhotoPreview || profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={profilePhotoPreview || profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       profileData.fullName.charAt(0).toUpperCase()
                       )}
@@ -494,7 +494,7 @@ const ClientProfile = () => {
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#4A47A3] to-[#4A47A3] flex items-center justify-center text-white text-xl font-bold">
                       {profileData.profilePhoto || profilePhotoPreview ? (
-                        <img src={profilePhotoPreview || profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                        <img src={profilePhotoPreview || profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         profileData.fullName.charAt(0).toUpperCase()
                       )}

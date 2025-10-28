@@ -24,6 +24,8 @@ import InterestSelector from '../../components/common/InterestSelector';
 import ServicesSelector from '../../components/companion/ServicesSelector';
 import LanguageSelector from '../../components/companion/LanguageSelector';
 import PhoneNumberInput from '../../components/common/PhoneNumberInput';
+import { transformKeysSnakeToCamel } from '../../types/transformers';
+import logger from '../../utils/logger';
 
 interface ProfileData {
   fullName: string;
@@ -72,7 +74,7 @@ const CompanionProfile = () => {
   useEffect(() => {
     const fetchApplicationData = async () => {
       try {
-        console.log('🔍 Fetching application data for user:', user?.email);
+        logger.info('Fetching application data for user', { email: user?.email });
 
         const response = await axios.get(
           `${API_CONFIG.BASE_URL}/companion/application/status`,
@@ -81,27 +83,27 @@ const CompanionProfile = () => {
           }
         );
 
-        console.log('📥 Received application data:', response.data);
+        logger.info('Received application data', { data: response.data });
 
-        const application = response.data.data.application;
+        const application = transformKeysSnakeToCamel(response.data.data.application);
 
         // Verify this is the correct user's application
-        if (application && application.user_id) {
-          console.log('✅ Application belongs to user ID:', application.user_id);
+        if (application && application.userId) {
+          logger.info('Application belongs to user', { userId: application.userId });
         }
 
         // Set all data from application
-        const photoUrl = application.profile_photo_url
-          ? `${API_CONFIG.BASE_URL.replace('/api', '')}${application.profile_photo_url}`
+        const photoUrl = application.profilePhotoUrl
+          ? `${API_CONFIG.BASE_URL.replace('/api', '')}${application.profilePhotoUrl}`
           : '';
 
         // Parse services and languages if they're JSON strings
         let services = [];
         let languages = [];
         try {
-          services = application.services_offered ? JSON.parse(application.services_offered) : [];
+          services = application.servicesOffered ? JSON.parse(application.servicesOffered) : [];
         } catch (e) {
-          services = application.services_offered || [];
+          services = application.servicesOffered || [];
         }
         try {
           languages = application.languages ? JSON.parse(application.languages) : [];
@@ -118,36 +120,36 @@ const CompanionProfile = () => {
           ...prev,
           profilePhoto: photoUrl,
           fullName: user?.name || prev.fullName,
-          phoneNumber: application.phone_number || '',
+          phoneNumber: application.phoneNumber || '',
           location: location || '',
           bio: application.bio || '',
-          hourlyRate: application.hourly_rate || 50,
+          hourlyRate: application.hourlyRate || 50,
           services: Array.isArray(services) ? services : [],
           languages: Array.isArray(languages) ? languages : []
         }));
 
-        console.log('📋 Updated profile data with application info');
+        logger.info('📋 Updated profile data with application info');
 
         // Fetch existing interests
         if (user?.id) {
           try {
             const interestsResponse = await companionsApi.getCompanionInterests(user.id);
             if (interestsResponse.status === 'success') {
-              console.log('📋 Fetched existing interests:', interestsResponse.data.interests);
+              logger.info('Fetched existing interests', { interests: interestsResponse.data.interests });
               setProfileData(prev => ({ 
                 ...prev, 
                 interests: interestsResponse.data.interests 
               }));
             }
           } catch (interestsError) {
-            console.log('⚠️ No existing interests found or error fetching:', interestsError);
+            logger.info('No existing interests found or error fetching', { error: interestsError });
             // Keep default interests
           }
         }
       } catch (error: any) {
-        console.error('❌ Error fetching application data:', error);
+        logger.error('Error fetching application data', { error });
         if (error.response) {
-          console.error('Error response:', error.response.data);
+          logger.error('Error response', { data: error.response.data });
         }
       } finally {
         setIsLoading(false);
@@ -225,7 +227,7 @@ const CompanionProfile = () => {
         const formData = new FormData();
         formData.append('profilePhoto', profilePhotoFile);
 
-        console.log('📸 Uploading new profile photo for user:', user?.email);
+        logger.info('Uploading new profile photo for user', { email: user?.email });
 
         const response = await axios.post(
           `${API_CONFIG.BASE_URL}/companion/profile/photo`,
@@ -238,13 +240,16 @@ const CompanionProfile = () => {
           }
         );
         
-        console.log('✅ Profile photo uploaded successfully:', response.data);
+        logger.info('Profile photo uploaded successfully', { data: response.data });
         
         // Update the profile photo URL with the one from backend
-        if (response.data.data?.profilePhotoUrl) {
-          const newPhotoUrl = `${API_CONFIG.BASE_URL.replace('/api', '')}${response.data.data.profilePhotoUrl}`;
-          console.log('🔄 Updating photo URL to:', newPhotoUrl);
-          setProfileData(prev => ({ ...prev, profilePhoto: newPhotoUrl }));
+        if (response.data.data) {
+          const transformedData = transformKeysSnakeToCamel(response.data.data);
+          if (transformedData.profilePhotoUrl) {
+            const newPhotoUrl = `${API_CONFIG.BASE_URL.replace('/api', '')}${transformedData.profilePhotoUrl}`;
+            logger.info('Updating photo URL', { url: newPhotoUrl });
+            setProfileData(prev => ({ ...prev, profilePhoto: newPhotoUrl }));
+          }
         }
         
         setProfilePhotoFile(null);
@@ -254,17 +259,17 @@ const CompanionProfile = () => {
       // Save interests if they have changed
       if (profileData.interests.length > 0) {
         try {
-          console.log('💾 Saving interests:', profileData.interests);
+          logger.info('Saving interests', { interests: profileData.interests });
           await companionsApi.updateCompanionInterests(profileData.interests);
-          console.log('✅ Interests saved successfully');
+          logger.info('Interests saved successfully');
         } catch (interestsError) {
-          console.error('❌ Error saving interests:', interestsError);
+          logger.error('Error saving interests', { error: interestsError });
           toast.error('Failed to save interests');
         }
       }
 
       // Save profile data (phone, bio, services, languages, hourly rate)
-      console.log('💾 Saving profile data...');
+      logger.info('Saving profile data');
       const profileUpdateResponse = await axios.put(
         `${API_CONFIG.BASE_URL}/companion/profile`,
         {
@@ -282,13 +287,13 @@ const CompanionProfile = () => {
         }
       );
 
-      console.log('✅ Profile data saved successfully:', profileUpdateResponse.data);
+      logger.info('Profile data saved successfully', { data: profileUpdateResponse.data });
       
       toast.success('Profile updated successfully!');
     } catch (error: any) {
-      console.error('❌ Error updating profile:', error);
+      logger.error('Error updating profile', { error });
       if (error.response) {
-        console.error('Error details:', error.response.data);
+        logger.error('Error details', { data: error.response.data });
       }
       toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
@@ -389,7 +394,7 @@ const CompanionProfile = () => {
                 <div className="mb-4">
                   <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-[#4A47A3] to-[#4A47A3] flex items-center justify-center text-white text-4xl font-bold">
                     {profileData.profilePhoto ? (
-                      <img src={profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       profileData.fullName.charAt(0).toUpperCase()
                     )}
@@ -448,7 +453,7 @@ const CompanionProfile = () => {
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#4A47A3] to-[#4A47A3] flex items-center justify-center text-white text-xl font-bold">
                       {profileData.profilePhoto ? (
-                        <img src={profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                        <img src={profileData.profilePhoto} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
                         profileData.fullName.charAt(0).toUpperCase()
                       )}

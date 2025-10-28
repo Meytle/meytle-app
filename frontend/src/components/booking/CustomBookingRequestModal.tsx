@@ -24,7 +24,10 @@ import { toast } from 'react-hot-toast';
 import { bookingApi } from '../../api/booking';
 import { serviceCategoryApi } from '../../api/serviceCategory';
 import AddressSearch from '../common/AddressSearch';
+import AutoResizeTextarea from '../common/AutoResizeTextarea';
+import { useModalRegistration } from '../../context/ModalContext';
 import type { ServiceCategory } from '../../types';
+import type { ValidatedAddress } from '../../services/addressValidation';
 
 interface CustomBookingRequestModalProps {
   isOpen: boolean;
@@ -56,6 +59,7 @@ interface RequestFormData {
     lng?: number;
     place_id?: string;
   };
+  validatedAddress?: ValidatedAddress;
 
   // Step 3: Additional Info
   specialRequests: string;
@@ -76,6 +80,9 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
   const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  // Register modal with global modal context
+  useModalRegistration('custom-booking-request-modal', isOpen);
 
   const [formData, setFormData] = useState<RequestFormData>({
     // Step 1
@@ -190,9 +197,23 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
   };
 
   const validateStep2 = (): boolean => {
-    if (formData.meetingType === 'in_person' && !formData.meetingLocation.trim()) {
-      toast.error('Please enter a meeting location');
-      return false;
+    if (formData.meetingType === 'in_person') {
+      if (!formData.meetingLocation.trim()) {
+        toast.error('Please enter a meeting location');
+        return false;
+      }
+
+      // Check if address is validated
+      if (!formData.validatedAddress) {
+        toast.error('Please select a verified address from the suggestions for safety');
+        return false;
+      }
+
+      // Check if validated address has required fields
+      if (!formData.validatedAddress.lat || !formData.validatedAddress.lon) {
+        toast.error('Selected address is missing location coordinates. Please select another address.');
+        return false;
+      }
     }
     return true;
   };
@@ -239,6 +260,9 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
         extraAmount: parseFloat(formData.extraAmount) || 0,
         meetingType: formData.meetingType,
         meetingLocation: formData.meetingLocation,
+        meetingLocationLat: formData.validatedAddress?.lat,
+        meetingLocationLon: formData.validatedAddress?.lon,
+        meetingLocationPlaceId: formData.validatedAddress?.placeId,
         specialRequests: formData.specialRequests +
           (formData.isCustomService && formData.customServiceDescription
             ? `\n\nCustom Service Details: ${formData.customServiceDescription}`
@@ -261,10 +285,11 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
     }
   };
 
-  const handleLocationChange = (address: string) => {
+  const handleLocationChange = (address: string, placeDetails?: any, validatedAddress?: ValidatedAddress) => {
     setFormData(prev => ({
       ...prev,
-      meetingLocation: address
+      meetingLocation: address,
+      validatedAddress: validatedAddress
     }));
   };
 
@@ -348,13 +373,21 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
-      >
+    <div className="fixed inset-0 z-[60]">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/30 backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      {/* Modal Container */}
+      <div className="flex h-full items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-xl shadow-xl max-w-3xl w-full h-full overflow-hidden flex flex-col"
+        >
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#312E81] to-[#FFCCCB] text-white px-6 py-4">
           <div className="flex items-center justify-between">
@@ -374,11 +407,11 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6">
+        <div className="flex-1 p-6 overflow-y-auto flex flex-col">
           {/* Step Indicator */}
           {renderStepIndicator()}
 
-          <div className="min-h-[400px]">
+          <div className="flex-1 overflow-y-auto">
             <AnimatePresence mode="wait">
               {/* Step 1: Date, Time & Service */}
               {currentStep === 1 && (
@@ -475,58 +508,141 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                       Select Service
                     </h3>
 
-                    <div className="mb-3">
-                      <label className="inline-flex items-center">
+                    <div className="space-y-4">
+                      {/* Custom Service Option */}
+                      <label
+                        className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          formData.isCustomService
+                            ? 'border-[#312E81] bg-purple-50'
+                            : 'border-gray-200'
+                        }`}
+                      >
                         <input
-                          type="checkbox"
+                          type="radio"
+                          name="serviceType"
                           checked={formData.isCustomService}
-                          onChange={(e) => setFormData({
+                          onChange={() => setFormData({
                             ...formData,
-                            isCustomService: e.target.checked,
+                            isCustomService: true,
                             serviceType: '',
                             serviceCategoryId: undefined
                           })}
-                          className="form-checkbox h-4 w-4 text-[#312E81]"
+                          className="sr-only"
                         />
-                        <span className="ml-2">Custom Service Request</span>
+                        <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                          formData.isCustomService
+                            ? 'border-[#312E81]'
+                            : 'border-gray-300'
+                        }`}>
+                          {formData.isCustomService && (
+                            <div className="w-3 h-3 rounded-full bg-[#312E81]" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <span className="font-semibold text-[#312E81]">✨ Custom Service Request</span>
+                          <p className="text-sm text-gray-600 mt-1">Specify your own service requirements</p>
+                        </div>
                       </label>
+
+                      {!formData.isCustomService && (
+                        <>
+                          {/* Standard Services */}
+                          {serviceCategories.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Standard Services</h4>
+                              <div className="space-y-2">
+                                {serviceCategories.map((category) => (
+                                  <label
+                                    key={category.id}
+                                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                      formData.serviceType === category.name
+                                        ? 'border-[#312E81] bg-purple-50'
+                                        : 'border-gray-200'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="serviceType"
+                                      value={category.name}
+                                      checked={formData.serviceType === category.name}
+                                      onChange={(e) => {
+                                        const selectedValue = e.target.value;
+                                        setFormData({
+                                          ...formData,
+                                          isCustomService: false,
+                                          serviceType: selectedValue,
+                                          serviceCategoryId: category.id
+                                        });
+                                      }}
+                                      className="sr-only"
+                                    />
+                                    <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                      formData.serviceType === category.name
+                                        ? 'border-[#312E81]'
+                                        : 'border-gray-300'
+                                    }`}>
+                                      {formData.serviceType === category.name && (
+                                        <div className="w-3 h-3 rounded-full bg-[#312E81]" />
+                                      )}
+                                    </div>
+                                    <span className="flex-1">{category.name}</span>
+                                    <span className="text-[#312E81] font-semibold">${category.basePrice}/hr</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Companion's Specialties */}
+                          {companionServices.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Companion's Specialties</h4>
+                              <div className="space-y-2">
+                                {companionServices.map((service, index) => (
+                                  <label
+                                    key={`companion-${index}`}
+                                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                      formData.serviceType === service
+                                        ? 'border-[#312E81] bg-purple-50'
+                                        : 'border-gray-200'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="serviceType"
+                                      value={service}
+                                      checked={formData.serviceType === service}
+                                      onChange={(e) => {
+                                        setFormData({
+                                          ...formData,
+                                          isCustomService: false,
+                                          serviceType: e.target.value,
+                                          serviceCategoryId: undefined
+                                        });
+                                      }}
+                                      className="sr-only"
+                                    />
+                                    <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                                      formData.serviceType === service
+                                        ? 'border-[#312E81]'
+                                        : 'border-gray-300'
+                                    }`}>
+                                      {formData.serviceType === service && (
+                                        <div className="w-3 h-3 rounded-full bg-[#312E81]" />
+                                      )}
+                                    </div>
+                                    <span className="flex-1">{service}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     {!formData.isCustomService ? (
-                      <select
-                        value={formData.serviceType}
-                        onChange={(e) => {
-                          const selectedValue = e.target.value;
-                          // Find the category if it's a standard service
-                          const selectedCategory = serviceCategories.find(cat => cat.name === selectedValue);
-                          setFormData({
-                            ...formData,
-                            serviceType: selectedValue,
-                            serviceCategoryId: selectedCategory?.id
-                          });
-                        }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
-                      >
-                        <option value="">Select a service...</option>
-                        {serviceCategories.length > 0 && (
-                          <optgroup label="Standard Services">
-                            {serviceCategories.map((category) => (
-                              <option key={category.id} value={category.name}>
-                                {category.name} - ${category.base_price}/hour
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                        {companionServices.length > 0 && (
-                          <optgroup label="Companion's Specialties">
-                            {companionServices.map((service, index) => (
-                              <option key={`companion-${index}`} value={service}>
-                                {service}
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                      </select>
+                      <div style={{ display: 'none' }}></div>
                     ) : (
                       <div className="space-y-3">
                         <input
@@ -537,12 +653,13 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                           maxLength={255}
                         />
-                        <textarea
+                        <AutoResizeTextarea
                           value={formData.customServiceDescription}
                           onChange={(e) => setFormData({ ...formData, customServiceDescription: e.target.value })}
                           placeholder="Additional details (optional)..."
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
-                          rows={2}
+                          minRows={2}
+                          maxRows={6}
                           maxLength={1000}
                         />
                       </div>
@@ -737,11 +854,12 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
                         <FaComment className="text-[#312E81]" />
                         Special Requests or Notes (Optional)
                       </label>
-                      <textarea
+                      <AutoResizeTextarea
                         value={formData.specialRequests}
                         onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
                         placeholder="Any specific preferences or requirements..."
-                        rows={3}
+                        minRows={3}
+                        maxRows={8}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#312E81]"
                       />
                     </div>
@@ -822,6 +940,7 @@ const CustomBookingRequestModal: React.FC<CustomBookingRequestModalProps> = ({
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 };

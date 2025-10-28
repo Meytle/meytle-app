@@ -29,8 +29,8 @@ interface FloatingProfileImagesProps {
   zIndex?: string;
 }
 
-// Adaptive profile configuration based on device
-const getProfileConfig = () => {
+// Adaptive profile configuration based on device and variant
+const getProfileConfig = (variant?: string) => {
   // Check if we're in browser environment
   if (typeof window === 'undefined') {
     return { count: 6, complexity: 'simple', imageSize: 150 };
@@ -44,12 +44,24 @@ const getProfileConfig = () => {
     return { count: 0, complexity: 'none', imageSize: 150 };
   }
 
+  // Auth pages get fewer, subtler profiles
+  if (variant === 'auth') {
+    if (width >= 1024) {
+      return { count: 3, complexity: 'high', imageSize: 120 };
+    } else if (width >= 768) {
+      return { count: 2, complexity: 'medium', imageSize: 100 };
+    } else {
+      return { count: 2, complexity: 'simple', imageSize: 80 };
+    }
+  }
+
+  // Regular pages get more dynamic profiles
   if (width >= 1024) {
-    return { count: 10, complexity: 'high', imageSize: 150 };
+    return { count: 5, complexity: 'high', imageSize: 150 };
   } else if (width >= 768) {
-    return { count: 8, complexity: 'medium', imageSize: 150 };
+    return { count: 4, complexity: 'medium', imageSize: 150 };
   } else {
-    return { count: 6, complexity: 'simple', imageSize: 150 };
+    return { count: 3, complexity: 'simple', imageSize: 150 };
   }
 };
 
@@ -79,7 +91,8 @@ const generateFallbackSVG = (name: string, bgColor: string): string => {
 // Profile Avatar Component with loading and error handling
 const ProfileAvatar: React.FC<{
   profile: FloatingProfile;
-}> = ({ profile }) => {
+  variant?: string;
+}> = ({ profile, variant }) => {
   const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
   // Use random person photos from randomuser.me
   const [imageSrc, setImageSrc] = useState<string>(() =>
@@ -110,6 +123,7 @@ const ProfileAvatar: React.FC<{
           }`}
           loading="lazy"
           decoding="async"
+          fetchPriority={variant === 'auth' ? "auto" : "high"}
           onLoad={handleImageLoad}
           onError={handleImageError}
         />
@@ -134,9 +148,9 @@ const ProfileAvatar: React.FC<{
           x: ['-200%', '200%'],
         }}
         transition={{
-          duration: 3,
+          duration: variant === 'auth' ? 4 : 3,
           repeat: Infinity,
-          repeatDelay: 5,
+          repeatDelay: variant === 'auth' ? 5 : 3,
           ease: "easeInOut",
         }}
       />
@@ -150,35 +164,41 @@ const FloatingProfileImages = React.memo(({
   opacity,
   zIndex = ''
 }: FloatingProfileImagesProps) => {
-  const [isVisible, setIsVisible] = useState(true);
-  const [profileConfig, setProfileConfig] = useState(getProfileConfig());
+  const [isVisible, setIsVisible] = useState(false);
+  const [profileConfig, setProfileConfig] = useState(getProfileConfig(variant));
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
 
   // Update profile config on resize
   useEffect(() => {
     const handleResize = () => {
-      setProfileConfig(getProfileConfig());
+      setProfileConfig(getProfileConfig(variant));
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [variant]);
 
   // Don't render if animations are disabled
   if (profileConfig.count === 0) {
     return null;
   }
 
-  // Use Intersection Observer with rootMargin for early activation
+  // Use Intersection Observer for visibility control
   useEffect(() => {
+    // For auth variant, always show immediately (subtle background)
+    if (variant === 'auth') {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setIsVisible(entry.isIntersecting);
       },
       {
         threshold: 0.1,
-        rootMargin: '50px' // Start animations 50px before visible
+        rootMargin: '100px' // Start animations 100px before visible
       }
     );
 
@@ -195,7 +215,7 @@ const FloatingProfileImages = React.memo(({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [variant]);
 
   // Enhanced profiles with gradient colors and visual effects
   const profiles = useMemo(() => {
@@ -217,47 +237,93 @@ const FloatingProfileImages = React.memo(({
     const selectedProfiles = baseProfiles.slice(0, profileCount);
     const { complexity } = profileConfig;
 
-    return selectedProfiles.map((profile, index) => ({
-      ...profile,
-      id: index,
-      size: complexity === 'simple' ? 60 : complexity === 'medium' ? 70 : 80,
-      initialX: 10 + (index / profileCount) * 80, // Even distribution
-      initialY: 15 + Math.sin(index * 0.8) * 30 + Math.random() * 20,
-      duration: complexity === 'simple' ? 40 + index * 3 : complexity === 'medium' ? 35 + index * 2 : 30 + index * 2,
-      delay: index * 0.1, // Faster staggered start
-      orbitRadius: complexity === 'simple' ? 20 : complexity === 'medium' ? 35 : 50,
-      hasGlow: complexity !== 'simple' && Math.random() > 0.3,
-      hasBreathing: complexity === 'high' || (complexity === 'medium' && Math.random() > 0.5),
-      rotationSpeed: complexity === 'simple' ? 60 : complexity === 'medium' ? 45 : 30,
-    }));
+    return selectedProfiles.map((profile, index) => {
+      // Create better random distribution across viewport
+      const zones = [
+        { x: 15, y: 20 },  // Top left
+        { x: 85, y: 25 },  // Top right
+        { x: 20, y: 70 },  // Bottom left
+        { x: 80, y: 65 },  // Bottom right
+        { x: 50, y: 40 },  // Center
+      ];
+
+      const zone = zones[index % zones.length];
+      const randomOffsetX = (Math.random() - 0.5) * 15;
+      const randomOffsetY = (Math.random() - 0.5) * 15;
+
+      // Variant-specific delays
+      const getDelay = () => {
+        if (variant === 'auth') {
+          return index * 0.3; // Slower, subtle appearance for auth pages
+        }
+        return index * 0.8; // One by one appearance with 0.8s between each
+      };
+
+      return {
+        ...profile,
+        id: index,
+        size: complexity === 'simple' ? 60 : complexity === 'medium' ? 70 : 85,
+        initialX: zone.x + randomOffsetX,
+        initialY: zone.y + randomOffsetY,
+        duration: complexity === 'simple' ? 45 : complexity === 'medium' ? 40 : 35,
+        delay: getDelay(),
+        orbitRadius: complexity === 'simple' ? 30 : complexity === 'medium' ? 45 : 60,
+        hasGlow: complexity !== 'simple' && Math.random() > 0.4,
+        hasBreathing: complexity === 'high' || (complexity === 'medium' && Math.random() > 0.6),
+        rotationSpeed: complexity === 'simple' ? 60 : complexity === 'medium' ? 50 : 40,
+      };
+    });
   }, [variant, profileConfig]);
 
-  // Create orbital or simple animation path based on complexity
+  // Create varied animation patterns for more natural movement
   const getAnimationPath = (profile: FloatingProfile) => {
     const { complexity } = profileConfig;
+    const patterns = ['float', 'orbit', 'figure8', 'diagonal'];
+    const pattern = patterns[profile.id % patterns.length];
 
     if (complexity === 'simple') {
-      // Simple vertical bounce for mobile
+      // Gentle floating for mobile
       return {
-        x: 0,
-        y: [-profile.orbitRadius/2, profile.orbitRadius/2, -profile.orbitRadius/2],
+        x: [0, 10, 0, -10, 0],
+        y: [-profile.orbitRadius * 0.7, profile.orbitRadius * 0.7, -profile.orbitRadius * 0.7],
       };
-    } else if (complexity === 'medium') {
-      // Figure-8 pattern for tablet
-      return {
-        x: [0, profile.orbitRadius, 0, -profile.orbitRadius, 0],
-        y: [0, profile.orbitRadius/2, 0, -profile.orbitRadius/2, 0],
-      };
-    } else {
-      // Smooth orbital motion for desktop
-      const steps = 8;
-      const xPath = Array.from({ length: steps }, (_, i) =>
-        Math.sin((i / steps) * Math.PI * 2) * profile.orbitRadius
-      );
-      const yPath = Array.from({ length: steps }, (_, i) =>
-        Math.cos((i / steps) * Math.PI * 2) * profile.orbitRadius * 0.6
-      );
-      return { x: xPath, y: yPath };
+    }
+
+    switch (pattern) {
+      case 'float':
+        // Gentle floating up and down with slight horizontal drift
+        return {
+          x: [0, profile.orbitRadius * 0.3, profile.orbitRadius * 0.2, -profile.orbitRadius * 0.2, 0],
+          y: [-profile.orbitRadius, -profile.orbitRadius * 0.5, profile.orbitRadius * 0.8, profile.orbitRadius * 0.3, -profile.orbitRadius],
+        };
+
+      case 'orbit':
+        // Smooth circular orbit
+        const orbitSteps = 12;
+        const orbitX = Array.from({ length: orbitSteps }, (_, i) =>
+          Math.sin((i / orbitSteps) * Math.PI * 2) * profile.orbitRadius
+        );
+        const orbitY = Array.from({ length: orbitSteps }, (_, i) =>
+          Math.cos((i / orbitSteps) * Math.PI * 2) * profile.orbitRadius * 0.7
+        );
+        return { x: orbitX, y: orbitY };
+
+      case 'figure8':
+        // Elegant figure-8 pattern
+        return {
+          x: [0, profile.orbitRadius, profile.orbitRadius * 0.5, -profile.orbitRadius * 0.5, -profile.orbitRadius, -profile.orbitRadius * 0.5, profile.orbitRadius * 0.5, 0],
+          y: [0, -profile.orbitRadius * 0.5, -profile.orbitRadius, 0, profile.orbitRadius * 0.5, profile.orbitRadius, 0, 0],
+        };
+
+      case 'diagonal':
+        // Diagonal drift pattern
+        return {
+          x: [0, profile.orbitRadius * 0.8, profile.orbitRadius * 0.6, -profile.orbitRadius * 0.4, -profile.orbitRadius * 0.6, 0],
+          y: [0, -profile.orbitRadius * 0.6, profile.orbitRadius * 0.4, profile.orbitRadius * 0.8, -profile.orbitRadius * 0.4, 0],
+        };
+
+      default:
+        return { x: 0, y: 0 };
     }
   };
 
@@ -272,10 +338,10 @@ const FloatingProfileImages = React.memo(({
         contain: 'layout style paint'
       }}
     >
-      {/* Sparkle effects for desktop only */}
-      {profileConfig.complexity === 'high' && (
+      {/* Sparkle effects for non-auth desktop only */}
+      {profileConfig.complexity === 'high' && variant !== 'auth' && (
         <>
-          {[...Array(5)].map((_, i) => (
+          {[...Array(3)].map((_, i) => (
             <motion.div
               key={`sparkle-${i}`}
               className="absolute text-2xl"
@@ -290,10 +356,10 @@ const FloatingProfileImages = React.memo(({
                 rotate: [0, 180, 360],
               }}
               transition={{
-                duration: 3 + i * 0.5,
+                duration: 2 + i * 0.3,
                 repeat: Infinity,
-                delay: i * 1.5,
-                repeatDelay: 5,
+                delay: i * 0.2,  // Reduced from 1.5 to 0.2
+                repeatDelay: 3,   // Reduced from 5 to 3
                 ease: "easeInOut"
               }}
             >
@@ -318,9 +384,13 @@ const FloatingProfileImages = React.memo(({
               transform: 'translate3d(-50%, -50%, 0)',
               filter: profile.hasGlow ? 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.3))' : 'none'
             }}
-            initial={{ opacity: 0, scale: 0 }}
+            initial={{
+              opacity: variant === 'auth' ? 0 : 0,
+              scale: variant === 'auth' ? 0 : 0,
+              y: variant === 'auth' ? 0 : 50
+            }}
             animate={{
-              opacity: opacity !== undefined ? opacity : 0.85,
+              opacity: opacity !== undefined ? opacity : (variant === 'auth' ? 0.4 : 0.85),
               scale: profile.hasBreathing ? [1, 1.05, 1] : 1,
               x: animationPath.x,
               y: animationPath.y,
@@ -363,6 +433,7 @@ const FloatingProfileImages = React.memo(({
               {/* Avatar image with loading and error handling */}
               <ProfileAvatar
                 profile={profile}
+                variant={variant}
               />
 
               {/* Optional pulse ring */}

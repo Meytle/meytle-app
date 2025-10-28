@@ -86,8 +86,8 @@ const InterestSelector: React.FC<InterestSelectorProps> = ({
                   key={interest}
                   variant="info"
                   size="sm"
-                  className="cursor-pointer hover:bg-accent-200"
-                  onClick={(e) => handleInterestToggle(e as any, interest)}
+                  className="cursor-pointer hover:bg-[#FFCCCB]/20"
+                  onClick={(e) => handleInterestToggle(e, interest)}
                 >
                   {Icon && <Icon className="w-3 h-3 mr-1" />}
                   {interest}

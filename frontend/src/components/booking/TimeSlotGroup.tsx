@@ -3,8 +3,8 @@ import { FaSun, FaCloudSun, FaMoon, FaClock, FaCheck } from 'react-icons/fa';
 
 interface TimeSlot {
   id: string;
-  start_time: string;
-  end_time: string;
+  startTime: string;
+  endTime: string;
   price: number;
   available: boolean;
   duration: number; // in hours
@@ -44,7 +44,7 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
 
   // Group slots by time period
   const groupedSlots = slots.reduce((acc, slot) => {
-    const period = getTimePeriod(slot.start_time);
+    const period = getTimePeriod(slot.startTime);
     if (!acc[period]) acc[period] = [];
     acc[period].push(slot);
     return acc;
@@ -119,9 +119,9 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
         <div className="bg-white rounded-lg p-3 text-center shadow-sm">
           <p className="text-sm text-gray-500">Time Range</p>
           <p className="text-xl font-bold text-gray-800">
-            {slots.length > 0 && formatTime(slots[0].start_time).split(' ')[0]}
+            {slots.length > 0 && formatTime(slots[0].startTime).split(' ')[0]}
             -
-            {slots.length > 0 && formatTime(slots[slots.length - 1].end_time).split(' ')[0]}
+            {slots.length > 0 && formatTime(slots[slots.length - 1].endTime).split(' ')[0]}
           </p>
         </div>
       </div>
@@ -185,10 +185,10 @@ const TimeSlotGroup: React.FC<TimeSlotGroupProps> = ({
 
                       {/* Time Range */}
                       <div className={`font-semibold ${isSelected ? 'text-white' : 'text-gray-800'}`}>
-                        {formatTime(slot.start_time)}
+                        {formatTime(slot.startTime)}
                       </div>
                       <div className={`text-sm mt-1 ${isSelected ? 'text-white/90' : 'text-gray-500'}`}>
-                        to {formatTime(slot.end_time)}
+                        to {formatTime(slot.endTime)}
                       </div>
 
                       {/* Duration Badge */}

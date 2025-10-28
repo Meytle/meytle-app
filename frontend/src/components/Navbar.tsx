@@ -1,6 +1,7 @@
 ﻿import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useModal } from '../context/ModalContext';
 import { FaUser, FaSignOutAlt, FaBell, FaEdit, FaTachometerAlt, FaUserCircle } from 'react-icons/fa';
 import Button from './common/Button';
 import RoleSwitcher from './common/RoleSwitcher';
@@ -24,6 +25,7 @@ const throttle = (func: Function, delay: number) => {
 const Navbar = React.memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAnyModalOpen } = useModal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -54,6 +56,9 @@ const Navbar = React.memo(() => {
   // Throttled scroll handler for 60fps (16ms)
   useEffect(() => {
     const handleScroll = throttle(() => {
+      // Don't update visibility based on scroll when modal is open
+      if (isAnyModalOpen) return;
+
       const currentScrollY = window.scrollY;
 
       // Only hide header after scrolling down past 80px
@@ -74,7 +79,7 @@ const Navbar = React.memo(() => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [isAnyModalOpen]);
 
   // Fetch notifications when user is authenticated
   useEffect(() => {
@@ -122,7 +127,7 @@ const Navbar = React.memo(() => {
       await notificationApi.markAsRead(notificationId);
       // Update local state
       setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -135,7 +140,7 @@ const Navbar = React.memo(() => {
     try {
       await notificationApi.markAllAsRead();
       // Update local state
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error('Failed to mark all as read:', error);
@@ -158,12 +163,12 @@ const Navbar = React.memo(() => {
   // Handle notification click
   const handleNotificationItemClick = useCallback((notification: Notification) => {
     // Mark as read if unread
-    if (!notification.is_read) {
+    if (!notification.isRead) {
       markAsRead(notification.id);
     }
     // Navigate if action URL exists
-    if (notification.action_url) {
-      navigate(notification.action_url);
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
       setIsNotificationOpen(false);
     }
   }, [markAsRead, navigate]);
@@ -241,8 +246,8 @@ const Navbar = React.memo(() => {
 
   return (
     <>
-      {/* Floating Auth Buttons - Only show when header is hidden */}
-      {!isHeaderVisible && (
+      {/* Floating Auth Buttons - Only show when header is hidden and no modals are open */}
+      {!isHeaderVisible && !isAnyModalOpen && (
         <div className="fixed top-6 right-6 z-[9999] hidden md:flex items-center gap-3 glass-navy px-4 py-3 rounded-2xl shadow-[0_10px_40px_rgba(30,27,75,0.2)] border border-[#312E81]/20 transition-all duration-300 animate-fadeIn">
         {isAuthenticated ? (
           // Authenticated User Menu
@@ -271,7 +276,7 @@ const Navbar = React.memo(() => {
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 z-50">
                   <div className="px-4 py-2 border-b border-neutral-200 flex items-center justify-between">
                     <h3 className="font-semibold text-neutral-900">Notifications</h3>
-                    {notifications.some(n => !n.is_read) && (
+                    {notifications.some(n => !n.isRead) && (
                       <button
                         onClick={markAllAsRead}
                         className="text-xs text-primary-600 hover:text-primary-700 font-medium"
@@ -297,18 +302,18 @@ const Navbar = React.memo(() => {
                           key={notification.id}
                           onClick={() => handleNotificationItemClick(notification)}
                           className={`px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-neutral-100 transition-colors ${
-                            notification.is_read ? 'opacity-70' : ''
+                            notification.isRead ? 'opacity-70' : ''
                           }`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`w-2 h-2 rounded-full mt-2 ${getNotificationIconColor(notification.type, notification.is_read)}`}></div>
+                            <div className={`w-2 h-2 rounded-full mt-2 ${getNotificationIconColor(notification.type, notification.isRead)}`}></div>
                             <div className="flex-1">
-                              <p className={`text-sm ${notification.is_read ? 'text-neutral-600' : 'text-neutral-800 font-medium'}`}>
+                              <p className={`text-sm ${notification.isRead ? 'text-neutral-600' : 'text-neutral-800 font-medium'}`}>
                                 {notification.title}
                               </p>
                               <p className="text-xs text-neutral-600 mt-0.5">{notification.message}</p>
                               <p className="text-xs text-neutral-500 mt-1">
-                                {formatNotificationTime(notification.created_at)}
+                                {formatNotificationTime(notification.createdAt)}
                               </p>
                             </div>
                           </div>
@@ -429,10 +434,10 @@ const Navbar = React.memo(() => {
 
       {/* Main Navigation Bar */}
       <nav className={`bg-white/95 border-b border-neutral-200 sticky top-0 z-50 shadow-lg transition-transform duration-300 ${
-        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+        (isHeaderVisible && !isAnyModalOpen) ? 'translate-y-0' : '-translate-y-full'
       }`}
       style={{
-        transform: `translateY(${isHeaderVisible ? '0' : '-100%'})`,
+        transform: `translateY(${(isHeaderVisible && !isAnyModalOpen) ? '0' : '-100%'})`,
         willChange: 'transform',
       }}>
         <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-12">
@@ -542,7 +547,7 @@ const Navbar = React.memo(() => {
                       <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 z-50">
                         <div className="px-4 py-2 border-b border-neutral-200 flex items-center justify-between">
                           <h3 className="font-semibold text-neutral-900">Notifications</h3>
-                          {notifications.some(n => !n.is_read) && (
+                          {notifications.some(n => !n.isRead) && (
                             <button
                               onClick={markAllAsRead}
                               className="text-xs text-primary-600 hover:text-primary-700 font-medium"
@@ -568,18 +573,18 @@ const Navbar = React.memo(() => {
                                 key={notification.id}
                                 onClick={() => handleNotificationItemClick(notification)}
                                 className={`px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-neutral-100 transition-colors ${
-                                  notification.is_read ? 'opacity-70' : ''
+                                  notification.isRead ? 'opacity-70' : ''
                                 }`}
                               >
                                 <div className="flex items-start gap-3">
-                                  <div className={`w-2 h-2 rounded-full mt-2 ${getNotificationIconColor(notification.type, notification.is_read)}`}></div>
+                                  <div className={`w-2 h-2 rounded-full mt-2 ${getNotificationIconColor(notification.type, notification.isRead)}`}></div>
                                   <div className="flex-1">
-                                    <p className={`text-sm ${notification.is_read ? 'text-neutral-600' : 'text-neutral-800 font-medium'}`}>
+                                    <p className={`text-sm ${notification.isRead ? 'text-neutral-600' : 'text-neutral-800 font-medium'}`}>
                                       {notification.title}
                                     </p>
                                     <p className="text-xs text-neutral-600 mt-0.5">{notification.message}</p>
                                     <p className="text-xs text-neutral-500 mt-1">
-                                      {formatNotificationTime(notification.created_at)}
+                                      {formatNotificationTime(notification.createdAt)}
                                     </p>
                                   </div>
                                 </div>

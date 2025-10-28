@@ -50,7 +50,7 @@ const SignIn = () => {
       </motion.div>
 
       {/* Right Side - Login Form (40%) */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center bg-white">
+      <div className="w-full lg:w-2/5 flex items-center justify-center bg-gradient-to-br from-[#FFF0F0] via-[#FFE5E5] to-[#FFCCCB]">
         <div className="w-full max-w-md px-8 py-12">
           {/* Profile images carousel above login */}
           <ProfileImageCarousel variant="signin" />
@@ -115,7 +115,7 @@ const SignIn = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-24 h-24 flex items-center justify-center rounded-full text-base font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 ${
+                className={`w-24 h-24 flex items-center justify-center rounded-full text-base font-medium text-white bg-gradient-to-r from-[#312E81] to-[#1E1B4B] hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] hover:transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#312E81] transition-all duration-300 ${
                   isLoading ? 'opacity-75 cursor-not-allowed' : ''
                 }`}
               >
@@ -124,7 +124,7 @@ const SignIn = () => {
 
               <Link
                 to="/signup"
-                className="w-16 h-16 flex items-center justify-center rounded-full text-xs font-medium text-gray-900 bg-white border-2 border-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                className="w-16 h-16 flex items-center justify-center rounded-full text-xs font-medium text-[#312E81] bg-white/90 backdrop-blur-sm border-2 border-[#312E81] hover:bg-gradient-to-r hover:from-[#312E81] hover:to-[#1E1B4B] hover:text-white hover:shadow-[0_0_20px_rgba(255,204,203,0.5)] hover:border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#312E81] transition-all duration-300"
               >
                 Join us
               </Link>

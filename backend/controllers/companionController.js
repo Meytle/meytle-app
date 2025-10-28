@@ -4,6 +4,8 @@
  */
 
 const { pool } = require('../config/database');
+const { transformToFrontend, transformArrayToFrontend } = require('../utils/transformer');
+const logger = require('../services/logger');
 
 /**
  * Submit companion application
@@ -29,12 +31,12 @@ const submitApplication = async (req, res) => {
     } = req.body;
 
     // Log received data for debugging
-    console.log('📥 Received application data:', {
+    logger.controllerInfo('companionController', 'submitApplication', 'Received application data', {
       userId,
-      dateOfBirth,
-      governmentIdNumber,
+      dateOfBirth: dateOfBirth ? 'provided' : 'missing',
+      governmentIdNumber: governmentIdNumber ? 'provided' : 'missing',
       backgroundCheckConsent,
-      addressLine,
+      addressLine: addressLine ? 'provided' : 'missing',
       city,
       state,
       country,
@@ -45,14 +47,17 @@ const submitApplication = async (req, res) => {
 
     // Validate required fields
     if (!dateOfBirth || !governmentIdNumber || !addressLine || !city || !state || !country || !postalCode) {
-      console.log('❌ Missing required fields:', {
-        dateOfBirth,
-        governmentIdNumber,
-        addressLine,
-        city,
-        state,
-        country,
-        postalCode
+      logger.warn('Missing required fields in companion application', {
+        userId,
+        missingFields: {
+          dateOfBirth: !dateOfBirth,
+          governmentIdNumber: !governmentIdNumber,
+          addressLine: !addressLine,
+          city: !city,
+          state: !state,
+          country: !country,
+          postalCode: !postalCode
+        }
       });
       return res.status(400).json({
         status: 'error',
@@ -88,9 +93,10 @@ const submitApplication = async (req, res) => {
     const profilePhotoUrl = req.files?.profilePhoto ? `/uploads/profiles/${req.files.profilePhoto[0].filename}` : null;
     const governmentIdUrl = req.files?.governmentId ? `/uploads/documents/${req.files.governmentId[0].filename}` : null;
 
-    console.log('📁 Files uploaded:', {
-      profilePhoto: profilePhotoUrl,
-      governmentId: governmentIdUrl
+    logger.info('Files uploaded for companion application', {
+      userId,
+      profilePhoto: profilePhotoUrl ? 'uploaded' : 'not provided',
+      governmentId: governmentIdUrl ? 'uploaded' : 'not provided'
     });
 
     // Insert application with all fields including new ones
@@ -115,7 +121,11 @@ const submitApplication = async (req, res) => {
         try {
           interestArray = JSON.parse(interests);
         } catch (e) {
-          console.error('Failed to parse interests JSON:', e);
+          logger.warn('Failed to parse interests JSON', {
+            userId,
+            error: e.message,
+            interests: interests
+          });
           interestArray = [];
         }
       }
@@ -128,7 +138,7 @@ const submitApplication = async (req, res) => {
               [userId, interest]
             );
           } catch (interestError) {
-            console.error('Failed to save interest:', interest, interestError);
+            logger.dbError('insertInterest', interestError, `INSERT INTO companion_interests for interest: ${interest}`);
             // Continue with other interests even if one fails
           }
         }
@@ -144,7 +154,7 @@ const submitApplication = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Submit application error:', error);
+    logger.controllerError('companionController', 'submitApplication', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to submit application. Please try again.',
@@ -161,7 +171,7 @@ const getApplicationStatus = async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user.email;
 
-    console.log('🔍 Fetching application for user:', { userId, email: userEmail });
+    logger.info('Fetching application for user', { userId, email: userEmail });
 
     const [applications] = await pool.execute(
       `SELECT id, user_id, profile_photo_url, government_id_url, status, created_at, reviewed_at, rejection_reason,
@@ -174,28 +184,27 @@ const getApplicationStatus = async (req, res) => {
     );
 
     if (applications.length === 0) {
-      console.log('❌ No application found for user:', userId);
+      logger.info('No application found for user', { userId });
       return res.status(404).json({
         status: 'error',
         message: 'No application found'
       });
     }
 
-    console.log('✅ Found application:', {
-      id: applications[0].id,
-      user_id: applications[0].user_id,
-      profile_photo_url: applications[0].profile_photo_url,
+    logger.info('Found application', {
+      applicationId: applications[0].id,
+      userId: applications[0].user_id,
       status: applications[0].status
     });
 
     res.status(200).json({
       status: 'success',
-      data: {
+      data: transformToFrontend({
         application: applications[0]
-      }
+      })
     });
   } catch (error) {
-    console.error('Get application status error:', error);
+    logger.controllerError('companionController', 'getApplicationStatus', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch application status',
@@ -212,11 +221,11 @@ const updateProfilePhoto = async (req, res) => {
     const userId = req.user.id;
     const userEmail = req.user.email;
 
-    console.log('📸 Updating profile photo for user:', { userId, email: userEmail });
+    logger.controllerInfo('companionController', 'updateProfilePhoto', 'Updating profile photo', { userId, email: userEmail });
 
     // Check if file was uploaded
     if (!req.file) {
-      console.log('❌ No file uploaded');
+      logger.warn('No file uploaded for profile photo update', { userId });
       return res.status(400).json({
         status: 'error',
         message: 'Please upload a profile photo'
@@ -225,7 +234,8 @@ const updateProfilePhoto = async (req, res) => {
 
     const profilePhotoUrl = `/uploads/profiles/${req.file.filename}`;
 
-    console.log('📁 New photo:', {
+    logger.info('New profile photo uploaded', {
+      userId,
       filename: req.file.filename,
       size: req.file.size,
       mimetype: req.file.mimetype,
@@ -240,10 +250,10 @@ const updateProfilePhoto = async (req, res) => {
       [profilePhotoUrl, userId]
     );
 
-    console.log('✅ Photo updated, rows affected:', result.affectedRows);
+    logger.info('Photo updated successfully', { userId, rowsAffected: result.affectedRows });
 
     if (result.affectedRows === 0) {
-      console.log('⚠️ No application found to update for user:', userId);
+      logger.warn('No application found to update for user', { userId });
       return res.status(404).json({
         status: 'error',
         message: 'No application found to update'
@@ -258,7 +268,7 @@ const updateProfilePhoto = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Update profile photo error:', error);
+    logger.controllerError('companionController', 'updateProfilePhoto', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update profile photo',
@@ -318,10 +328,10 @@ const getApprovedCompanions = async (req, res) => {
           'SELECT interest_name FROM companion_interests WHERE companion_id = ?',
           [companion.id]
         );
-        
+
         const birthDate = new Date(companion.date_of_birth);
         const age = Math.floor((new Date() - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
-        
+
         // Build location string
         const locationParts = [];
         if (companion.city) locationParts.push(companion.city);
@@ -329,19 +339,12 @@ const getApprovedCompanions = async (req, res) => {
         if (companion.country) locationParts.push(companion.country);
         const location = locationParts.join(', ');
 
+        // Keep the raw companion data from DB and add computed fields
         return {
           ...companion,
           age,
           interests: interests.map(i => i.interest_name),
           location: location || null,
-          bio: companion.bio || null,
-          services_offered: companion.services_offered ?
-            (typeof companion.services_offered === 'string' ?
-              JSON.parse(companion.services_offered) : companion.services_offered) : [],
-          languages: companion.languages ?
-            (typeof companion.languages === 'string' ?
-              JSON.parse(companion.languages) : companion.languages) : [],
-          hourly_rate: companion.hourly_rate || null,
           // Remove sensitive data
           email: undefined,
           date_of_birth: undefined,
@@ -352,12 +355,28 @@ const getApprovedCompanions = async (req, res) => {
       })
     );
 
+    // Transform to frontend format and handle JSON parsing
+    const transformedCompanions = transformArrayToFrontend(companionsWithInterests).map(companion => {
+      // Parse JSON fields after transformation
+      if (companion.servicesOffered) {
+        companion.servicesOffered = typeof companion.servicesOffered === 'string'
+          ? JSON.parse(companion.servicesOffered)
+          : companion.servicesOffered || [];
+      }
+      if (companion.languages) {
+        companion.languages = typeof companion.languages === 'string'
+          ? JSON.parse(companion.languages)
+          : companion.languages || [];
+      }
+      return companion;
+    });
+
     res.json({
       status: 'success',
-      data: companionsWithInterests
+      data: transformedCompanions
     });
   } catch (error) {
-    console.error('Get approved companions error:', error);
+    logger.controllerError('companionController', 'getApprovedCompanions', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch companions',
@@ -395,7 +414,7 @@ const saveInterests = async (req, res) => {
           [userId, interest]
         );
       } catch (interestError) {
-        console.error('Failed to save interest:', interest, interestError);
+        logger.dbError('insertInterest', interestError, `INSERT INTO companion_interests for interest: ${interest}`);
         // Continue with other interests even if one fails
       }
     }
@@ -406,7 +425,7 @@ const saveInterests = async (req, res) => {
       data: { interests }
     });
   } catch (error) {
-    console.error('Save interests error:', error);
+    logger.controllerError('companionController', 'saveInterests', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to save interests',
@@ -434,7 +453,7 @@ const getCompanionInterests = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get companion interests error:', error);
+    logger.controllerError('companionController', 'getInterests', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch interests',
@@ -466,7 +485,7 @@ const getCompanionServices = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log('🔍 Fetching services for companion:', userId);
+    logger.controllerInfo('companionController', 'getCompanionServices', 'Fetching services for companion', { userId });
 
     // Get services from companion application
     const [applications] = await pool.execute(
@@ -477,22 +496,28 @@ const getCompanionServices = async (req, res) => {
       [userId]
     );
 
-    console.log('📊 Query result:', applications);
+    logger.debug('Query result for companion services', {
+      userId,
+      hasResults: applications.length > 0
+    });
 
     if (applications.length === 0) {
-      console.log('⚠️ No application found for user:', userId, '- returning default services');
+      logger.info('No application found for user - returning default services', { userId });
       // Return default services instead of error so companion can still set availability
       return res.status(200).json({
         status: 'success',
-        data: {
+        data: transformToFrontend({
           services: DEFAULT_COMPANION_SERVICES,
-          isDefault: true
-        }
+          is_default: true
+        })
       });
     }
 
-    console.log('📝 Raw services_offered value:', applications[0].services_offered);
-    console.log('📝 Type of services_offered:', typeof applications[0].services_offered);
+    logger.debug('Raw services_offered value', {
+      userId,
+      servicesOffered: applications[0].services_offered,
+      servicesOfferedType: typeof applications[0].services_offered
+    });
 
     // Parse services if stored as JSON
     let services = [];
@@ -505,8 +530,11 @@ const getCompanionServices = async (req, res) => {
           services = applications[0].services_offered;
         }
       } catch (e) {
-        console.error('Failed to parse services JSON:', e);
-        console.error('Raw value that failed to parse:', applications[0].services_offered);
+        logger.warn('Failed to parse services JSON', {
+          userId,
+          error: e.message,
+          rawValue: applications[0].services_offered
+        });
         // If parsing fails, try to use as is or split by comma
         if (typeof applications[0].services_offered === 'string') {
           // Check if it's a comma-separated string
@@ -516,33 +544,36 @@ const getCompanionServices = async (req, res) => {
         }
       }
     } else {
-      console.log('⚠️ services_offered is null or undefined');
+      logger.debug('services_offered is null or undefined', { userId });
     }
 
-    console.log('✅ Parsed services:', services);
-    console.log('✅ Is array?:', Array.isArray(services));
+    logger.debug('Parsed services successfully', {
+      userId,
+      services: services,
+      isArray: Array.isArray(services)
+    });
 
     // If no services are registered, return default services
     if (!services || (Array.isArray(services) && services.length === 0)) {
-      console.log('⚠️ No services registered - returning default services');
+      logger.info('No services registered - returning default services', { userId });
       return res.status(200).json({
         status: 'success',
-        data: {
+        data: transformToFrontend({
           services: DEFAULT_COMPANION_SERVICES,
-          isDefault: true
-        }
+          is_default: true
+        })
       });
     }
 
     res.status(200).json({
       status: 'success',
-      data: {
+      data: transformToFrontend({
         services: Array.isArray(services) ? services : [],
-        isDefault: false
-      }
+        is_default: false
+      })
     });
   } catch (error) {
-    console.error('Get companion services error:', error);
+    logger.controllerError('companionController', 'getCompanionServices', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch companion services',
@@ -565,8 +596,14 @@ const updateProfile = async (req, res) => {
       hourlyRate
     } = req.body;
 
-    console.log('📝 Updating profile for user:', userId);
-    console.log('Data received:', { phoneNumber, bio, services, languages, hourlyRate });
+    logger.controllerInfo('companionController', 'updateProfile', 'Updating companion profile', {
+      userId,
+      hasPhoneNumber: !!phoneNumber,
+      hasBio: !!bio,
+      hasServices: !!services,
+      hasLanguages: !!languages,
+      hourlyRate
+    });
 
     // Convert arrays to JSON strings for storage
     const servicesJson = services ? JSON.stringify(services) : null;
@@ -590,16 +627,16 @@ const updateProfile = async (req, res) => {
     res.status(200).json({
       status: 'success',
       message: 'Profile updated successfully',
-      data: {
-        phoneNumber,
-        bio,
-        services,
-        languages,
-        hourlyRate
-      }
+      data: transformToFrontend({
+        phone_number: phoneNumber,
+        bio: bio,
+        services_offered: services,
+        languages: languages,
+        hourly_rate: hourlyRate
+      })
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    logger.controllerError('companionController', 'updateProfile', error, req);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update profile',

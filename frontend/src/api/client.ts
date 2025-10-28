@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import { API_CONFIG } from '../constants';
+import { transformKeysSnakeToCamel, transformKeysCamelToSnake } from '../types/transformers';
 
 // Configure axios instance with credentials support
 const api = axios.create({
@@ -18,25 +19,25 @@ const api = axios.create({
 
 export interface ClientVerification {
   id?: number;
-  user_id: number;
-  profile_photo_url?: string;
-  id_document_url?: string;
-  date_of_birth?: string;
-  government_id_number?: string;
-  phone_number?: string;
+  userId: number;
+  profilePhotoUrl?: string;
+  idDocumentUrl?: string;
+  dateOfBirth?: string;
+  governmentIdNumber?: string;
+  phoneNumber?: string;
   location?: string;
-  address_line?: string;
+  addressLine?: string;
   city?: string;
   state?: string;
   country?: string;
-  postal_code?: string;
+  postalCode?: string;
   bio?: string;
-  verification_status: 'not_submitted' | 'pending' | 'approved' | 'rejected';
-  rejection_reason?: string;
-  verified_at?: string;
-  reviewed_at?: string;
-  created_at?: string;
-  updated_at?: string;
+  verificationStatus: 'not_submitted' | 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  verifiedAt?: string;
+  reviewedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ClientProfile {
@@ -45,7 +46,7 @@ export interface ClientProfile {
     name: string;
     email: string;
     role: string;
-    created_at: string;
+    createdAt: string;
   };
   verification: ClientVerification | null;
 }
@@ -74,15 +75,16 @@ const clientApi = {
    */
   async getProfile(): Promise<ClientProfile> {
     const response = await api.get('/client/profile');
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
    * Update client profile information
    */
   async updateProfile(data: UpdateProfileData) {
-    const response = await api.put('/client/profile', data);
-    return response.data;
+    const transformedData = transformKeysCamelToSnake(data);
+    const response = await api.put('/client/profile', transformedData);
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -97,7 +99,7 @@ const clientApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -114,7 +116,7 @@ const clientApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -122,7 +124,7 @@ const clientApi = {
    */
   async getVerificationStatus() {
     const response = await api.get('/client/verification-status');
-    return response.data.data;
+    return response.data.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -144,7 +146,7 @@ const clientApi = {
   async isVerified(): Promise<boolean> {
     try {
       const status = await this.getVerificationStatus();
-      return status.verification_status === 'approved';
+      return status.verificationStatus === 'approved';
     } catch (error) {
       console.error('Error checking verification:', error);
       return false;
@@ -156,7 +158,7 @@ const clientApi = {
    */
   async getFavorites() {
     const response = await api.get('/favorites');
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -164,7 +166,7 @@ const clientApi = {
    */
   async addFavorite(companionId: number) {
     const response = await api.post('/favorites', { companionId });
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   },
 
   /**
@@ -172,7 +174,7 @@ const clientApi = {
    */
   async removeFavorite(companionId: number) {
     const response = await api.delete(`/favorites/${companionId}`);
-    return response.data;
+    return response.data; // Backend already transformed to camelCase
   }
 };
 

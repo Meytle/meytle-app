@@ -96,7 +96,7 @@ const SignUp = () => {
       </motion.div>
 
       {/* Right Side - Sign Up Form (40%) */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center bg-white">
+      <div className="w-full lg:w-2/5 flex items-center justify-center bg-gradient-to-br from-[#FFF0F0] via-[#FFE5E5] to-[#FFCCCB]">
         <div className="w-full max-w-md px-8 py-12">
           {/* Profile images carousel above form */}
           <ProfileImageCarousel variant="signup" />
@@ -138,8 +138,8 @@ const SignUp = () => {
                       onClick={() => setSelectedRole('client')}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         selectedRole === 'client'
-                          ? 'border-gray-800 bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-400'
+                          ? 'border-[#312E81] bg-white/90 shadow-[0_0_15px_rgba(255,204,203,0.3)]'
+                          : 'border-[#312E81]/30 bg-white/70 hover:border-[#312E81]/60 hover:shadow-[0_0_10px_rgba(255,204,203,0.2)]'
                       }`}
                     >
                       <div className="text-center">
@@ -166,8 +166,8 @@ const SignUp = () => {
                       onClick={() => setSelectedRole('companion')}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         selectedRole === 'companion'
-                          ? 'border-gray-800 bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-400'
+                          ? 'border-[#312E81] bg-white/90 shadow-[0_0_15px_rgba(255,204,203,0.3)]'
+                          : 'border-[#312E81]/30 bg-white/70 hover:border-[#312E81]/60 hover:shadow-[0_0_10px_rgba(255,204,203,0.2)]'
                       }`}
                     >
                       <div className="text-center">
@@ -185,7 +185,7 @@ const SignUp = () => {
                     type="button"
                     onClick={handleNext}
                     disabled={!selectedRole}
-                    className={`w-24 h-24 flex items-center justify-center rounded-full text-base font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 ${
+                    className={`w-24 h-24 flex items-center justify-center rounded-full text-base font-medium text-white bg-gradient-to-r from-[#312E81] to-[#1E1B4B] hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] hover:transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#312E81] transition-all duration-300 ${
                       !selectedRole ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -194,7 +194,7 @@ const SignUp = () => {
 
                   <Link
                     to="/signin"
-                    className="w-16 h-16 flex items-center justify-center rounded-full text-xs font-medium text-gray-900 bg-white border-2 border-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                    className="w-16 h-16 flex items-center justify-center rounded-full text-xs font-medium text-[#312E81] bg-white/90 backdrop-blur-sm border-2 border-[#312E81] hover:bg-gradient-to-r hover:from-[#312E81] hover:to-[#1E1B4B] hover:text-white hover:shadow-[0_0_20px_rgba(255,204,203,0.5)] hover:border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#312E81] transition-all duration-300"
                   >
                     Sign in
                   </Link>
@@ -342,7 +342,7 @@ const SignUp = () => {
                   <button
                     type="submit"
                     disabled={isLoading || !allRequirementsMet || !agreedToTerms}
-                    className={`w-24 h-24 flex items-center justify-center rounded-full text-base font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 ${
+                    className={`w-24 h-24 flex items-center justify-center rounded-full text-base font-medium text-white bg-gradient-to-r from-[#312E81] to-[#1E1B4B] hover:shadow-[0_0_30px_rgba(255,204,203,0.6)] hover:transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#312E81] transition-all duration-300 ${
                       (isLoading || !allRequirementsMet || !agreedToTerms) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -351,7 +351,7 @@ const SignUp = () => {
 
                   <Link
                     to="/signin"
-                    className="w-16 h-16 flex items-center justify-center rounded-full text-xs font-medium text-gray-900 bg-white border-2 border-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                    className="w-16 h-16 flex items-center justify-center rounded-full text-xs font-medium text-[#312E81] bg-white/90 backdrop-blur-sm border-2 border-[#312E81] hover:bg-gradient-to-r hover:from-[#312E81] hover:to-[#1E1B4B] hover:text-white hover:shadow-[0_0_20px_rgba(255,204,203,0.5)] hover:border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#312E81] transition-all duration-300"
                   >
                     Sign in
                   </Link>
@@ -372,8 +372,8 @@ const SignUp = () => {
 
             {/* Progress dots */}
             <div className="flex justify-center gap-2 pt-4">
-              <div className={`w-2 h-2 rounded-full transition-colors ${currentStep === 1 ? 'bg-gray-800' : 'bg-gray-300'}`}></div>
-              <div className={`w-2 h-2 rounded-full transition-colors ${currentStep === 2 ? 'bg-gray-800' : 'bg-gray-300'}`}></div>
+              <div className={`w-2 h-2 rounded-full transition-colors ${currentStep === 1 ? 'bg-[#312E81]' : 'bg-[#312E81]/30'}`}></div>
+              <div className={`w-2 h-2 rounded-full transition-colors ${currentStep === 2 ? 'bg-[#312E81]' : 'bg-[#312E81]/30'}`}></div>
             </div>
 
             {/* Playful tooltip for step 2 */}

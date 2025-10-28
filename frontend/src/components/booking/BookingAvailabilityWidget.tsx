@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FaClock, FaCalendarWeek, FaInfoCircle } from 'react-icons/fa';
 import axios from 'axios';
 import { API_CONFIG } from '../../constants';
+import { transformKeysSnakeToCamel } from '../../types/transformers';
 
 interface WeeklyAvailability {
-  day_of_week: string;
-  start_time: string;
-  end_time: string;
-  is_available: boolean;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
 }
 
 interface BookingAvailabilityWidgetProps {
@@ -41,7 +42,8 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
       );
 
       if (response.data.success) {
-        setWeeklyAvailability(response.data.data || []);
+        const transformedData = transformKeysSnakeToCamel(response.data.data || []);
+        setWeeklyAvailability(transformedData);
       }
     } catch (error) {
       console.error('Error fetching weekly availability:', error);
@@ -61,7 +63,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
 
   const getAvailabilityForDay = (day: string) => {
     return weeklyAvailability.filter(slot =>
-      slot.day_of_week === day && slot.is_available
+      slot.dayOfWeek === day && slot.isAvailable
     );
   };
 
@@ -71,8 +73,8 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
 
     // Check if it's a full day (9+ hours)
     const totalHours = slots.reduce((total, slot) => {
-      const start = new Date(`2000-01-01T${slot.start_time}`);
-      const end = new Date(`2000-01-01T${slot.end_time}`);
+      const start = new Date(`2000-01-01T${slot.startTime}`);
+      const end = new Date(`2000-01-01T${slot.endTime}`);
       return total + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     }, 0);
 
@@ -151,7 +153,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
                 `}
                 onClick={() => {
                   if (slots.length > 0 && onTimeSlotHint) {
-                    onTimeSlotHint(day, slots[0].start_time, slots[0].end_time);
+                    onTimeSlotHint(day, slots[0].startTime, slots[0].endTime);
                   }
                 }}
               >
@@ -168,7 +170,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
                   {slots.length > 0 && (
                     <div className="mt-1 text-xs opacity-75">
                       {slots.length === 1 ? (
-                        <span>{formatTime(slots[0].start_time)}</span>
+                        <span>{formatTime(slots[0].startTime)}</span>
                       ) : (
                         <span>{slots.length} slots</span>
                       )}
@@ -184,7 +186,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
                       {slots.map((slot, i) => (
                         <div key={i} className="flex items-center gap-1">
                           <FaClock className="w-3 h-3" />
-                          <span>{formatTime(slot.start_time)} - {formatTime(slot.end_time)}</span>
+                          <span>{formatTime(slot.startTime)} - {formatTime(slot.endTime)}</span>
                         </div>
                       ))}
                       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
@@ -227,7 +229,7 @@ const BookingAvailabilityWidget: React.FC<BookingAvailabilityWidgetProps> = ({
       {/* Summary */}
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-500">
-          Available {weeklyAvailability.filter(s => s.is_available).length > 0 ?
+          Available {weeklyAvailability.filter(s => s.isAvailable).length > 0 ?
             `${daysOfWeek.filter(d => getAvailabilityForDay(d).length > 0).length} days` :
             'by appointment'
           } this week

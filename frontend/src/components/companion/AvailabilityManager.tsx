@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { FaClock, FaPlus, FaTrash, FaSave, FaServicestack, FaEdit, FaCheck, FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import { FaClock, FaPlus, FaTrash, FaSave, FaServicestack, FaEdit, FaCheck, FaTimes, FaExclamationTriangle, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { bookingApi } from '../../api/booking';
 import { companionsApi } from '../../api/companions';
@@ -71,6 +71,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
   const [isUsingDefaultServices, setIsUsingDefaultServices] = useState(false); // Track if using default services
   const [editingSlots, setEditingSlots] = useState<Set<number>>(new Set());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -159,6 +160,13 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
 
       setAvailability(parsedSlots);
       setOriginalAvailability(parsedSlots); // Store original data
+
+      // Initialize expanded days - expand days that have slots
+      const daysWithSlots = new Set<string>();
+      parsedSlots.forEach(slot => {
+        daysWithSlots.add(slot.dayOfWeek);
+      });
+      setExpandedDays(daysWithSlots);
     } catch (error: any) {
       console.error('Error fetching availability:', error);
 
@@ -189,7 +197,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
     }
 
     // Check for existing slots on the same day
-    const existingSlots = availability.filter(slot => slot.day_of_week === dayOfWeek);
+    const existingSlots = availability.filter(slot => slot.dayOfWeek === dayOfWeek);
 
     // Find a non-overlapping default time
     let startTime = '09:00';
@@ -198,13 +206,13 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
     if (existingSlots.length > 0) {
       // Sort existing slots by end time using proper time comparison
       const sortedSlots = [...existingSlots].sort((a, b) =>
-        timeToMinutes(a.end_time) - timeToMinutes(b.end_time)
+        timeToMinutes(a.endTime) - timeToMinutes(b.endTime)
       );
       const lastSlot = sortedSlots[sortedSlots.length - 1];
 
       // Start the new slot after the last one ends
-      if (timeToMinutes(lastSlot.end_time) < timeToMinutes('23:00')) {
-        startTime = lastSlot.end_time;
+      if (timeToMinutes(lastSlot.endTime) < timeToMinutes('23:00')) {
+        startTime = lastSlot.endTime;
         // Calculate end time (add 2 hours if possible)
         const startHour = parseInt(startTime.split(':')[0]);
         const newEndHour = Math.min(startHour + 2, 23);
@@ -217,10 +225,10 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
     }
 
     const newSlot: AvailabilitySlotExtended = {
-      day_of_week: dayOfWeek,
-      start_time: startTime,
-      end_time: endTime,
-      is_available: true,
+      dayOfWeek: dayOfWeek,
+      startTime: startTime,
+      endTime: endTime,
+      isAvailable: true,
       services: []
     };
 
@@ -276,12 +284,12 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
       const slot = availability[index];
 
       // Validate time
-      if (!slot.start_time || !slot.end_time) {
+      if (!slot.startTime || !slot.endTime) {
         toast.error('Please select both start and end times');
         return;
       }
 
-      if (timeToMinutes(slot.start_time) >= timeToMinutes(slot.end_time)) {
+      if (timeToMinutes(slot.startTime) >= timeToMinutes(slot.endTime)) {
         toast.error('End time must be after start time');
         return;
       }
@@ -317,27 +325,27 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
 
   const updateTimeSlot = (index: number, field: keyof AvailabilitySlotExtended, value: any) => {
     // Validate for overlapping times when changing start or end time
-    if (field === 'start_time' || field === 'end_time') {
+    if (field === 'startTime' || field === 'endTime') {
       const currentSlot = availability[index];
       const updatedSlot = { ...currentSlot, [field]: value };
 
       // Check if the new times are valid (start < end)
-      if (timeToMinutes(updatedSlot.start_time) >= timeToMinutes(updatedSlot.end_time)) {
+      if (timeToMinutes(updatedSlot.startTime) >= timeToMinutes(updatedSlot.endTime)) {
         toast.error('Start time must be before end time');
         return;
       }
 
       // Check for overlaps with other slots on the same day
       const otherSlots = availability.filter((slot, i) =>
-        i !== index && slot.day_of_week === currentSlot.day_of_week
+        i !== index && slot.dayOfWeek === currentSlot.dayOfWeek
       );
 
       for (const otherSlot of otherSlots) {
         // Convert times to minutes for proper comparison
-        const updatedStart = timeToMinutes(updatedSlot.start_time);
-        const updatedEnd = timeToMinutes(updatedSlot.end_time);
-        const otherStart = timeToMinutes(otherSlot.start_time);
-        const otherEnd = timeToMinutes(otherSlot.end_time);
+        const updatedStart = timeToMinutes(updatedSlot.startTime);
+        const updatedEnd = timeToMinutes(updatedSlot.endTime);
+        const otherStart = timeToMinutes(otherSlot.startTime);
+        const otherEnd = timeToMinutes(otherSlot.endTime);
 
         // Check for overlap: slots overlap if one starts before the other ends
         // Allow consecutive slots (where one ends exactly when another begins)
@@ -346,7 +354,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
         );
 
         if (overlaps) {
-          toast.error(`This time overlaps with another slot (${formatTime(otherSlot.start_time)} - ${formatTime(otherSlot.end_time)})`);
+          toast.error(`This time overlaps with another slot (${formatTime(otherSlot.startTime)} - ${formatTime(otherSlot.endTime)})`);
           return;
         }
       }
@@ -390,17 +398,17 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
       // Check for overlapping slots before saving
       const daySlots: { [key: string]: typeof availabilityData } = {};
       availabilityData.forEach(slot => {
-        if (!daySlots[slot.day_of_week]) {
-          daySlots[slot.day_of_week] = [];
+        if (!daySlots[slot.dayOfWeek]) {
+          daySlots[slot.dayOfWeek] = [];
         }
-        daySlots[slot.day_of_week].push(slot);
+        daySlots[slot.dayOfWeek].push(slot);
       });
 
       for (const [day, slots] of Object.entries(daySlots)) {
         if (slots.length > 1) {
           // Sort slots by start time (convert to minutes for proper numerical sorting)
           const sortedSlots = [...slots].sort((a, b) =>
-            timeToMinutes(a.start_time) - timeToMinutes(b.start_time)
+            timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
           );
 
           // Check for overlaps
@@ -409,13 +417,13 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
             const nextSlot = sortedSlots[i + 1];
 
             // Convert times to minutes for proper comparison
-            const currentEnd = timeToMinutes(currentSlot.end_time);
-            const nextStart = timeToMinutes(nextSlot.start_time);
+            const currentEnd = timeToMinutes(currentSlot.endTime);
+            const nextStart = timeToMinutes(nextSlot.startTime);
 
             // Check if slots overlap (not just consecutive)
             // Consecutive slots where one ends exactly when another begins are allowed
             if (currentEnd > nextStart) {
-              toast.error(`Overlapping time slots detected on ${DAY_LABELS[day as keyof typeof DAY_LABELS]}: ${formatTime(currentSlot.start_time)}-${formatTime(currentSlot.end_time)} overlaps with ${formatTime(nextSlot.start_time)}-${formatTime(nextSlot.end_time)}`);
+              toast.error(`Overlapping time slots detected on ${DAY_LABELS[day as keyof typeof DAY_LABELS]}: ${formatTime(currentSlot.startTime)}-${formatTime(currentSlot.endTime)} overlaps with ${formatTime(nextSlot.startTime)}-${formatTime(nextSlot.endTime)}`);
               setIsSaving(false);
               return false;
             }
@@ -442,7 +450,7 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
   };
 
   const getSlotsForDay = (dayOfWeek: string) => {
-    return availability.filter(slot => slot.day_of_week === dayOfWeek);
+    return availability.filter(slot => slot.dayOfWeek === dayOfWeek);
   };
 
   const formatTime = (time: string) => {
@@ -451,6 +459,18 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const toggleDayExpansion = (day: string) => {
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(day)) {
+        newSet.delete(day);
+      } else {
+        newSet.add(day);
+      }
+      return newSet;
+    });
   };
 
   if (showLoading) {
@@ -502,179 +522,205 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
       )}
 
       <div className="space-y-4">
-        {DAYS_OF_WEEK.map(day => {
+        {DAYS_OF_WEEK.map((day) => {
           const daySlots = getSlotsForDay(day);
+          const isExpanded = expandedDays.has(day);
 
           return (
-            <div key={day} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">
-                  {DAY_LABELS[day as keyof typeof DAY_LABELS]}
-                </h3>
-                <button
-                  onClick={() => addTimeSlot(day)}
-                  disabled={editingSlots.size > 0}
-                  className={`flex items-center gap-2 px-3 py-1 text-sm rounded-lg transition-colors ${
-                    editingSlots.size > 0
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-green-100 text-green-700 hover:bg-green-200'
-                  }`}
-                  title={editingSlots.size > 0 ? 'Save current slot first' : 'Add new time slot'}
-                >
-                  <FaPlus className="w-3 h-3" />
-                  Add Slot
-                </button>
+            <div key={day} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div
+                className={`flex items-center justify-between p-4 ${daySlots.length === 0 ? 'cursor-pointer hover:bg-gray-50' : ''} transition-colors`}
+                onClick={() => daySlots.length === 0 ? toggleDayExpansion(day) : null}
+              >
+                <div className="flex items-center gap-2">
+                  {daySlots.length === 0 && (
+                    isExpanded ? <FaChevronDown className="w-4 h-4 text-gray-500" /> : <FaChevronRight className="w-4 h-4 text-gray-500" />
+                  )}
+                  <h3 className="font-semibold text-gray-900">
+                    {DAY_LABELS[day as keyof typeof DAY_LABELS]}
+                  </h3>
+                  {daySlots.length > 0 && (
+                    <span className="px-2 py-0.5 bg-[#312E81] text-white rounded-full text-xs font-medium">
+                      {daySlots.length} slot{daySlots.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {daySlots.length === 0 && !isExpanded && (
+                    <span className="text-sm text-gray-500">No slots</span>
+                  )}
+                </div>
+                {(daySlots.length > 0 || isExpanded) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addTimeSlot(day);
+                    }}
+                    disabled={editingSlots.size > 0}
+                    className={`flex items-center gap-2 px-3 py-1 text-sm rounded-lg transition-colors ${
+                      editingSlots.size > 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
+                    title={editingSlots.size > 0 ? 'Save current slot first' : 'Add new time slot'}
+                  >
+                    <FaPlus className="w-3 h-3" />
+                    Add Slot
+                  </button>
+                )}
               </div>
 
-              {daySlots.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  <FaClock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p>No availability set for this day</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {daySlots.map((slot, index) => {
-                    const globalIndex = availability.findIndex(s => s === slot);
-                    const isEditing = isSlotEditing(globalIndex);
+              {(daySlots.length > 0 || isExpanded) && (
+                <div className="px-4 pb-4">
+                  {daySlots.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500">
+                      <FaClock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p>No availability set for this day</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {daySlots.map((slot, index) => {
+                        const globalIndex = availability.findIndex(s => s === slot);
+                        const isEditing = isSlotEditing(globalIndex);
 
-                    return (
-                      <div key={index} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
-                        {!isEditing ? (
-                          // Minimized/View Mode
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                  {slot.is_available ? (
-                                    <div className="w-2 h-2 bg-green-500 rounded-full" title="Available"></div>
-                                  ) : (
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full" title="Not available"></div>
-                                  )}
-                                  <span className="text-sm font-medium text-gray-700">
-                                    {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                                  </span>
+                        return (
+                          <div key={index} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
+                            {!isEditing ? (
+                              // Minimized/View Mode
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                      {slot.isAvailable ? (
+                                        <div className="w-2 h-2 bg-green-500 rounded-full" title="Available"></div>
+                                      ) : (
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full" title="Not available"></div>
+                                      )}
+                                      <span className="text-sm font-medium text-gray-700">
+                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => toggleEditMode(globalIndex)}
+                                      className="p-1.5 text-[#312E81] hover:bg-blue-50 rounded transition-colors"
+                                      title="Edit time slot"
+                                    >
+                                      <FaEdit className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => removeTimeSlot(globalIndex)}
+                                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      title="Delete time slot"
+                                    >
+                                      <FaTrash className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => toggleEditMode(globalIndex)}
-                                  className="p-1.5 text-[#312E81] hover:bg-blue-50 rounded transition-colors"
-                                  title="Edit time slot"
-                                >
-                                  <FaEdit className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => removeTimeSlot(globalIndex)}
-                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                  title="Delete time slot"
-                                >
-                                  <FaTrash className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            {slot.services && slot.services.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {slot.services.map((service, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="inline-block px-2 py-1 text-xs bg-[#f0effe] text-[#1E1B4B] rounded"
-                                  >
-                                    {service}
-                                  </span>
-                                ))}
+                                {slot.services && slot.services.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {slot.services.map((service, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-block px-2 py-1 text-xs bg-[#f0effe] text-[#1E1B4B] rounded"
+                                      >
+                                        {service}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-amber-600 italic">No services selected</p>
+                                )}
                               </div>
                             ) : (
-                              <p className="text-xs text-amber-600 italic">No services selected</p>
-                            )}
-                          </div>
-                        ) : (
-                          // Expanded/Edit Mode
-                          <>
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={slot.is_available}
-                                  onChange={(e) => updateTimeSlot(globalIndex, 'is_available', e.target.checked)}
-                                  className="w-4 h-4 text-[#312E81] rounded focus:ring-[#312E81]"
-                                />
-                                <span className="text-sm font-medium text-gray-700">Available</span>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <label className="text-sm text-gray-600">From:</label>
-                                <select
-                                  value={slot.start_time}
-                                  onChange={(e) => updateTimeSlot(globalIndex, 'start_time', e.target.value)}
-                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
-                                >
-                                  {TIME_SLOTS.map(time => (
-                                    <option key={time} value={time}>
-                                      {formatTime(time)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <label className="text-sm text-gray-600">To:</label>
-                                <select
-                                  value={slot.end_time}
-                                  onChange={(e) => updateTimeSlot(globalIndex, 'end_time', e.target.value)}
-                                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
-                                >
-                                  {TIME_SLOTS.filter(time => timeToMinutes(time) > timeToMinutes(slot.start_time)).map(time => (
-                                    <option key={time} value={time}>
-                                      {formatTime(time)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              <button
-                                onClick={() => toggleEditMode(globalIndex)}
-                                className="ml-auto p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Save changes"
-                              >
-                                <FaCheck className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            {/* Services Selection */}
-                            <div className="border-t border-gray-200 pt-3">
-                              <div className="flex items-center gap-2 mb-2">
-                                <FaServicestack className="w-4 h-4 text-[#312E81]" />
-                                <label className="text-sm font-medium text-gray-700">
-                                  Available Services for this time slot:
-                                </label>
-                              </div>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {companionServices.map(service => (
-                                  <label
-                                    key={service}
-                                    className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-[#f9f8ff] transition-colors"
-                                  >
+                              // Expanded/Edit Mode
+                              <>
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="flex items-center gap-2">
                                     <input
                                       type="checkbox"
-                                      checked={slot.services?.includes(service) || false}
-                                      onChange={() => toggleService(globalIndex, service)}
+                                      checked={slot.isAvailable}
+                                      onChange={(e) => updateTimeSlot(globalIndex, 'isAvailable', e.target.checked)}
                                       className="w-4 h-4 text-[#312E81] rounded focus:ring-[#312E81]"
                                     />
-                                    <span className="text-xs text-gray-700">{service}</span>
-                                  </label>
-                                ))}
-                              </div>
-                              {(!slot.services || slot.services.length === 0) && (
-                                <p className="text-xs text-red-500 mt-2">
-                                  ⚠️ Please select at least one service for this time slot
-                                </p>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
+                                    <span className="text-sm font-medium text-gray-700">Available</span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <label className="text-sm text-gray-600">From:</label>
+                                    <select
+                                      value={slot.startTime}
+                                      onChange={(e) => updateTimeSlot(globalIndex, 'startTime', e.target.value)}
+                                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
+                                    >
+                                      {TIME_SLOTS.map(time => (
+                                        <option key={time} value={time}>
+                                          {formatTime(time)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <label className="text-sm text-gray-600">To:</label>
+                                    <select
+                                      value={slot.endTime}
+                                      onChange={(e) => updateTimeSlot(globalIndex, 'endTime', e.target.value)}
+                                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#312E81] focus:border-transparent"
+                                    >
+                                      {TIME_SLOTS.filter(time => timeToMinutes(time) > timeToMinutes(slot.startTime)).map(time => (
+                                        <option key={time} value={time}>
+                                          {formatTime(time)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <button
+                                    onClick={() => toggleEditMode(globalIndex)}
+                                    className="ml-auto p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                    title="Save changes"
+                                  >
+                                    <FaCheck className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                {/* Services Selection */}
+                                <div className="border-t border-gray-200 pt-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <FaServicestack className="w-4 h-4 text-[#312E81]" />
+                                    <label className="text-sm font-medium text-gray-700">
+                                      Available Services for this time slot:
+                                    </label>
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {companionServices.map(service => (
+                                      <label
+                                        key={service}
+                                        className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-[#f9f8ff] transition-colors"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={slot.services?.includes(service) || false}
+                                          onChange={() => toggleService(globalIndex, service)}
+                                          className="w-4 h-4 text-[#312E81] rounded focus:ring-[#312E81]"
+                                        />
+                                        <span className="text-xs text-gray-700">{service}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                  {(!slot.services || slot.services.length === 0) && (
+                                    <p className="text-xs text-red-500 mt-2">
+                                      ⚠️ Please select at least one service for this time slot
+                                    </p>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -714,7 +760,6 @@ const AvailabilityManager = ({ className = '' }: AvailabilityManagerProps) => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

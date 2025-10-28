@@ -74,9 +74,9 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({
                   ) : (
                     <div className="flex items-center justify-center">
                       {React.isValidElement(step.icon) ?
-                        React.cloneElement(step.icon, {
+                        React.cloneElement(step.icon as React.ReactElement<{ className?: string }>, {
                           className: `w-5 h-5 ${isActive ? 'animate-pulse' : ''}`
-                        } as any) :
+                        }) :
                         step.icon
                       }
                     </div>

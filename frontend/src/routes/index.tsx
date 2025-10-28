@@ -1,26 +1,42 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import App from '../App';
 import MainLayout from '../components/MainLayout';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
-import HomePage from '../pages/HomePage';
-import SignIn from '../pages/auth/SignIn';
-import SignUp from '../pages/auth/SignUp';
-import ClientDashboard from '../pages/client/ClientDashboard';
-import ClientProfile from '../pages/client/ClientProfile';
-import CompanionDashboard from '../pages/companion/CompanionDashboard';
-import CompanionApplication from '../pages/companion/CompanionApplication';
-import CompanionProfile from '../pages/companion/CompanionProfile';
-import AdminDashboard from '../pages/admin/AdminDashboard';
-import VerifyEmail from '../pages/auth/VerifyEmail';
-import BrowseCompanions from '../pages/BrowseCompanions';
-import CompanionDetails from '../pages/companion/CompanionDetails';
-// Payment pages removed - will be implemented later
-import Favorites from '../pages/client/Favorites';
-import BookingCreate from '../pages/booking/BookingCreate';
-import Notifications from '../pages/Notifications';
-import DashboardRedirect from '../components/redirects/DashboardRedirect';
-import ProfileRedirect from '../components/redirects/ProfileRedirect';
+
+// Simple loading component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+  </div>
+);
+
+// Helper to wrap lazy components with Suspense
+const withSuspense = (Component: React.ComponentType) => (
+  <Suspense fallback={<PageLoader />}>
+    <Component />
+  </Suspense>
+);
+
+// Lazy load all pages for better performance
+const HomePage = lazy(() => import('../pages/HomePage'));
+const SignIn = lazy(() => import('../pages/auth/SignIn'));
+const SignUp = lazy(() => import('../pages/auth/SignUp'));
+const ClientDashboard = lazy(() => import('../pages/client/ClientDashboard'));
+const ClientProfile = lazy(() => import('../pages/client/ClientProfile'));
+const CompanionDashboard = lazy(() => import('../pages/companion/CompanionDashboard'));
+const CompanionApplication = lazy(() => import('../pages/companion/CompanionApplication'));
+const CompanionProfile = lazy(() => import('../pages/companion/CompanionProfile'));
+const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
+const VerifyEmail = lazy(() => import('../pages/auth/VerifyEmail'));
+const BrowseCompanions = lazy(() => import('../pages/BrowseCompanions'));
+const CompanionDetails = lazy(() => import('../pages/companion/CompanionDetails'));
+const Favorites = lazy(() => import('../pages/client/Favorites'));
+const BookingCreate = lazy(() => import('../pages/booking/BookingCreate'));
+const Notifications = lazy(() => import('../pages/Notifications'));
+const DashboardRedirect = lazy(() => import('../components/redirects/DashboardRedirect'));
+const ProfileRedirect = lazy(() => import('../components/redirects/ProfileRedirect'));
 
 const router = createBrowserRouter([
   {
@@ -37,11 +53,11 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <HomePage />,
+            element: withSuspense(HomePage),
           },
           {
             path: 'signin',
-            element: <SignIn />,
+            element: withSuspense(SignIn),
           },
           {
             path: 'login',
@@ -49,17 +65,19 @@ const router = createBrowserRouter([
           },
           {
             path: 'signup',
-            element: <SignUp />,
+            element: withSuspense(SignUp),
           },
           {
             path: 'verify-email',
-            element: <VerifyEmail />,
+            element: withSuspense(VerifyEmail),
           },
           {
             path: 'companion-application',
             element: (
               <ProtectedRoute requiredRole="companion">
-                <CompanionApplication />
+                <Suspense fallback={<PageLoader />}>
+                  <CompanionApplication />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -67,7 +85,9 @@ const router = createBrowserRouter([
             path: 'client-dashboard',
             element: (
               <ProtectedRoute requiredRole="client">
-                <ClientDashboard />
+                <Suspense fallback={<PageLoader />}>
+                  <ClientDashboard />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -75,7 +95,9 @@ const router = createBrowserRouter([
             path: 'client-profile',
             element: (
               <ProtectedRoute requiredRole="client">
-                <ClientProfile />
+                <Suspense fallback={<PageLoader />}>
+                  <ClientProfile />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -83,7 +105,9 @@ const router = createBrowserRouter([
             path: 'favorites',
             element: (
               <ProtectedRoute requiredRole="client">
-                <Favorites />
+                <Suspense fallback={<PageLoader />}>
+                  <Favorites />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -91,7 +115,9 @@ const router = createBrowserRouter([
             path: 'companion-dashboard',
             element: (
               <ProtectedRoute requiredRole="companion">
-                <CompanionDashboard />
+                <Suspense fallback={<PageLoader />}>
+                  <CompanionDashboard />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -99,7 +125,9 @@ const router = createBrowserRouter([
             path: 'companion-profile',
             element: (
               <ProtectedRoute requiredRole="companion">
-                <CompanionProfile />
+                <Suspense fallback={<PageLoader />}>
+                  <CompanionProfile />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -107,13 +135,15 @@ const router = createBrowserRouter([
             path: 'admin-dashboard',
             element: (
               <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
+                <Suspense fallback={<PageLoader />}>
+                  <AdminDashboard />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
           {
             path: 'browse-companions',
-            element: <BrowseCompanions />,
+            element: withSuspense(BrowseCompanions),
           },
           {
             path: 'browse',
@@ -121,13 +151,15 @@ const router = createBrowserRouter([
           },
           {
             path: 'companion/:id',
-            element: <CompanionDetails />,
+            element: withSuspense(CompanionDetails),
           },
           {
             path: 'booking/create',
             element: (
               <ProtectedRoute>
-                <BookingCreate />
+                <Suspense fallback={<PageLoader />}>
+                  <BookingCreate />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -135,7 +167,9 @@ const router = createBrowserRouter([
             path: 'notifications',
             element: (
               <ProtectedRoute>
-                <Notifications />
+                <Suspense fallback={<PageLoader />}>
+                  <Notifications />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -143,7 +177,9 @@ const router = createBrowserRouter([
             path: 'dashboard',
             element: (
               <ProtectedRoute>
-                <DashboardRedirect />
+                <Suspense fallback={<PageLoader />}>
+                  <DashboardRedirect />
+                </Suspense>
               </ProtectedRoute>
             ),
           },
@@ -151,7 +187,9 @@ const router = createBrowserRouter([
             path: 'profile',
             element: (
               <ProtectedRoute>
-                <ProfileRedirect />
+                <Suspense fallback={<PageLoader />}>
+                  <ProfileRedirect />
+                </Suspense>
               </ProtectedRoute>
             ),
           },

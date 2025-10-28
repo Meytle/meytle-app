@@ -53,28 +53,28 @@ const Footer = () => {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-[#FFCCCB] transition-all duration-300 transform hover:scale-125 hover:drop-shadow-[0_0_10px_rgba(255,204,203,0.5)]"
+                className="text-[#FFCCCB] hover:text-[#FF9F9F] transition-all duration-300 transform hover:scale-125 hover:drop-shadow-[0_0_15px_rgba(255,204,203,0.6)]"
                 aria-label="Facebook"
               >
-                <FaFacebookF className="w-6 h-6" />
+                <FaFacebookF className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,204,203,0.3)]" />
               </a>
               <a
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-[#FFCCCB] transition-all duration-300 transform hover:scale-125 hover:drop-shadow-[0_0_10px_rgba(255,204,203,0.5)]"
+                className="text-[#FFCCCB] hover:text-[#FF9F9F] transition-all duration-300 transform hover:scale-125 hover:drop-shadow-[0_0_15px_rgba(255,204,203,0.6)]"
                 aria-label="Twitter"
               >
-                <FaTwitter className="w-6 h-6" />
+                <FaTwitter className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,204,203,0.3)]" />
               </a>
               <a
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-[#FFCCCB] transition-all duration-300 transform hover:scale-125 hover:drop-shadow-[0_0_10px_rgba(255,204,203,0.5)]"
+                className="text-[#FFCCCB] hover:text-[#FF9F9F] transition-all duration-300 transform hover:scale-125 hover:drop-shadow-[0_0_15px_rgba(255,204,203,0.6)]"
                 aria-label="Instagram"
               >
-                <FaInstagram className="w-6 h-6" />
+                <FaInstagram className="w-6 h-6 drop-shadow-[0_0_8px_rgba(255,204,203,0.3)]" />
               </a>
             </div>
           </div>
@@ -148,7 +148,7 @@ const Footer = () => {
             <h4 className="text-lg font-semibold mb-4">Contact</h4>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
-                <FaEnvelope className="w-5 h-5 text-[#312E81] mt-0.5 flex-shrink-0" />
+                <FaEnvelope className="w-5 h-5 text-[#FFCCCB] drop-shadow-[0_0_8px_rgba(255,204,203,0.4)] mt-0.5 flex-shrink-0" />
                 <a 
                   href="mailto:support@meetandgo.com" 
                   className="text-gray-300 hover:text-[#FFCCCB] transition-all duration-300 text-sm hover:drop-shadow-[0_0_8px_rgba(255,204,203,0.4)]"
@@ -157,7 +157,7 @@ const Footer = () => {
                 </a>
               </li>
               <li className="flex items-start gap-3">
-                <FaPhone className="w-5 h-5 text-[#312E81] mt-0.5 flex-shrink-0" />
+                <FaPhone className="w-5 h-5 text-[#FFCCCB] drop-shadow-[0_0_8px_rgba(255,204,203,0.4)] mt-0.5 flex-shrink-0" />
                 <a 
                   href="tel:+18002633846" 
                   className="text-gray-300 hover:text-[#FFCCCB] transition-all duration-300 text-sm hover:drop-shadow-[0_0_8px_rgba(255,204,203,0.4)]"
@@ -166,7 +166,7 @@ const Footer = () => {
                 </a>
               </li>
               <li className="flex items-start gap-3">
-                <FaMapMarkerAlt className="w-5 h-5 text-[#312E81] mt-0.5 flex-shrink-0" />
+                <FaMapMarkerAlt className="w-5 h-5 text-[#FFCCCB] drop-shadow-[0_0_8px_rgba(255,204,203,0.4)] mt-0.5 flex-shrink-0" />
                 <span className="text-gray-300 text-sm">
                   San Francisco, CA
                 </span>

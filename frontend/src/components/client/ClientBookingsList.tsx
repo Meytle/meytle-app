@@ -184,14 +184,14 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
   };
 
   const isUpcoming = (booking: Booking) => {
-    const bookingDate = new Date(booking.booking_date);
+    const bookingDate = new Date(booking.bookingDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return bookingDate >= today && ['pending', 'confirmed'].includes(booking.status);
   };
 
   const isPast = (booking: Booking) => {
-    const bookingDate = new Date(booking.booking_date);
+    const bookingDate = new Date(booking.bookingDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return bookingDate < today || ['completed', 'cancelled', 'no_show'].includes(booking.status);
@@ -251,38 +251,38 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                     {/* Companion Info */}
                     <div className="flex items-start gap-4 flex-1">
                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#4A47A3] to-[#FFCCCB] flex items-center justify-center text-white text-xl font-bold shadow-md">
-                        {booking.companion_name?.charAt(0) || 'C'}
+                        {booking.companionName?.charAt(0) || 'C'}
                       </div>
                       <div className="flex-1">
                         <h4 className="text-lg font-semibold text-gray-900">
-                          {booking.companion_name || 'Companion'}
+                          {booking.companionName || 'Companion'}
                         </h4>
                         <div className="mt-2 space-y-2">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <FaClock className="text-gray-400" />
                             <span className="font-medium text-gray-900">
-                              {formatDate(booking.booking_date)}
+                              {formatDate(booking.bookingDate)}
                             </span>
                             <span className="text-gray-500">•</span>
                             <span>
-                              {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                              {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
                             </span>
                             <span className="text-xs text-gray-500">
-                              ({calculateDuration(booking.start_time, booking.end_time)})
+                              ({calculateDuration(booking.startTime, booking.endTime)})
                             </span>
                           </div>
-                          {booking.meeting_location && (
+                          {booking.meetingLocation && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                               <FaMapMarkerAlt className="text-gray-400" />
-                              <span>{booking.meeting_location}</span>
+                              <span>{booking.meetingLocation}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-2 text-sm">
                             <FaMoneyBillWave className="text-green-500" />
                             <span className="font-semibold text-gray-900">
-                              ${booking.total_amount}
+                              ${booking.totalAmount}
                             </span>
-                            {booking.payment_status === 'paid' && (
+                            {booking.paymentStatus === 'paid' && (
                               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                 Paid
                               </span>
@@ -343,23 +343,23 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                     {/* Companion Info */}
                     <div className="flex items-start gap-4 flex-1">
                       <div className="w-14 h-14 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg font-bold">
-                        {booking.companion_name?.charAt(0) || 'C'}
+                        {booking.companionName?.charAt(0) || 'C'}
                       </div>
                       <div className="flex-1">
                         <h4 className="text-lg font-semibold text-gray-900">
-                          {booking.companion_name || 'Companion'}
+                          {booking.companionName || 'Companion'}
                         </h4>
                         <div className="mt-2 space-y-1">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <span>{formatDate(booking.booking_date)}</span>
+                            <span>{formatDate(booking.bookingDate)}</span>
                             <span className="text-gray-400">•</span>
                             <span>
-                              {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                              {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <FaMoneyBillWave className="text-gray-400" />
-                            <span>${booking.total_amount}</span>
+                            <span>${booking.totalAmount}</span>
                           </div>
                         </div>
                       </div>
@@ -373,7 +373,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                       </span>
 
                       <div className="flex gap-2">
-                        {booking.status === 'completed' && !booking.has_review && (
+                        {booking.status === 'completed' && !booking.hasReview && (
                           <button
                             onClick={() => handleLeaveReview(booking)}
                             className="px-3 py-1.5 text-sm bg-[#312E81] text-white rounded-lg hover:bg-[#1E1B4B] hover:shadow-[0_0_15px_rgba(255,204,203,0.3)] transition-colors flex items-center gap-2"
@@ -405,7 +405,7 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Cancel Booking</h3>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to cancel your booking with {selectedBooking.companion_name} on {formatDate(selectedBooking.booking_date)}?
+              Are you sure you want to cancel your booking with {selectedBooking.companionName} on {formatDate(selectedBooking.bookingDate)}?
             </p>
 
             <div className="mb-6">
@@ -459,8 +459,8 @@ const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
             setReviewBooking(null);
           }}
           bookingId={reviewBooking.id}
-          companionName={reviewBooking.companion_name || 'Companion'}
-          companionPhoto={reviewBooking.companion_photo}
+          companionName={reviewBooking.companionName || 'Companion'}
+          companionPhoto={reviewBooking.companionPhoto}
           onSubmit={handleSubmitReview}
         />
       )}

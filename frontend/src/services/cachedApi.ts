@@ -210,7 +210,7 @@ class CachedApiService {
       if (response) {
         // Invalidate related caches
         bookingCache.invalidateDependencies('bookings');
-        availabilityCache.invalidateDependencies(`companion_${bookingData.companion_id}`);
+        availabilityCache.invalidateDependencies(`companion_${bookingData.companionId}`);
       }
 
       return response;
